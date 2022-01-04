@@ -1,0 +1,1037 @@
+---
+title: "第四章 两个同类型变量的图形绘制"
+output:
+  html_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+在分析数据的过程中，往往希望了解数据之间是否存在某些关系，而变量之间的相关性是人们最早最早认识的关系，这很容易理解，人们早期的研究中，经常会发现某个指标会随着另外一个指标的变换而变化。例如，弗朗西斯·高尔顿，英国著名生物学家和统计学家(1822 ~ 1911)。为了研究父亲和孩子身高之间的关系，高尔顿收集了1078对父亲和儿子身高的数据。他发现数据的散点图大致呈线性，这意味着总体趋势是，随着父亲身高的增加，儿子的身高也会增加。高尔顿创造了回归这个概念，在今天很容易的可以构建一个回归方程，发现数据之间的线性关系。但是在回归还没有发明之前，在还没有统计模型能够描述这种关系之前，通过散点图可以很清楚地观察到数据间的关系。。在今天使用的所有图形形式中，散点图可以说是统计图形历史中最通用，多态且通常有用的发明。Galton的使用导致了相关性和回归的发现，并最终导致了大量现有的多变量统计。
+
+ 
+
+
+# 散点图
+
+散点图是毫无疑问是所有统计图形中最常用的图形之一。在所有主要图表类型中，它们是迄今为止最强大的图表类型。它们使我们能够快速理解在表格或不同类型的图表中几乎无法识别的关系。
+
+散点图描述的是两个连续变量之间的关系，散点图可以很好的描述出数据间的线性关系。通常而言，线性关系的统计指标为相关系数。描述多变量的线性关系的统计模型的多元线性回归模型。
+
+当然，线性关系是最简单的，也是人类最容易理解的一种关系。然而世界上大部分事物的关系并不是线性关系这个简单。而是呈现出某种复杂的，非线性关系。我们永远无法知道事物之间真实的关系是怎样的，毕竟，这个世界太复杂，有太多不可控的因素，我们也永远在解释事实，解释这个世界，希望通过一些方法能比较好的接近事实背后的那个真理。所有的模型都是错的，但是有一些模型是有用的。高尔顿通过父子身高的散点图发现了回归方程，虽然回归模型不能完美的回答，例如，如果父亲的身高是180，儿子的身高是多少这个问题。但是，回归模型告诉我们父亲身高比较高，儿子身高也会比较高。同理，虽然散点图没法告诉我们数据背后真正的关系，但是，我们依然能够从散点图中获取非常多的有用的信息。
+
+最初称为散点图，散点图通常绘制由RenéDescartes在17世纪开发的笛卡尔坐标系上的点，垂直线代表两个轴。我们将水平方向称为x轴，垂直方向称为y轴 - 这些字母的使用源于它们在代数中的作用。笛卡尔开发了他的坐标系来展示几何与代数之间的联系，他可能并不认为它会用来描绘现实世界之间的关系。
+
+条形图，折线图和饼图 - 其他最流行的数据可视化类型 - 都是由  苏格兰政治经济学家William Playfair  在18世纪初发明的。Playfair利用他的创作来形象化金融和人口趋势; 当时，通过视觉传达学术信息的想法被视为业余爱好者。这是一种令人难以置信的想象力和大胆的行为。
+
+相比之下，散点图对科学家来说更有用。虽然折线图和条形图在报纸和商业演示中更为常见，但散点图主导着科学期刊。统计学家爱德华·图夫特（Edward Tufte）曾估计科学出版物中超过70％的图表都是散点图。
+
+进行散点图研究2个变量之间的关系。因此，通常伴随有相关系数计算，但是，可以使用散点图来检测其他类型的关系，并且一项常见任务是使模型适合于以X的函数解释Y。
+```{r}
+# 加载包
+library(ggplot2)
+library(tidyverse)
+library(hrbrthemes)
+#  创建数据集
+d1 <- data.frame(x=seq(1,100), y=rnorm(100), name="No trend")
+d2 <- d1 %>% mutate(y=x*10 + rnorm(100,sd=60)) %>% mutate(name="Linear relationship")
+d3 <- d1 %>% mutate(y=x^2 + rnorm(100,sd=140)) %>% mutate(name="Square")
+d4 <- data.frame( x=seq(1,10,0.1), y=sin(seq(1,10,0.1)) + rnorm(91,sd=0.6)) %>% mutate(name="Sin")
+don <- do.call(rbind, list(d1, d2, d3, d4))
+
+# 绘制图形
+don %>%
+  ggplot(aes(x=x, y=y)) +
+    geom_point(color="#69b3a2", alpha=0.8) +
+    theme_ipsum() +
+    facet_wrap(~name, scale="free")
+```
+
+上面的代码中绘制了四副散点图，这四幅图形显示出了散点图的四种模型，左上角的图形中，散点图并没有显示出任何的趋势，右上角的散点图显示出了数据之间存在的线性关系。左下角的散点图显示出了数据间非线性关系，右下角的图形。使用散点图可以非常清晰的观察到数据之间的关系。
+
+```{r}
+ 
+# 加载包和数据集
+options(scipen=999)  # 取消科学计数法
+library(ggplot2)
+ 
+data("midwest", package = "ggplot2") # 获取数据集
+# midwest <- read.csv("http://goo.gl/G1K41K")  也可以从这行代码获取
+
+#  绘制散点图
+gg <- ggplot(midwest, aes(x=area, y=poptotal)) + 
+  geom_point(aes(col=state, size=popdensity)) + 
+  geom_smooth(method="loess", se=F) + 
+  xlim(c(0, 0.1)) + 
+  ylim(c(0, 500000)) + 
+  labs(subtitle="Area Vs Population", 
+       y="Population", 
+       x="Area", 
+       title="Scatterplot", 
+       caption = "Source: midwest")+theme_bw()
+
+plot(gg)
+```
+
+上面的代码中，使用了ggplot2包中的midwest数据集，这一份数据集记录了与人口相关的数据，其中变量area表示地区，poptotal表示总人口数，state表示不同的州，popdensity表示人口密度。上面的代码绘制了一副散点图，并根据state的不同用于设置散点图不同的颜色，更具不同的popdensity调整散点图的大小，最后添加了一条拟合曲线，拟合曲线的方法是局部加权回归（loess）。整个散点图显示出了不同地区的人口的数量。
+
+##  绘制基础的散点图
+
+
+使用ggplot2绘制散点图会涉及到很多函数，最基本的函数是geom_point()函数。使用这个函数用于绘制散点图，下面的代码中绘制出了一个基本的散点图：
+
+```{r}
+# 绘制散点图
+b <- ggplot(mtcars, aes(x = wt, y = mpg))
+b + geom_point()
+```
+
+散点图显示沿两个轴的两个变量的值。它显示了它们之间的关系，最终揭示了一种相关性。这里显示了几种植物的萼片宽度和萼片长度之间的关系，使用的数据集iris数据集。
+
+绘制一个散点图的基本步骤如下:
+
+1 -提供一个数据框
+2 -告诉在x轴和y轴上显示哪个变量
+3.添加一个geom_point()来显示点
+
+
+```{r}
+library(ggplot2)
+ 
+# 使用的数据集是iris数据集
+#head(iris)
+ 
+# 绘制散点图
+ggplot(iris, aes(x=Sepal.Length, y=Sepal.Width)) + 
+    geom_point()
+```
+
+绘制散点图的关键函数是geom_point()，上面的介绍的其他函数可以再散点图的基础之上进行一些修改。geom_point()这个函数还包含其他一些参数，包括散点图的点的大小：size，点的颜色：color，点的形状：shape。另外还有一点就是alpha参数，用于调整透明度，在数据点比较多的时候非常有用，通过调整透明度的方式可以了解到散点图中点的聚集程度。下面绘制基础的散点图，使用的数据集是mpg数据集，这个数据集包含了EPA在http://fueleconomy.gov上提供的燃油经济性数据的子集。它只包含1999年至2008年间每年都有新车发布的车型——这被用作汽车受欢迎程度的一个指标。
+
+
+```{r}
+# 绘制散点图
+ggplot(data = mpg,aes(x = displ,y = cty))+geom_point(color = "dark blue", size = 2, shape = 2) +theme_minimal()
+```
+
+上面的代码绘制出了一副散点图，使用color参数对于散点图的颜色进行了调整，设置颜色为'dark blue',然后通过size函数设置了散点图的大小，这里设置size为2，使用shape参数设置散点图的形状，这里将散点图用三角形进行代替。
+
+关于shape参数，不同的数字对应的形状如下图所示：
+
+![](/Users/milin/写书/shape.png)
+
+另外一个参数是alpha，用于调整图形的透明度，当数据量比较多的时候，图形中的点某些点会被覆盖，这个时候使用这个参数，通过调整图形的透明度，可以使得数据密集的地方颜色比较深，数据比较分散的地方颜色比较浅，下面的代码使用一个稍微大一些的数据集，diamonds数据集来绘制散点图，并且调整透明度：
+```{r}
+# 绘制散点图
+ggplot(data = diamonds,aes(x = carat,y = price)) + geom_point(color = "dark blue", size = 0,alpha = 0.5) +theme_ipsum()
+
+```
+
+上面的代码绘制了设置了透明度的散点图，从图中可以看到，有些地方的颜色比较深，说明数据集非常的密集。如果不设置这个参数，则无法知道散点图中那些区域的点数据比较多。
+
+下面的介绍geom_point()的更多参数，它显示了可以应用于散点图中数据点的自定义类型，其中
+
+1. color:用于表示散点图中点的轮廓颜色
+2. stroke: 用于表示散点图中轮廓的宽度
+3. fill: 用于表示点内部的颜色
+4. shape: 点的的形状。
+5. alpha:点的透明，[0->1]，0是完全透明的
+6. size:点的大小
+
+需要注意的注意的是，如果将这些选项放在geom_point()调用中，那么这些选项在所有点之间之间是一致的。如果将它们放在代码的aes()部分中，还可以将它们映射到一个变量。
+
+```{r}
+# 加载包
+library(ggplot2)
+library(hrbrthemes)
+ 
+ 
+ 
+# 绘制图散点图
+ggplot(iris, aes(x=Sepal.Length, y=Sepal.Width,fill = Species)) + 
+    geom_point(
+        color="black",
+       #  fill="red",
+        shape=21,
+        alpha=0.5,
+        size=6,
+        stroke = 2
+        )+theme_ipsum() # 设置主题
+```
+
+上面的代码对于散点图设置了更多地参数，图形中的数据是iris数据集，这个著名的虹膜数据集(Fisher’s或Anderson’s)分别给出了来自3种虹膜的50朵花的萼片长度和宽度以及花瓣长度和宽度的厘米变量的测量值。该物种是鸢尾属，杂色，和维珍属。图形绘制了iris数据集的Sepal.Length变量和Sepal.Width变量之间的散点图，然后设置了一些列的参数，设置散点图点的轮廓颜色为黑色，设置散点图点的填充颜色为红色，设置点的形状为圆形，设置透明度alpha为0.5，设置散点图点的大小为6，并且设置散点图点的轮廓大小为2。设置合适的参数能够使得图形更加具有表现力。
+ 
+## 绘制分组的散点图
+
+三点图可以描述两个维度的信息，分别用x轴和y轴代表两个维度的数据。如果希望绘制分组散点图，则需要一个新的维度来表示分组。因此，可以使用颜色，点的大小，点的形状，这三种方式来实现。例如，对于mpg数据集，想要观察不同年份的displ和cyl的关系，可以使用这三种方式来实现。需要一提的是，通过不同的点的大小来表示第三个维度的信息，这种图形也被称为气泡图。首先，使用不同的颜色来表示低三个维度：
+
+```{r}
+# 绘制散点图
+ggplot(data = mpg,aes(x = displ,y = cty,color = as.factor(year))) + geom_point()
+```
+
+上面的代码将year变量传递给了color参数，这样使得不同year变量对应的点表现出不同的颜色。另外还可以使用不同的点的大小来表示分组：
+```{r}
+# 绘制散点图
+ggplot(data = mpg,aes(x = displ,y = cty,size = as.factor(year),alpha = 0.5)) + geom_point()
+```
+
+上面的代码中绘制出了数据点不同大小的散点图，从图中可以观察到，不同year变量对应的散点图具有不同的大小。实现的方式是是将year变量传递给size参数。但是这个图形还有一点小问题，因为途中似乎很多数据点过于紧密的聚集在一起，无法清晰的观察到散点图中数据点密集区域的单个点信息,这种情况可以使用alpha参数调节图形的透明度。
+
+下面的代码使用不同的形状来表示分组：
+```{r}
+# 绘制散点图
+ggplot(data = mpg,aes(x = displ,y = cty,shape = as.factor(year))) + geom_point()
+```
+
+上面的代码中通过使用shape参数用于表示不同点。实现的方式是将year变量设置到shape参数。下面的代码同时设定你了颜色，形状，大小：
+```{r}
+# 加载包
+library(ggplot2)
+library(hrbrthemes)
+
+# 绘制散点图，其颜色取决Species
+ggplot(iris, aes(x=Sepal.Length, y=Sepal.Width, shape=Species, alpha=Species, size=Species, color=Species)) + 
+    geom_point() +
+    theme_ipsum()
+```
+
+上面的代码都是将作为分组的变量设置为颜色参数，大小参数或者形状参数。然后代码则会自动的将分组通过不同的颜色，大小或者形状区分开来。比如，第三幅图中1999年的数据点为圆形，2008年的数据点为三角形。我们代码中没有指定1999年的点为圆形，2008年的点为三角形。一般情况下，这样是没有问题的，代码默认的设定是没问题的，但是有的时候是需要一些自定义的调整，例如想要第三幅图中的1999年数据点的形状为正方形，这个时候就需要自己手动去调整了。其中调整点的大小的函数是：scale_size_manual() 。调整点的颜色的函数式：scale_shape_manual() 。调整点的形状的函数式：scale_shape_manual() 。
+
+首先，调整点的大小，如果想突出1999年的数据，想要将1999年的数据点变大，2008年的数据点变小，则可以使用如下代码：
+```{r}
+# 绘制散点图，调整了颜色
+ggplot(data = mpg,aes(x = displ,y = cty,size = as.factor(year))) + geom_point()+ scale_size_manual(values=c(2,1))
+```
+
+从上面的图形中可以观察到，year = 1999这一组的数据被设置为比较大，year = 2008 这一组数据点被设置得比较小。scale_size_manual函数中values参数用于描述点的大小，数值越大，代表点越大。因为散点图中只有两个分组，因此只需要传递一个长度为2的向量给values参数用于表示两组点的大小。
+
+如果想要指定不同分组的颜色，使用scale_color_manual，代码如下：
+
+```{r}
+# 绘制散点图，调整了颜色
+ggplot(data = mpg,aes(x = displ,y = cty,color = as.factor(year))) + geom_point()+scale_color_manual(values = c("black","red"))
+```
+
+上面的代码通过scale_color_manual函数手动的设置了两个分组的颜色，设置的方式和设置不同的分组的大小的方式是一样的，需要设置的参数都是values参数，只不过设置颜色的时候，需要传递表示颜色的值，有几种方式可以表示颜色，首先第一种就是颜色的英文名称，第二种就是数字，数字会被解释为数字所映射的某种颜色。第三种是使用十六进制的颜色代码。通常有这三种方式可以设置不同的颜色。上面的代码中，射中了两组的颜色分别为黑色和红色。调整图形的颜色，会与绘制出一副好的图形非常的重要，因此需要对于颜色的原理比较了解，知道如何去配色能够让图形有比较好的表现力。
+另外，如果并不想调整指定不同分组的颜色，而是指觉得当前图形的配色不好看。这个时候可以使用scale_color_*函数，这是一类函数，例如scale_color_grey()，这一类函数分别用于设定不同的配色方式，使用这个scale_color_grey()函数会将整个图形的颜色变成灰色调。下面的代码使用了scale_color_grey()函数来调整图形的颜色。
+
+```{r}
+# 绘制散点图
+ggplot(data = mpg,aes(x = displ,y = cty,color = as.factor(year))) + geom_point()+scale_color_grey()
+```
+
+从图形中可以看淡，散点图中的两种颜色分别为黑色和灰色。出了使用这种颜色还可使使用scale_color_brewer函数指定其他的配色。
+
+```{r}
+# 绘制散点图
+ggplot(data = mpg,aes(x = displ,y = cty,color = as.factor(year))) +geom_point()+ scale_color_brewer(palette = "PuOr")
+```
+
+上面的代码指定了一种叫做'PuOr'的配色。出了这种配色之外，还有其他很多可选的图形配色。如下图所示：
+![](/Users/milin/Documents/Rcolor.jpg)
+
+选择合适的颜色不是一件简单的事情，因此，往往需要不断地调整图形的颜色以达到比较好的图形效果。
+
+## 添加拟合曲线
+
+散点图是最常用的统计图形之一，当我们想要了解两个连续变量之间的关系的时候，首先绘制的就是散点图，散点图非常好的描述了数据点之间的关系，也可以非常直观的展示出数据间的关系。高尔顿通过观察散点图，进行提出了回归方程，回归方程式统计中描述变量之间关系的一种方法。在绘制好的散点图中添加散点图的拟合曲线能够更好的理解数据之间的趋势，尤其是在数据关系并不是很明显的时候。再或者，当我们构建好了回归模型之后，想知道回归模型是否有很好的拟合数据点，这个时候，一个好的方法就是讲散点图和拟合曲线绘制到同一张图中。
+
+使用ggplot2绘制散点图，然后添加拟合曲线的关键函数是geom_smooth() and geom_abline() 。其中geom_smooth()用于添加拟合曲线，geom_abline()用于添加水平线或者垂直曲线。
+
+geom_smooth()函数的基本参数包括：
+
+```
+geom_smooth(method="auto", se=TRUE, level=0.95)
+```
+
+其中，method参数用于指定使用什么方法来拟合数据，可以有的选项包括，线性回归模型（lm），广义线性回归模型（glm），广义加性模型（gam），局部多项式回归模型（loess）。默认情况下，geom_smooth()函数的参数指定为method="auto"，其表示的含义是会根据数据量的大小来选择使用的你和方法，如果数据量小于1000，则会使用局部多项式回归（loess），否则，会使用广义加性模型（gam）。如果使用method =‘lm’，则会拟合线性回归模型，需要注意的的是，如果想要拟合多项式回归模型，也可以用公式= y ~ poly(x, 2)来表示2次多项式。
+
+另外，还可以通过指定模型的方式进行绘制，例如method = MASS::rlm
+可以指定的模型还包括： mgcv::gam, stats::lm, stats::loess等等。
+
+参数se是一个逻辑值，如果是True，则表示绘制出拟合的置信区间.而level参数则用来指定置信区间的显著性水平，默认为95%。geom_smooth函数还包含一些通用的参数，包括拟合曲线的颜色（color），填充颜色（fill）.
+
+下面的代码分别使用了不同的拟合方式进行拟合数据，首先使用了线性回归的方式添加了拟合曲线：
+```{r}
+ggplot(data = mpg,aes(x = displ,y = cty,color = as.factor(year))) + geom_point()+scale_color_manual(values = c("black","red"))+geom_smooth(method = "lm",color = "yellow",fill = 'blue') # 绘制散点图，添加了拟合曲线
+```
+
+上面的代码首先使用了mpg数据集绘制了关于displ变量和cty变量之间的分组散点图，分组的变量为year。然后将不同的分组的点分别设置为黑色和红色。然后使用geom_smooth()函数在散点图中添加了线性拟合曲线，拟合曲线的颜色为黄色，置信区间的颜色为蓝色。
+
+在绘制这个图形的过程中，本质上是对这两个变量建立了线性回归模型。对于线性回归模型，模型的形式是：
+
+$Y_{i}=\beta_{0}+\beta_{1} \phi_{1}\left(X_{i 1}\right)+\cdots+\beta_{p} \phi_{p}\left(X_{i p}\right)+\varepsilon_{i} \quad i=1, \ldots, n$
+
+其中样本记录为 $Y_{i}, X_{i 1}, \ldots, X_{i p}$,i= 1,...n。y是因变量，x是自变量，$\varepsilon_{i}$ 是误差。上面的模型通常而言，使用的是最小二乘法进行求解，未知参数的求解公式是：
+$S=\sum_{i=1}^{n}\left(Y_{i}-\beta_{0}-\beta_{1} \phi_{1}\left(X_{i 1}\right)-\cdots-\beta_{p} \phi_{p}\left(X_{i p}\right)\right)^{2}$
+
+对于上面的情况，回归模型只有一个自变量，属于一元的线性回归模型。线性回归模型同样用于描述数据间的线性关系。如果数据间的关系属于非线性的关系，则使用其他模型，例如，多项式模型，广义加性模型等等可能更合适一些。
+
+
+```{r}
+# 绘制散点图，添加拟合曲线gam
+ggplot(data = mpg,aes(x = displ,y = cty,color = as.factor(year))) + geom_point()+scale_color_manual(values = c("black","red"))+geom_smooth(method = "gam",color = "yellow",fill = 'blue')
+
+```
+上面的代码中使用了广义加性模型（gam）来绘制拟合曲线，在统计中，广义加性模型（GAM）是广义线性模型的一种，其中线性预测变量线性地依赖于某些预测变量的未知平滑函数，并且关注点集中在对这些平滑函数的推断上。
+
+广义加性模型的模型形式是：
+
+$g(\mathrm{E}(Y))=\beta_{0}+f_{1}\left(x_{1}\right)+f_{2}\left(x_{2}\right)+\cdots+f_{m}\left(x_{m}\right)$
+
+函数$f_{i}$可以是具有指定参数形式的函数（例如，多项式或变量的无罚回归样条），也可以简单地以“平滑函数”的形式非参数或半参数地指定，这些函数用非参数的方法进行估计。
+
+广义加性模型可以描述数据间更加复杂的关系。
+```{r}
+# 绘制散点图，添加了拟合曲线loess
+ggplot(data = mpg,aes(x = displ,y = cty,color = as.factor(year))) + geom_point()+scale_color_manual(values = c("black","red"))+geom_smooth(method = "loess",color = "yellow",fill = 'blue')
+
+
+```
+上面的代码使用了局部加权模型（loess）来拟合散点图的数据。局部加权模型是局部多项式回归的一种。
+LOESS建立在经典回归的基础之上，例如线性和非线性最小二乘回归。它们解决了传统模型效果不佳的情况。LOESS结合了线性最小二乘回归的简单性和非线性回归的灵活性。它通过将简单模型拟合到数据的局部子集来实现这一点，从而建立了一个函数，该函数逐点描述数据变化的确定性部分。实际上，此方法的主要吸引力之一是，不需要数据分析师指定任何形式的全局函数来使模型适合数据，而仅适合于数据段。
+
+如上所述，与许多其他方法相比，LOESS的最大优势在于它不需要指定函数即可将模型拟合到样本中所有数据的事实。相反，分析人员只需提供平滑参数值和局部多项式的次数。此外，LOESS非常灵活，非常适合于建模不存在理论模型的复杂过程。这两个优点与方法的简单性相结合，使LOESS成为现代回归方法中最有吸引力的方法之一，适用于适合最小二乘回归的一般框架但具有复杂确定性结构的应用。
+
+另外，loess的却迪奥是，与其他最小二乘法相比，LOESS对数据的使用效率较低。为了产生良好的模型，它需要相当大的，密集采样的数据集。这是因为LOESS在执行本地拟合时依赖于本地数据结构。因此，LOESS提供了较少复杂的数据分析以换取更高的实验成本。LOESS的另一个缺点是它不会产生易于用数学公式表示的回归函数。这可能会使将分析结果转移给其他人变得困难。
+
+
+## 散点图中添加地毯图
+
+地毯图是单个定量变量的数据图，显示为沿轴的标记。它用于可视化数据的分布。因此，它类似于具有零宽度区间的直方图或一维散点图。 通常将地毯图与二维散点图结合使用。关于地毯图的这个术语的起源，是因为这些带有垂直标记的地毯图看起来像沿着散点图的矩形“地毯”边缘的流苏。
+
+地毯图中每‘根须’都对应着一个数据，数据密了地毯图中的‘根须’就比较集中，一般和其他一些统计图形(比方说密度曲线，散点图)结合着用，地毯图可以更好的帮助了解原始数据的信息(位置)。
+
+使用ggplot2绘制地毯图的核心函数是geom_rug。这个函数有一个主要的参数，side，这个参数控制地毯出现在图中哪边的字符串。允准值是包含任何“trbl”的字符串，trbl这四个字符串分别表示，上部（top），右部（right），下部（below），左部（left）。默认情况下是设置为bl，也就是下方和左方。
+
+```{r}
+# 加载包
+library(ggplot2)
+
+# 使用的数据集是iris数据集
+head(iris)
+
+# 绘制图形
+ggplot(data=iris, aes(x=Sepal.Length, Petal.Length)) +
+  geom_point() +
+  geom_rug(col="steelblue",alpha=0.1, size=1.5)
+
+```
+
+解释一下代码
+
+如果设置了分组，直接设置地毯图
+```{r}
+# 绘制图形
+ggplot(data = mpg,aes(x = displ,y = cty,color = as.factor(year))) + geom_point() + geom_rug()
+```
+
+上面的代码在中，在使用geom_point函数绘制好散点图之后，使用geom_rug函数对图形添加了地毯图。添加地毯图是为了了解散点图中两个变量的中单个变量的分布情况，还有很多其他的图形可以作为地毯图的一个替代，比如说添加边缘直方图，边缘密度图，边缘箱线图和小提琴图，这些图形可以以在绘制散点图的时候进行添加，以了解单个变量的信息。地毯图相比于其他图形有一个比较好的优势，地毯图所占图形面积比较少，在图形比较复杂的时候，此时添加地毯图既不会影响图形的整体外观，却能够表达更多的数据信息。
+
+但是在一般情况下，使用直方图，密度图或者箱线图跟能够了解数据的整体情况。添加这四种边际图形会使用到的函数式 ggExtra 包中的ggMarginal函数，使用这个函数可以非常方便的将这四种边际图形添加到散点图中：
+```{r}
+# 加载包
+library(ggplot2)
+library(ggExtra)
+ 
+# 使用的数据集是mtcars数据集
+head(mtcars)
+ 
+# 绘制图形
+p <- ggplot(mtcars, aes(x=wt, y=mpg, color=cyl, size=cyl)) +
+      geom_point() +
+      theme(legend.position="none")
+ 
+# 添加编辑分布
+p1 <- ggMarginal(p, type="histogram")
+ p1
+
+```
+上面的代码在绘制了一副散点图之后，在散点图的基础之上，添加了边际直方图。从图形中可以看到，散点图的上方和右方，分别添加了两幅直方图。这两幅直方图分别是x轴和y中对应变量的直方图。这样的话，图形在展示数据之间关系的同时，对于散点图的两个变量的分布同时进行了展示。实现的方式非常简单，使用了ggExtra包中的ggMarginal函数来添加边际直方图，在绘制好散点图之后，添加上ggMarginal函数，并且指定type = 'histogram',则可以添加标记直方图。下面的代码，在散点图中添加了边际密度图。
+
+```{r}
+# 加载包
+library(ggplot2)
+library(ggExtra)
+ 
+# 使用的数据集是mtcars数据集
+head(mtcars)
+ 
+# 绘制图形
+p <- ggplot(mtcars, aes(x=wt, y=mpg, color=cyl, size=cyl)) +
+      geom_point() +
+      theme(legend.position="none")
+ 
+ 
+ 
+# 添加密度曲线
+p2 <- ggMarginal(p, type="density")
+ 
+ p2
+
+```
+上面的代码在绘制的散点图的基础之上，添加了边界密度图。从图形中可以看到，上方和右方分别添加了两条密度曲线，用于表示x轴和y轴变量的分布密度。实现的方式与添加边际直方图类似，只需要将ggMarginal函数中的type参数修改为'density'。同理，如果希望添加边际箱线图或者边际小提琴图，只需要将ggMarginal函数中的type参数修改为'boxplot'或者'violin'，即可。下面的代码绘制了这两种图形。
+
+```{r}
+# 加载包
+library(ggplot2)
+library(ggExtra)
+ 
+# 使用的数据集是mtcars数据集，查看数据集
+head(mtcars)
+ 
+# 绘制图形
+p <- ggplot(mtcars, aes(x=wt, y=mpg, color=cyl, size=cyl)) +
+      geom_point() +
+      theme(legend.position="none")
+ 
+ 
+ 
+# 添加编辑图形，箱线图
+p3 <- ggMarginal(p, type="boxplot")
+p3
+```
+从图中可以观察到，在散点图中添加了两个箱线图。实现的方式是将ggMarginal()函数的type参数改为了boxplot.
+
+```{r}
+# 加载包
+library(ggplot2)
+library(ggExtra)
+ 
+# 使用mtcars数据集
+head(mtcars)
+ 
+# 绘制图形
+p <- ggplot(mtcars, aes(x=wt, y=mpg, color=cyl, size=cyl)) +
+      geom_point() +
+      theme(legend.position="none")
+ 
+ 
+ 
+# 添加边际图形，小提琴图
+p4 <- ggMarginal(p, type="violin")
+p4
+```
+
+从图中可以观察到，在散点图中添加了两个小提琴图。实现的方式是将ggMarginal()函数的type参数改为了violin.
+
+ggMarginal 函数中，margins参数用于指定是否x轴和y轴全部显示，如果只想显示一个变量的边际图，则通过这个参数进行调整。
+
+## 散点图中添加文本
+
+有的时候我们希望能够在散点图中添加一些文字信息，来帮助我们进一步理解散点图的一些细节信息。使用ggplot2 在统计图形中添加文本信息的函数式geom_text函数。这个函数的工作原理和geom_point函数非常的类似，在使用这个函数来添加文本的时候需要指定一些参数，参数包括：
+
+1. label ： 这个参数包含了所想要添加的文本信息
+2. nudge_x 和 nudge_y : 这两个参数用于调整文本在x轴和y轴的移动
+3. check_overlap ： 这个参数用于避免文本重叠。另外，有一个包专门用于解决文本重叠的问题，ggrepel。在后文会对这个包进行介绍。
+
+```{r}
+# 加载包
+library(ggplot2)
+ 
+# 保留30条数据
+data=head(mtcars, 30)
+ 
+# 添加文本
+ggplot(data, aes(x=wt, y=mpg)) +
+  geom_point() + # 显示数据点
+  geom_text(
+    label=rownames(data), 
+    nudge_x = 0.25, nudge_y = 0.25, 
+    check_overlap = T
+  )
+```
+
+从图中可以看到，散点图中每一个点都添加了标签。实现的方式是在绘制好散点图的基础之上，使用了geom_text函数，使用函数中label参数指定了需要添加的标签。另外，
+添加文本还有另外一个函数,geom_label函数，geom_label()函数的工作方式与geom_text()非常相似，不同的是，使用geom_label函数，图形中文本会被包装在一个可以自定义的矩形中。
+```{r}
+#加载包
+library(ggplot2)
+ 
+# 保留30条数据集
+data=head(mtcars, 30)
+ 
+# 添加文本
+ggplot(data, aes(x=wt, y=mpg)) +
+  geom_point() + # 显示数据点
+  geom_label(
+    label=rownames(data), 
+    nudge_x = 0.25, nudge_y = 0.25, 
+    check_overlap = T
+  )
+```
+
+上面的代码同样对散点图中的没一个数据点添加了标签，这里添加标签所使用的的函数是geom_label函数。从图中可以看到，散点图中的标签被一个方框包裹起来了，而是用geom_text则不会有这个方框，这也是两个函数的区别之一。
+
+有的时候，并不是想要将所有的数据点进行标注，如果想在某一特定的位置添加文本，使用geom_label参数可以实现，需要调整的参数包括x,y,label.padding，label.size, color 和 fill等参数，即可在特定的位置添加好文本：
+```{r}
+# 加载包
+library(ggplot2)
+ 
+# 保留30条数据集
+data=head(mtcars, 30)
+ 
+# 添加注释
+ggplot(data, aes(x=wt, y=mpg)) +
+  geom_point() + # Show dots
+  geom_label(
+    label="add text", 
+    x=4.1,
+    y=20,
+    label.padding = unit(0.55, "lines"), # 标签周围的矩形大小
+    label.size = 0.35,
+    color = "black",
+    fill="#69b3a2"
+  )
+```
+
+上面的代码使用geom_label在x = 4.1，y = 20的位置添加了一个文本。从图中可以观察到，添加了文本‘add text’，并且文本通过一个方框包裹起来。在geom_label函数中，lable参数用于指定需要添加的文本，x是文本添加的x轴的位置，y表示y轴的位置。label.padding用于指定标签周围矩形大小，label.size表示标签的大小，color表示标签的颜色，fill表示矩形的填充颜色。如果只是想对于一部分满足条件的数据集进行添加文本，则可以使用如下代码：
+```{r}
+# 加载包
+library(ggplot2)
+library(dplyr)
+library(tibble)
+
+# 保留30条数据
+data=head(mtcars, 30)
+
+# 改变变量的名称
+data <- data %>%
+  rownames_to_column(var="carName")
+  
+# 绘制图形
+ggplot(data, aes(x=wt, y=mpg)) +
+  geom_point() + 
+  geom_label( 
+    data=data %>% filter(mpg>20 & wt>3), # Filter data first
+    aes(label=carName)
+  )
+```
+
+从图形中可以看到，有一小部分图形被添加了标签。使得的当时是在调用geom_label函数的时候指定data参数，传入的数据集是经过筛选之后的数据集。然后使用label参数指定需要添加在图形中的标签。
+
+## 抖动点图
+
+之前提到过，如果数据集比较大，这个时候绘制散点图的话会有很多点会挤在一起，这个时候图形的可读性会变得非常的不好。解决数据覆盖的一个方法是设置图形的透明度，也就是调整alpha参数，这种方法会部分的解决数据覆盖的问题。还有另外一种解决方法，就是绘制抖动点图。抖动点图能够将避免了散点图的覆盖。另外，散点图还有另外一个问题，这个问题使得散点图没有办法充分的表达出数据中所蕴含的信息。下面的代码将使用mpg数据集来绘制城市里程(cty)与公路里程(hwy)之间的关系。
+```{r}
+# 加载包
+library(ggplot2)
+data(mpg, package="ggplot2") # 从ggplot2包中获取数据集
+theme_set(theme_bw())  # 设定图形主题
+
+g <- ggplot(mpg, aes(cty, hwy))
+
+#  绘制散点图
+g + geom_point() + 
+  geom_smooth(method="lm", se=F) +
+  labs(subtitle="mpg: city vs highway mileage", 
+       y="hwy", 
+       x="cty", 
+       title="Scatterplot with overlapping points", 
+       caption="Source: midwest")
+
+```
+
+
+上面的代码中使用了mpg图形绘制散点图，x轴表示变量cty，y轴表示变量hwy。然后添加了线性拟合的线段。从图中可以观察到图形很整洁，并且清楚地说明了城市里程(cty)和公路里程(hwy)的相关性是比较高高的。
+
+但是，这个背后有一个非常重要的问题，我们可以先查看一下数据集的大小：
+```{r}
+dim(mpg) # 查看数据维度
+```
+
+原始数据有234个数据点，但图表显示的数据点似乎非常少。这是为什么？这是因为有许多重叠的点以单个点的形式出现。cty和hwy都是数据集中的整数，这使得隐藏这个细节变得更加方便。下次用整数做散点图时要特别小心。
+
+那么如何处理呢?选择很少。我们可以使用jitter_geom()创建抖动图。顾名思义，基于宽度参数控制的阈值，重叠点围绕其原始位置随机抖动。
+```{r}
+# 加载包
+library(ggplot2)
+data(mpg, package="ggplot2")
+# mpg <- read.csv("http://goo.gl/uEeRGu")
+
+# 绘制散点图
+theme_set(theme_bw())  # pre-set the bw theme.
+g <- ggplot(mpg, aes(cty, hwy))
+g + geom_jitter(width = .5, size=1) +
+  labs(subtitle="mpg: city vs highway mileage", 
+       y="hwy", 
+       x="cty", 
+       title="Jittered Points")
+```
+
+上面的代码中使用geom_jitter函数绘制出了抖动点图。从图中可以看到，更多的数据点现在显示出来了。需要注意的是width参数的值越大，点就会从原来的位置抖动得越远。
+
+# 连续二维分布图
+
+了解两个连续变量之间的关系，散点图是经常会使用的统计图形，除此之外，还有另外一个统计图形常常被用于分析两个连续的变量。这种图形就是二维分布图，这种图形也被称之为热力图。如果你有个庞大的数据，当描述2个数值变量之间的关系一个二维密度图是非常有用的。为避免重叠（如旁边的散点图），它将绘图区域划分为多个小片段，并表示此片段中的点数。例如下面这个图形就非常的适合使用二维分布图进行表示：
+```{r}
+#  加载包
+library(tidyverse)
+ 
+# 创建数据集
+a <- data.frame( x=rnorm(20000, 10, 1.9), y=rnorm(20000, 10, 1.2) )
+b <- data.frame( x=rnorm(20000, 14.5, 1.9), y=rnorm(20000, 14.5, 1.9) )
+c <- data.frame( x=rnorm(20000, 9.5, 1.9), y=rnorm(20000, 15.5, 1.9) )
+data <- rbind(a,b,c)
+ 
+ 
+# 绘制散点图
+ggplot(data, aes(x=x, y=y) ) +
+  geom_point()
+```
+
+上面的代码绘制出了一副散点图。从图形中可以看到，散点图非常的集中，形成了聚集成为一大块。这个时候散点图并不能显示出什么信息。因此，此时绘制一个二维分布图是一种更好的选择
+
+
+
+使用ggplot2绘制二维分布通常有三个函数：
+
+1. geom_bin2d() ：绘制二维直方图
+2. geom_hex() ：绘制六角直方图
+3. geom_density_2d ：二维密度估计图
+
+
+
+对于二维直方图而言，图形将将平面划分为矩形，然后，计算每个矩形中的数据量，然后(默认情况下)将样本数量映射到矩形的填充颜色。这也是在数据非常密集的情况下代替geom_point()的一个有用的替代方法。同样，geom_hex函数与geom_bin2d函数类似，只不过geom_hex函数是将平面划分成为多个六边形。
+
+
+## 二维直方图
+
+二维直方图将绘图区域分为多个小方块，每个方块中的点数由其颜色表示。
+绘制二维直方图的关键函数是geom_bin2d()，使用该geom_bin_2d()函数绘制。此函数提供一个bins参数，用于控制要显示的区域数。
+
+```{r}
+# 绘制2D直方图
+ggplot(data, aes(x=x, y=y) ) +
+  geom_bin2d() +
+  theme_bw()
+ 
+```
+
+上面的代码中将图。。。转变成为了一个二维直方图，从图中可以看到，不同的颜色代表了不同矩阵中样本量的多少，其中颜色越浅代表样本量越大，也就是数据集中在这一块。实现的方法是与绘制散点图是一样的，区别是将geom_point函数换成了geom_bin2d函数来绘制。下面的图形是在基础的二维直方图中进行了一些调整：
+```{r}
+# 调整颜色
+ggplot(data, aes(x=x, y=y) ) +
+  geom_bin2d(bins = 70) +
+  scale_fill_continuous(type = "viridis") +
+  theme_bw()
+```
+
+上面的代码中，修改了geom_bin2d函数中的bins参数，然后调整了图形的配色。从图中可以看到，二维直方图中矩形的面积变小了，并且颜色也发生了改变。在绘制二维直方图的时候需要设置合适的bins参数，以使图形能够达到最好的表现力。
+
+## 绘制六角直方图
+
+六角直方图所表达的信息与二维直方图一样，只不过六角直方图是将绘图区域划分为多个六边形，因此称为六边形图表，并使用该geom_hex()函数进行制作。
+
+
+```{r}
+# 绘制六角直方图
+ggplot(data, aes(x=x, y=y) ) +
+  geom_hex() +
+  theme_bw()
+ 
+
+```
+上面的代码绘制了六角直方图，绘制图形的方式与绘制二维直方图的方式一样，只需要将geom_bin2d函数改为geom_hex函数。图形表达的函数也与二维直方图是相似的。然后对图形的参数进行调节，调节的方式与二维直方图同样相似。
+```{r}
+# 调整大小以及颜色
+ggplot(data, aes(x=x, y=y) ) +
+  geom_hex(bins = 70) +
+  scale_fill_continuous(type = "viridis") +
+  theme_bw()
+```
+
+上面的代码中同样调整了bins参数，然后调整了图形的配色。从图中可以明显的观察到，图形的颜色发生了改变，并且六角形的大小同样发生了改变。
+
+## 二维密度直方图
+
+
+二维密度图直方图是二维直方图的一个变形。密度直方图回去估计数据的二维分布，密度图其中一个比直方图优胜的地方是，是由于它们不受所使用分组数量影响，所以能更好地界定分布形状 。下面的代码中绘制了基础的二维密度直方图，绘制二维密度直方图所使用的的函数是geom_density_2d函数：
+
+
+```{r}
+# 仅仅显示轮廓
+ggplot(data, aes(x=x, y=y) ) +
+  geom_density_2d()
+ 
+
+```
+绘制二维密度直方图的方法与绘制散点图类似，只需要将绘制散点图的geom_point函数改为geom_density_2d函数即可。基础的二维密度直方图只会显示密度分布的轮廓线，从图形中可以看到，显示轮廓显得密度分布图非常类似于等高线图。当然，还有使用区域来表示二维密度直方图：
+
+
+```{r}
+# 仅仅显示区域
+ggplot(data, aes(x=x, y=y) ) +
+  stat_density_2d(aes(fill = ..level..), geom = "polygon")
+
+```
+上面的代码中使用的区域来表示二维密度直方图，从图形中可以看到，不同的区域颜色不一样，颜色浅的地方表示数据越集中。在上面的代码中，调整了两个地方，首先是设置了代码```aes(fill = ..level..)```,然后设置参数，geom = "polygon"。当然，一个更好的选择是同时绘制轮廓线和区域，这样可以使得读者更加容易阅读图形。
+```{r}
+# 区域 + 轮廓
+ggplot(data, aes(x=x, y=y) ) +
+  stat_density_2d(aes(fill = ..level..), geom = "polygon", color="white")
+ 
+
+```
+从图形中可以看出，同时使用了轮廓线和区域来表示二维密度直方图，这样图形更加的清晰。实现的方式非常简单，在state——density_2d函数中添加color参数即可。
+
+
+
+
+## 调整图形配色
+
+无论使用二维直方图，六边形图表还是二维分布，都可以并且应该自定义图表的颜色。这是一个使用该scale_fill_distiller()功能。
+
+```{r}
+# 设置调色版
+ggplot(data, aes(x=x, y=y) ) +
+  stat_density_2d(aes(fill = ..density..), geom = "raster", contour = FALSE) +
+  scale_fill_distiller(palette=4) +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
+  theme(
+    legend.position='none'
+  )
+ 
+
+```
+
+上面的代码对于二维密度直方图的颜色进行了调整，设置了不一样的配色。实现的方式使用scale_fill_distiller函数，通过参数palaette来指定不同的配色方式。可选的配色包括BrBG, PiYG, PRGn, PuOr等等。选择合适的配色并不容易，需要不断地进行尝试。
+
+
+
+# 线图
+
+线图或折线图显示了一个或多个数值变量的演变。数据点通过直线段连接。它类似于散点图，除了测量点是有序的（通常通过它们的x轴值）并与直线段连接。
+
+折线图通常用于在时间间隔（时间序列）中显示数据趋势，因此通常按时间顺序绘制线条。当每个时间戳有多个值可用时，可以聚合数据，并且通常会在趋势周围添加置信区。以下示例显示了2013年4月到2018年4月比特币价格的变化。数据来自CoinMarketCap网站。
+```{r}
+# 加载包
+library(tidyverse)
+library(hrbrthemes)
+library(plotly)
+library(patchwork)
+library(babynames)
+library(viridis)
+
+# 从github获取数据
+data <- read.table("https://raw.githubusercontent.com/holtzy/data_to_viz/master/Example_dataset/3_TwoNumOrdered.csv", header=T)
+data$date <- as.Date(data$date)
+
+# 绘制图形
+data %>%
+  ggplot( aes(x=date, y=value)) +
+    geom_line(color="#69b3a2") +
+    ggtitle("Bitcoin price") +
+    ylab("bitcoin price ($)") +
+    theme_ipsum()
+```
+
+上面的代码中，使用read.table函数获取的绘图所需要的数据，然后将数据中的date变量转变成为时间格式。在处理好数据之后，使用geom_line绘制线图。
+
+从图中可以看到，这个图形有比较好的可视化效果，能够非常清晰的观察到数据的一个变化情况，一旦有多条图形一起显示，这个时候会有非常不好的效果，图形会变得弄混乱，难以理解，这种多条图形一起显示的图被称为‘意大利面条图’，如下图所示
+```{r}
+
+# 加载包
+library(tidyverse)
+require(readr)
+library(tidyverse)
+library(hrbrthemes)
+library(streamgraph)
+library(viridis)
+
+# 获取数据
+babynames <- read_csv("https://raw.githubusercontent.com/holtzy/data_to_viz/master/Example_dataset/5_OneCatSevNumOrdered.csv")
+
+# 数据处理
+data <- babynames %>% 
+  filter(name %in% c("Mary","Emma", "Ida", "Ashley", "Amanda", "Jessica",    "Patricia", "Linda", "Deborah",   "Dorothy", "Betty", "Helen")) %>%
+  filter(sex=="FALSE")
+
+# 绘制图形
+data %>%
+  ggplot( aes(x=year, y=n, group=name, color=name)) +
+    geom_line() +
+    scale_color_viridis(discrete = TRUE) +
+    theme(
+      legend.position="none",
+      plot.title = element_text(size=14)
+    ) +
+    ggtitle("A spaghetti chart of baby names popularity") +
+    theme_ipsum()
+
+```
+上面的代码绘制了多条线图，从图形中可以观察到，不同的线图交织在一起，这个时候很难获取有效地信息。解决这种问题的方法有很多，比如使用分面：
+```{r}
+# 数据处理，然后绘制图形
+data %>%
+  ggplot( aes(x=year, y=n, group=name, fill=name)) +
+    geom_line() +
+    scale_fill_viridis(discrete = TRUE) +
+    theme(legend.position="none") +
+    ggtitle("Popularity of American names in the previous 30 years") +
+    theme_ipsum() +
+    theme(
+      legend.position="none",
+      panel.spacing = unit(0.1, "lines"),
+      strip.text.x = element_text(size = 8),
+      plot.title = element_text(size=14)
+    ) +
+    facet_wrap(~name)
+```
+上面图形中的对于不同name的值，绘制了多幅图形。相比于上面的图形，使用分面来表示多副线图能够更加有效地展示出不同分组的图形信息。
+
+另外一种方法是突出某一条线段，也就是说一次性只观察某多条线段中某一条线段。也就是说绘制了许多组，但实际原因是要解释一个特定组与其他组相比的特征。然后一个好的解决方法是突出显示这个组，使它看起来不同，并给它一个适当的注释。下面的代码中，对于name变量中Amanda对应值的线图进行了突出显示，如图所示：
+```{r}
+data %>% # 数据处理然后绘制图形
+  mutate( highlight=ifelse(name=="Amanda", "Amanda", "Other")) %>%
+  ggplot( aes(x=year, y=n, group=name, color=highlight, size=highlight)) +
+    geom_line() +
+    scale_color_manual(values = c("#69b3a2", "lightgrey")) +
+    scale_size_manual(values=c(1.5,0.2)) +
+    theme(legend.position="none") +
+    ggtitle("Popularity of American names in the previous 30 years") +
+    theme_ipsum() +
+    geom_label( x=1990, y=55000, label="Amanda reached 3550\nbabies in 1970", size=4, color="#69b3a2") +
+    theme(
+      legend.position="none",
+      plot.title = element_text(size=14)
+)
+```
+上面的代码中首先还是对数据集进行了处理，将name 的变量分为两组，Amanda为一组，其他的值为第二组，并将处理后的结果赋值为highlight变量。然后再绘图中，将颜色参数color和大小参数size都映射为highlinht变量。这样的话，Amanda对应的组合其他组的颜色和大小都会不一样。然后使用scale_color_manual函数指定了绘图的函数，使用scale_size_manual函数指定了大小。从图形中可以看出，经过这样调整的图形同样能够有比较好的可视化效果。
+
+也就是说，在绘制线图的时候需要避免绘制出太多的线条，过多的线条会让图形非常的混乱。如果无法避免绘制太多的线条，此时则可以参上上述的两种解决方法。
+
+关于线图还有很多的细节需要讨论的，例如坐标轴是否需要从0开始。应为很多时候，我们的数据并不是从0开始，甚至，我们的数据可能在某个阈值之上。需不需要对坐标轴进行切割，需要比较视情况而定,一般来说，在时间序列中，使用显示数据而不是零点的基线，有的时候切割了坐标轴才能够更高的让数据的趋势体现出来，如下如所示：
+
+```{r}
+ # 绘制图形
+data <- data.frame(date = c(1:10),value = c(8000,8300,8375,8270,8200,8300,8810,9000,9020,8900))
+p1 <- data %>%
+  tail(10) %>%
+  ggplot( aes(x=date, y=value)) +
+    geom_line(color="#69b3a2") +
+    geom_point(color="#69b3a2", size=4) +
+    ggtitle("Not cuting") +
+    ylab("bitcoin price ($)") +
+    theme_ipsum() +
+    ylim(0,10000)
+# 绘制图形
+p2 <- data %>%
+  tail(10) %>%
+  ggplot( aes(x=date, y=value)) +
+    geom_line(color="#69b3a2") +
+    geom_point(color="#69b3a2", size=4) +
+    ggtitle("Cuting") +
+    ylab("bitcoin price ($)") +
+    theme_ipsum()+ylim(8000,9000)
+
+p1+p2 # 将两幅图形合并起来
+```
+
+上面的代码中，使用了相同的数据绘制了两幅图形，在第一副图形中，设置了y轴的范围，通过ylim函数将y轴的范围为(0,10000)。然后再第二幅图中，将坐标轴的范围设置为(8000,9000).从图中可以清楚的看到两幅图形的区别，在左边的图形中，数据的趋势并不能体现出来，似乎数据的变化波动并不大。然而在第二幅图中，缩小的坐标轴的范围，这个时候图形清晰的体现出了数据的波动。也就是说，第一幅图基本上无法看出数据中的趋势，而第二幅图缩小了坐标轴的范围，从而能够更加清楚的观察到数据中所蕴含的趋势。
+
+
+另外，在绘制线图的时候还有一个需要注意的事项。就是避免绘制双y轴线图，因为这种图形y轴的刻度不一样，非常容易得出错误的结论。在同一个坐标系下，一个图形中的两条线段可能是这样的：
+```{r}
+# 加载包
+library(latticeExtra)
+ 
+# 创建数据集
+set.seed(1)
+x <- 1:100
+var1 <- cumsum(rnorm(100))
+var2 <- var1^2
+data <- data.frame(x,var1,var2)
+ 
+ 
+# 绘制图形
+xyplot(var1 + var2 ~ x, data, type = "l", col=c("steelblue", "#69b3a2") , lwd=2)
+
+```
+上面的图形使用了latticeExtra包中的xyplot函数绘制了两条线段，在这一幅图中，两条线段使用了同样的坐标轴。从图中可以看到，其中一条线段比另外一条线段要高。但是，如果将上面的图形变成双y轴图形，则如下图所示：
+```{r}
+# 加载包
+library(latticeExtra)
+ 
+# 创建数据集
+set.seed(1)
+x <- 1:100
+var1 <- cumsum(rnorm(100))
+var2 <- var1^2
+data <- data.frame(x,var1,var2)
+ 
+ 
+#  为每个系列构建单独的图
+obj1 <- xyplot(var1 ~ x, data, type = "l" , lwd=2, col="steelblue")
+obj2 <- xyplot(var2 ~ x, data, type = "l", lwd=2, col="#69b3a2")
+ 
+#  使用第二个y轴绘制图：
+doubleYScale(obj1, obj2, add.ylab2 = TRUE, use.style=FALSE )
+```
+
+上面的代码使用与上图相同的数据绘制了一个双y坐标的线图。也就是说，y轴有两个坐标。从图中可以，在双y轴坐标的图形中，这两条线的趋势似乎非常的相似。虽然这幅图和上图所使用的的数据一样，但是从图形中得到的结论却非常的不同。
+
+这个图表确实具有误导性：很容易得出结论，两个变量都遵循完全错误的相同模式。因此，最好不好绘制双y轴线的图形。接下来，会一步步的介绍线图的绘制方式。
+
+
+## 绘制基本的线图
+
+ 线图或折线图显示了一个或多个数值变量的演变。数据点通常由直线段连接。
+```{r}
+# 加载包
+library(ggplot2)
+
+# 创建数据集
+xValue <- 1:10
+yValue <- cumsum(rnorm(10))
+data <- data.frame(xValue,yValue)
+
+# 绘制图形
+ggplot(data, aes(x=xValue, y=yValue)) +
+  geom_line()
+```
+
+构建线图和构建散点图几乎是一样的，只不过是将geom_point函数改为geom_line函数即可绘制出线图。这是最基本的折线图的绘制方式。然后，可以对线图的一些参数进行修改，并添加一些内容。例如，使用ggtitle()添加标题，修改color，size，shape等参数，或者添加主题。
+
+```{r}
+#  加载包
+library(ggplot2)
+library(hrbrthemes)
+
+# 创建数据集
+xValue <- 1:10
+yValue <- cumsum(rnorm(10))
+data <- data.frame(xValue,yValue)
+
+# 绘制图形
+ggplot(data, aes(x=xValue, y=yValue)) +
+  geom_line( color="#69b3a2", size=2, alpha=0.9, linetype=2) +
+  theme_ipsum() +
+  ggtitle("Evolution of something")
+```
+
+上面的代码调整了线图的颜色，设置了线图的size参数，调整了透明度，选择了线条的类型为虚线。另外，如果希望对数据进行一别变换，例如对数变换。可以非常方便的实现，调用scale_y_log10,或者scale_x_log10函数即可,进行底数为10的对数转换。类似的函数还包括scale_x_sqrt，scale_x_reverse,其作用分别是对数据集进行开方和将坐标轴翻转。
+```{r}
+# 绘制图形
+ggplot(data, aes(x=xValue, y=yValue)) +
+  geom_line( color="#69b3a2", size=2, alpha=0.9, linetype=2) +
+  theme_ipsum() +
+  ggtitle("Evolution of something")+xlab(label = "log10(x)") + scale_x_reverse()
+```
+上面的代码使用scale_y_log10函数将y轴的数据进行了对数转换。
+
+```{r}
+#  加载包
+library(ggplot2)
+
+#  创建数据集
+data <- data.frame(
+  x=seq(10,100),
+  y=seq(10,100)/2+rnorm(90)
+)
+
+#  绘制图形
+ggplot(data, aes(x=x, y=y)) +
+  geom_line() +
+  scale_y_log10( breaks=c(1,5,10,15,20,50,100), limits=c(1,100) ) 
+```
+
+上面的代码对y轴的数据进行了对数转换，并且使用scale_y_log10函数对于y轴的坐标进行了调整，使用limits参数指定了坐标轴的范围，使用breaks参数调整了坐标轴的刻度显示。从图形中可以看到，y轴的刻度不再是等距，而是根据breaks参数所设置的数字进行显示。
+
+关于数据的转换，如果需要转换的变量是连续变量，则可使scale_x_continuous进行更多的转换，调整参数trans可以对数据进行包括："asn", "atanh", "boxcox", "date", "exp", "hms", "identity", "log", "log10", "log1p", "log2", "logit", "modulus", "probability", "probit", "pseudo_log", "reciprocal", "reverse", "sqrt"等等的转换。例如多数据进行指数变换：
+```{r}
+#  加载包
+library(ggplot2)
+
+# 创建数据集
+data <- data.frame(
+  x=seq(10,100),
+  y=seq(10,100)/2+rnorm(90)
+)
+
+# 绘制图形
+ggplot(data, aes(x=x, y=y)) +
+  geom_line() +scale_y_continuous(trans = "sqrt")
+```
+
+上面的代码使用了scale_y_continuous函数对于y轴的数据进行开平方，然后在绘制图形。如果有需要还有其他的数据转换可以调整。另外，scale_y_continuous 这个函数的另外几个参数也常常被使用，在这里介绍一下。更详细的内容会在后面的章节进行介绍。scale_y_continuous函数的breaks参数可以调整坐标轴的显示间隔。limits参数用于调整坐标轴的范围：
+```{r}
+#  加载包
+library(ggplot2)
+
+#  创建数据集
+data <- data.frame(
+  x=seq(10,100),
+  y=seq(10,100)/2+rnorm(90)
+)
+
+#  绘制图形
+ggplot(data, aes(x=x, y=y)) +
+  geom_line() + scale_x_continuous(limits = c(0,200),breaks = c(0,50,100,150,200))
+```
+
+上面的代码使用scale_x_continuous函数调整了x州的坐标轴范围，通过limits参数将x轴的范围设置为(0,200)，然后使用breaks参数调整x轴的坐标轴刻度。刻度显示为(0,50,100,150,200)。通过这样可以轻松的对坐标轴进行调整。
+
+## 连线图
+
+连线图是线图的一种，连线图会将数据点按照先后顺序一个一个连接起来.绘制连线图的函数是geom_path，下面的代码绘制了一副连线图。
+```{r}
+# 加载包
+library(ggplot2)
+library(dplyr)
+library(hrbrthemes)
+
+#  从github中获取数据集
+data <- read.table("https://raw.githubusercontent.com/holtzy/data_to_viz/master/Example_dataset/3_TwoNumOrdered.csv", header=T)
+data$date <- as.Date(data$date)
+#  绘制图形
+data %>%
+  tail(10) %>%
+  ggplot( aes(x=date, y=value)) +
+    geom_path( color="grey") +
+    geom_point(shape=21, color="black", fill="#69b3a2", size=6) +
+    theme_ipsum() +
+    ggtitle("Evolution of bitcoin price")
+```
+
+这里使用了geom_path绘制了连线图。从图形中可以看到，似乎使用geom_path函数绘制的连线图和使用geom_line绘制的线图并没有区别。这是因为数据的原因，下面的代码使用更复杂的数据绘制连线图，并与线图进行了比较，并且，图形还是使用hrbrthemes包的theme_ipsum()函数自定义一般主题。使用ggtitle()函数添加标题。调整了shape，size，color等参数。
+
+```{r}
+#  加载包
+library(ggplot2)
+library(dplyr)
+library(babynames)
+library(ggrepel)
+library(tidyr)
+data(babynames)
+# 对数据集进行处理
+data <- babynames %>% 
+  filter(name %in% c("Ashley","Amanda")) %>%
+  filter(sex=="F") %>%
+  filter(year>1970) %>%
+  select(year, name, n) %>%
+  spread(key = name, value=n, -1)
+
+# 绘制图形
+data %>% 
+  ggplot(aes(x=Amanda, y=Ashley, label=year)) +
+     geom_path(color = 'red',size = 1,arrow = arrow()) +geom_point(shape = 2)+theme_ipsum()
+```
+
+上面的代码绘制了一副路径图，从图中可以看到，路径图中的线段从左下角出发，最后回到了左下角。需要注意的是，路径图中的连线是更具数据中点的先后顺序来进行连接的。下面的代码绘制出了线图，从两幅图形中可以清楚的观察到不一样的地方。
+
+```{r}
+data %>%  # 绘制图形
+  ggplot(aes(x=Amanda, y=Ashley, label=year)) +
+     geom_line(color = 'red',size = 1,arrow = arrow()) +geom_point(shape = 2)+theme_ipsum()
+```
+
+上面的代码绘制了一副线图，从图形中可以观察到，线段的起点在图的左下角，而线段的终点在图的右上角。并且从图中可以看到，数据似乎有向上的趋势。在线图中，线段的连接是从左往右连接的，而不是根据数据点中的顺序。
+
+
+

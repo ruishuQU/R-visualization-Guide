@@ -1,0 +1,914 @@
+---
+title: "颜色"
+output:
+  html_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# 图形颜色调整
+
+
+本章节用于描述了如何改变图形的颜色,再图形中改变颜色有几种方式。其中包括使用单个颜色来调整图形，讲一个具体的颜色传递给color或者fill参数，这样的图形的整体颜色将会改变。具体的颜色可以用英文来表示，例如'red'，也可以使用数字来表示,例如1，还可以使用十六进制的颜色代码.例如'#FF1234'。
+另外一种颜色的调整方式是将一个变量映射到颜色相关的参数，然后使用不同的颜色来表示数据。
+下面的代码使用ToothGrowth数据集创建了一个关于dose变量和len变量的箱线图和一个关于wt变量和mpg变量的散点图。如图和图所示
+
+```{r}
+library(ggplot2)
+# 将dose和cyl变量转变成为因子类型
+ 
+ToothGrowth$dose <- as.factor(ToothGrowth$dose) 
+mtcars$cyl <- as.factor(mtcars$cyl)
+# 绘制箱线图
+bp <- ggplot(ToothGrowth, aes(x=dose, y=len))+geom_boxplot()
+bp
+```
+上面的代码绘制了一副基础的箱线图，从图中可以看到，图形并没有进行任何的调整，相关的参数都是默认的。
+
+```{r}
+# 绘制散点图
+sp <- ggplot(mtcars, aes(x=wt, y=mpg))+geom_point()
+sp
+```
+
+上面的代码绘制了一副基础的散点图，从图中可以看到，图形没有进行任何的参数调节。
+
+## 使用单个颜色调整图形
+
+在绘图的过程中，可以将color参数和fill参数指定为某个颜色，然后图形中的点，线条和填充则会被设置为对应的颜色。下面的代码对于箱线图进行了调整，如图所示：
+```{r}
+#  绘制箱线图
+bp + geom_boxplot(fill = 'yellow', color = "black")
+
+```
+上面的代码对于图。。中的箱线图进行了修改，修改的方式是使用fill参数将箱线图的箱子填充颜色设置为黄色，使用color参数将想象图中的线条和点的颜色设置为黑色。从图中可以清楚的观察到，箱线图的填充颜色被设置成为了黄色，线条被设置成为了黑色。下面的代码对于散点图的颜色进行了调整。如图所示
+
+
+```{r}
+# 绘制散点图
+sp + geom_point(color = 'red')
+```
+上面的代码使用color参数将散点图的点设置为红色。从图中可以清楚的看到，图形中散点图的颜色显示出红色。需要注意的是，color参数一般用于调整图形中点和线条的颜色。fill参数用于调整图形中区域的填充颜色。
+
+## 通过分组调整颜色
+
+除了将某个具体的颜色传递给颜色参数，还可以将一个分组变量传递给颜色参数，这个时候则会，图形中不同的分组则会显示不同的颜色。下面绘制箱线图的代码中，将dose变量映射到fill参数中，图形结果如图所示：
+```{r}
+# 绘制箱线图
+bp <- bp + geom_boxplot(aes(fill = dose)) 
+bp
+
+```
+上面的代码设置了'fill = dose',从图中可以观察到，三组箱线图被设置成为了不同的颜色。下面的代码使用同样对散点图进行了颜色调整。如图所示：
+```{r}
+# 绘制散点图
+sp <- sp + geom_point(aes(color = cyl)) 
+sp
+```
+
+上面的代码设置了'color = cyl'，从图中可以看到，散点图被分成了三组，每一组的散点图显示出不同的颜色。
+
+可以使用下面的scale_hue函来数修改默认(色调)颜色的亮度(l)和色度(c,色彩的强度))。
+```{r}
+#绘制箱线图
+bp + scale_fill_hue(l=40, c=35)
+
+```
+上面的代码使用了scale_fill_hue函数来修改图形的，其中l参数表示的是亮度，其取值范围为(0,100),l值越大，图形颜色会越鲜艳。c参数表示的色彩的强度，其最大值取决于色调和亮度的组合。从图形中可以观察到，箱线图的颜色变得更深，呈现出深色调。下面使用同样的方式对散点图的颜色进行了调整：
+
+```{r}
+# 绘制散点图
+sp + scale_color_hue(l=80, c=35)
+```
+
+上面的代码使用scale_color_hue函数对于图形的颜色进行调整。其中l设置为80。从图中可以看到，散点图的颜色比较浅。
+
+另外还可以手动的调整图形的颜色。使用的函数是scale_fill_manual()和scale_color_manual()。其中scale_fill_manual()可以对箱线图，条形图，小提琴图等等图形的填充颜色进行调整。scale_color_manual()可以用于对散点图的点和线图的线条的颜色进行调整。
+下面的代码将箱线图的颜色调整为红，黑，蓝色。图形如图所示：
+```{r}
+# 绘制箱线图
+bp + scale_fill_manual(values=c("red", "black", "blue"))
+
+```
+上面的代码使用了scale_fill_manual函数对于图形的颜色进行了设置，代码'values=c("red", "black", "blue"'，表示将不同的分组分别设置为红色，黑色和蓝色。从图中可以看到，箱线图从左到右分别显示为红色，黑色和蓝色。
+
+下面的代码对于散点图的颜色进行了调整，结果如图所示：
+```{r}
+# 绘制散点图
+sp + scale_color_manual(values=c("red", "black", "blue"))
+```
+上面的代码使用了scale_color_manual函数对于散点图的颜色进行设置。代码'values=c("red", "black", "blue")'将散点图的三组分别设置为红色，黑色和蓝色。从图中可以观察到，散点图的颜色被设置为红色，黑色和蓝色
+
+
+如果不希望手动的设定颜色，则可以尝试使用不同的配色。使用scale_fill_brewer函数可以调整箱线图，条形图小提琴图等等图形的填充颜色的配色。使用scale_color_brewer函数可以调整散点图点的配色和线图线段的配色。下面的代码对于箱线图的颜色进行了调整，如图所示
+```{r}
+bp + scale_fill_brewer(palette="Dark2") # 调整颜色
+
+
+
+```
+上面的代码中，使用scale_fill_brewer函数用于调整图形的配色，其中代码'palette="Dark2'表示使用Dark2这种配色。从图中可以看到图形的颜色和默认的图形颜色是由很大的区别的。下面的代码对于散点图的颜色进行了调整，如图所示：
+```{r}
+# 绘制散点图
+sp + scale_color_brewer(palette="Dark2")
+
+```
+上面的代码使用了scale_color_brewer函数对于散点图的颜色进行了调整。调整的的方式和箱线图的调整是一样的。从图中可以看到，相比于图。。，图的颜色发生了改变。
+
+Dark2配色是来自于RColorBrewer包，关于Dark2的配色具体是如何的，图。。中显示出了RColorBrewer包可选的配色，以及对应配色的代码。
+![](/Users/milin/写书/color.png)
+
+如果RColorBrewer包中的配色并不满意，还可以选择其他的配色。wesanderson包提供了更多的配色。这些配色包括如图所示：
+
+![](/Users/milin/写书/pale.png)
+
+下面的代码使用了wesanderson包中的配色来调整图形的颜色。
+```{r}
+ 
+library(wesanderson)
+# 调整颜色
+bp+scale_fill_manual(values=wes_palette(n=3, name="Royal1"))
+
+```
+上面的代码使用了scale_fill_manual函数来调整箱线图的配色。其中'values=wes_palette(n=3, name="Royal1")'表示选取Royal1这种配色来调整图新的颜色。从图中可以看到，箱线图的颜色显示为绿色，红色和米色。
+
+
+```{r}
+#调整颜色
+sp+scale_color_manual(values=wes_palette(n=3, name="Royal1"))
+```
+上面的代码使用了scale_color_manual函数调整散点图的配色。调整的方式与图。。一样。从图中可以看到，散点图的颜色被调整成为Royal1所对应的的配色。
+
+另外还有一种方式可以调整图形的配色，这种方式是调用'scale_color_'，和'scale_fill_'。例如scale_fill_grey(),scale_color_grey()。scale_fill_grey()和scale_color_grey()函数可以将图形修改成为灰色色调的图形如图所示
+```{r}
+# 调整颜色
+bp + scale_fill_grey(start=0.8, end=0.2) + theme_minimal()
+# 调整颜色
+sp + scale_color_grey(start=0.8, end=0.2) + theme_minimal()
+```
+上面的代码分别使用了scale_fill_grey函数和scale_color_grey函数调整了箱线图和散点图的颜色。从图中从图中可以观察到图形的颜色被修改成为浅灰色，灰色，和黑色。图形呈现出灰色色调。
+
+
+## 渐变或连续颜色
+
+如果是将一个连续变量映射到颜色参数，那么颜色的变化将会是渐变的。对于渐变颜色
+的调整可以使用scale_color_gradient()函数和scale_fill_gradient()函数，这两个函数会创建两个颜色的渐变，颜色从高到低变化。
+
+scale_color_gradient2(), scale_fill_gradient2()这两个函数与scale_color_gradient()和scale_fill_gradient()这两个函数类似，都是在两个颜色之间得渐变。不同点是scale_color_gradient2(), scale_fill_gradient2()这两个函数可以设置一个中间颜色。
+
+scale_color_gradientn(), scale_fill_gradientn()这两个函数同样可以用于调整渐变颜色，这两个函数用于调整图形的颜色从多种颜色之间的渐变。
+
+下图绘制了两种颜色之间的渐变的散点图。图中使用qsec变量对图形进行着色，图形如图所示：
+```{r}
+# 调整颜色
+sp2 <- ggplot(mtcars, aes(x = wt, y = mpg)) + geom_point(aes(color = qsec))
+sp2 + scale_color_gradient(low = "red",high = "yellow")
+
+
+```
+
+上面的代码使用scale_color_gradient函数调整数据的颜色。颜色从红色到黄色之间渐变，数据点qsec的值越大，颜色越黄，否则颜色越红。下面的的代码使用了scale_color_gradient2函数对图形的颜色进行调整，并且设置的中间颜色，图形如图所示：
+```{r}
+# 改变高低颜色
+ 
+# 不同的配色方案
+sp2 + scale_color_gradient2(low = "red",high = "yellow",mid = "white",midpoint = 18)
+```
+上面的代码使用了scale_color_gradient2函数对于图形的颜色进行调整。图形的颜色的渐变范围是从红色渐变到黄色，中间颜色设置为白色，中间颜色对应的值为18.从图中可以看到，如果数据点qsec的值为18的时候，点为白色。qsec值越大颜色越黄，越小颜色越红。
+
+
+最后一种方式是设置为n种颜色之间的梯度。使用的函数是scale_color_gradientn()。图形如图所示
+```{r}
+ 
+#   将mog参数映射到颜色参数
+sp3 <- ggplot(mtcars, aes(x = wt, y = mpg)) +
+geom_point(aes(color = mpg)) 
+# n种颜色间的梯度
+sp3 + scale_color_gradientn(colours = c('red','black','white','blue','yellow')) # rainbow(5)
+```
+
+上面的代码使用了scale_color_gradientn()函数对图形的颜色进行调整。图形的颜色在红色，黑色，白色，蓝色，黄色，这几种颜色之间渐变。从图中可以看到。图例中的渐变颜色包含了这五种颜色。
+
+# 点的形状，颜色，大小的调整
+
+通常而言，都是使用原点来表示数据。但是，会碰到需要将点设置成为其他颜色的情况。R中常用的不同点形状如下图所示，在设置的时候，设置对应的数子，最终图中会显示对应的形状:
+![](/Users/milin/写书/shape.png)
+
+下面的示例使用mtcars数据绘制了关于wt变量和mpg变量的散点图，并且调整的散点图中点的颜色，如图所示：
+```{r}
+# 将cyl变量变成因子
+mtcars$cyl <- as.factor(mtcars$cyl)
+
+#   改变的形状，颜色和大小
+ggplot(mtcars, aes(x = wt, y = mpg)) +
+geom_point(shape = 18, color = "steelblue", size = 4)
+
+```
+上面的代码调整了散点图点的颜色，设置参数shape为18，表示使用方块的形状来表示点。如图所示，散点图的点的形状变成了方块。下面的代码讲一个变量映射到shape参数，通过点的形状来区分不同的分组。如图所示。
+
+```{r}
+# 按组改变点的形状和颜色
+ggplot(mtcars, aes(x = wt, y = mpg)) + geom_point(aes(shape = cyl),color = 'red',size = 6)
+ 
+```
+上面的代码中将shape参数设置成为cyl变量。然后调整点的颜色为红色，调整点的大小为6.从图中可以看到，点被设置为圆形，正方形和三角形三个形状，并且图形中点的颜色为红色。
+
+
+
+将变量映射到shape参数之后，如果希望自定义指定不同的分组使用什么形状。则可以使用scale_shape_manual函数。下面的代码使用scale_shape_manual函数自定义了不同分组点的形状。
+```{r}
+
+# 手动更改点大小
+ggplot(mtcars, aes(x=wt, y=mpg, group=cyl)) + geom_point(aes(shape=cyl, color=cyl, size=cyl))+ scale_shape_manual(values=c(3, 16, 17))+ scale_color_manual(values=c('#999999','#E69F00', '#56B4E9'))+ scale_size_manual(values=c(1.5,2,3))+ theme(legend.position="top")
+```
+上面的代码中使用了scale_shape_manual函数调整values参数为c(3,16,17),表示分别将三组数据点分别设置为加号，圆形和三角形。然后调整了图形的颜色和数据点的大小。并且将图例设置为放在图形的上方。
+
+
+# 线条类型调整
+
+
+R中可用的线条类型包括 : 
+
+1. blank： 不显示线条
+2. solid  ：实线
+3. dashed ：横线构成的虚线
+4. dotted ：点构成的虚线
+5. dotdash ： 点和线构成的虚线
+6. longdash ：长线段构成的虚线
+7. twodash ：长线段和短线段构成的虚线
+
+在编写代码的时候可以使用对应的编号来，例如他0，表示black，1，表示solid，6表示twodash。图。。显示出不同名称所对应的的虚线。
+
+![](/Users/milin/写书/line.png)
+
+下面的代码绘制了一副线图，然后调整了图形中线条的种类。如图所示：
+```{r}
+
+#创建一个数据集
+df <- data.frame(time=c("breakfeast", "Lunch", "Dinner"), bill=c(10, 30, 15))
+head(df)
+
+# 基本的点线图
+# 改变线条的类型
+ggplot(data = df, aes(x = time, y = bill, group = 1)) +
+geom_line(linetype = 6)+ geom_point()
+
+
+```
+上面的代码中，首先创建了一组数据集，然后使用geom_line函数绘制线图。其中设定linetype=6。表示使用twodash来表示线段。从图中可以看到，线段是长线段和短线段构成的虚线。
+
+对于多组的线图，可以将某一个分组变量映射到linetype参数，从而使得不同的分组线条不一样。图形如图所示：
+```{r}
+#  创建数据集
+df2 <- data.frame(sex = rep(c("Female", "Male"), each=3), time=c("breakfeast", "Lunch", "Dinner"),bill = c(1000,2000))
+head(df2)
+
+
+# 多组的线状图
+#按组(性别)更改线条类型和颜色
+ggplot(df2, aes(x=time, y=bill, group=sex)) +geom_line(aes(linetype = sex, color = sex))+ geom_point(aes(color=sex))
+
+
+```
+上面的代码创建了一个数据集，包含三个变量sex,time和bill。然后在绘图的时候将sex变量映射到linetype参数。从图中可以看到，线图中一条为虚线一条为实线。
+
+如果映射了变量到linetype参数，同时还需要自定义，指定不同分组的线条类型。则可以使用scale_linetype_manual()函数。下面的代码指定了图形的线条类型，如图所示：
+
+```{r}
+# 改变线条类型、颜色和大小
+ggplot(df2, aes(x=time, y=bill, group=sex)) + geom_line(aes(linetype=sex, color=sex, size=sex))+ geom_point()+ scale_linetype_manual(values=c("twodash", "dotted"))+ scale_color_manual(values=c('#999999','#E69F00'))+ scale_size_manual(values=c(1, 1.5))
+```
+
+上面的代码将图形的线条分别设置为twodash和dotted。并且调整了图形中线条的颜色。从图中可以看出，图形中的线条之一为点构成的虚线，另外一条线条使用过点和短线构成的虚线。
+
+# 坐标轴范围调整
+
+如果需要对坐标轴的范围进行调整，有很多种方式实现。
+
+1. 不进行剪切，使用coord_cartesian函数，例如p + coord_cartesian(xlim = c(5, 10), ylim = (0, 20))。这个函数它可以放大图像(就像你用放大镜看一样)，而不需要剪切数据。
+
+2. 对数据进行剪切，(删除不可见的数据点):不在此范围内的观测值将被完全删除，不会传递到任何其他层。使用xlim，ylim函数和scale_x_continuous，scale_y_continuous。例如p + xlim(5, 20) + ylim(0, 50)和p + scale_x_continuous(limits = c(5, 20)) + scale_y_continuous(limits = c(0, 50))
+
+下面的例子使用了coord_cartesian函数来调整图形的坐标轴范围。代码所使用的的数据集是cars数据集。
+```{r}
+data(cars)
+p <- ggplot(cars, aes(x = speed, y = dist)) + geom_point()
+
+# 使用coord_cartesian()更改坐标轴范围 
+p + coord_cartesian(xlim =c(5, 25), ylim = c(0, 40))
+```
+上面的代码使用coord_cartesian函数调整了坐标轴逇范围，通过设置参数xlim =c(5, 25)和ylim = c(0, 40)将x坐标轴的范围设置为5到20，y坐标轴的范围设置为0到50.从图中可以看到坐标轴的范围为x轴从5到25，y轴从0到40。这种方式没有对数据进行了筛选，数据全部都保留在图层之中。
+下面的代码使用了xlim()和ylim()函数对于图形的坐标轴范围进行了调整。如图所示
+```{r}
+p + xlim(c(0,20))+ylim(c(0,50))
+```
+
+上面的代码使用了xlim和ylim函数调整了图形的坐标轴。从图中中可以看到，有一条警告信息：'	Removed 17 rows containing missing values (geom_point).'，表示有17条数据被删除掉了，因为这些数据在坐标轴的外面。图中x坐标轴从0到20，y坐标轴从0到50.
+
+另外一种修改坐标轴范围的函数是scale_x_continuous()和scale_y_continuous()。
+分贝可以用来修改x轴和y轴的坐标轴范围，还可以修改坐标轴的名称，以及坐标轴的间隔。如图所示：
+```{r}
+# 改变坐标轴的范围和标签
+p + scale_x_continuous(name="Speed of cars", limits=c(0, 30),breaks = c(0,10,20,30)) + scale_y_continuous(name="Stopping distance", limits=c(0, 150),breaks = c(0,20,40,60,80,100,120,140))
+```
+
+上面的代码不仅修改了坐标轴的范围，还调整了坐标轴的名称，以及坐标轴的间隔。从图中可以看到，x坐标轴的范围是0到30，其中间隔为10。y轴的范围为0到140，间隔为20.另外，x和y轴的名称都进行了调整。
+
+
+# 坐标轴转换
+
+有的时候需要对于数据进行转换，例如计算数据的对数然后绘图，再或者数据开方，然后绘图。ggplot中专门有一些函数用于解决这些问题，并不在在对数据进行多余的计算。这些函数包括：
+
+1. scale_x_log10，scale_y_log10：表示对坐标轴的数据取对数。例如p + scale_x_log10(), p + scale_y_log10()。
+2. scale_x_sqrt()和 scale_y_sqrt()：表示对于数据进行开方，例如p + scale_x_sqrt(), p + scale_y_sqrt() 
+3. scale_x_reverse()和scale_y_reverse() ：用于将坐标轴进行翻转，例如之前的坐标轴是从0到100.使用这个函数之后坐标轴变成从100到0。例如p + scale_x_reverse(), p + scale_y_reverse() 
+4. coord_trans：使用这个函数可以进行更多的转换，包括log2，sqrt，boxcox等等。例如 p + coord_trans(x ="log10", y="log10")
+5. scale_x_continuous，scale_y_continuous ：同样可以进行更多的转换，可以进行包括log2，sqrt，boxcox等等的转换。例如：p + scale_x_continuous(trans=’boxcox’), p + scale_y_continuous(trans=’boxcox’)
+
+
+下面的代码使用了scale_xx_continuous函数对于坐标轴进行转换。如图所示：
+```{r}
+data(cars)
+p <- ggplot(cars, aes(x = speed, y = dist)) + geom_point() 
+
+p1 <- p+scale_y_continuous(trans='log2')
+p
+p1
+```
+上面的代码使用了scale_y_continuous函数对y轴进行了以2对底数的对数变换。从图中可以看到。左边的图形是原始图形，右边的图形是y轴经过以2为底的对数变换之后的结果。从图中的结果可以看到，右边图形的y轴经过变换之后，范围缩小了很多。下面的代码对于坐标轴进行了翻转。如图所示：
+```{r}
+p3 <- p + scale_y_reverse()
+
+p
+p3
+```
+上面的代码中，使用了scale_y_reverse函数将y轴进行了翻转。从图中可以看到，左边的图形是原始图形，右边的图形是经过翻转之后的图形，可以看到坐标轴的范围变成从125到0.
+
+scales包还提供了更多而的数据变换。下面的代码将y轴的数据分别进行了三种变换。
+```{r}
+require(scales)
+# 改变坐标轴 ，比例
+p1 <- p + scale_y_continuous(labels = percent)
+# 改变坐标轴 ，美元 Dollar
+p2 <- p + scale_y_continuous(labels = dollar)
+# 改变坐标轴 科学计数 Scientific
+p3 <- p + scale_y_continuous(labels = scientific)
+
+p1
+p2
+p3
+```
+
+上面的代码使用了scales包。并设置了三种变换，percent，dollar，scientific。其中percent表示通过百分比显示数据，dollar表示添加美元符号，scientific表示显示科学计数法。从图中可以看到，第一幅图的y轴是通过比例显示的，中间的图形y轴添加美元符号。右边的图形y轴通过科学计数法表示。
+
+
+# 时间数据坐标轴
+
+如果坐标轴逇是时间数据，则需要使用scale_x_date()和scale_y_date()函数来调整坐标轴逇。例如，希望调整时间轴的时间格式，调整坐标轴的范围等等。线面的代码调整了坐标轴逇时间格式，通过集中不同的格式来表示时间。如图所示：
+```{r}
+set.seed(1234)
+df <- data.frame(
+date = seq(Sys.Date(), len=100, by="1 day")[sample(100, 50)],
+price = runif(50) )
+df <- df[order(df$date), ] 
+head(df)
+
+# 绘制图形
+p <- ggplot(data=df, aes(x = date, y=price)) + geom_line() 
+
+ 
+# 格式:月/日
+# 更改时间格式
+require(scales)
+p1 <- p + scale_x_date(labels = date_format("%m/%d")) +
+theme(axis.text.x = element_text(angle=45)) # Format : Week
+p2 <- p + scale_x_date(labels = date_format("%W"))
+# Months only
+p3 <- p + scale_x_date(breaks = date_breaks("months"), labels = date_format("%Y-%m-%d")) + theme(axis.text.x = element_text(angle=45))
+
+# p+p1+p2+p3
+p
+p1
+p2
+p3
+```
+
+上面的代码首先创建了一个数据。从数据集的输出结果可以看到。数据集包含两列，第一列是时间，第二列是一个数值变量。然后绘制了四幅图形，第一幅图形是默认的图形。
+第二幅到第四幅都调整了labels参数，并通过date_format函数调整的时间的格式。从图中可以看到，第一幅图默认图形，默认将时间设置为英文字母月份的简称，例如Oct。第二幅图代码'labels = date_format("%m/%d")'表示将时间格式设置为月份加日期。从图中可以看到，坐标轴显示的时间为'10/01'这种格式的。第三幅图将时间通过周数来表示。从第四幅图可以看到，图形的时间格式为年月日。
+
+## 时间轴的范围
+
+通过scale_x_date和scale_y_date函数同样可以用来限定时间轴的范围。如下图所示：
+<!-- # ```{r} -->
+<!-- # p + scale_x_date(limits = c(date("2019-11-30"),date("2019-12-31"))) -->
+<!-- # ``` -->
+上面的代码将时间序列图的时间范围限定在"2019-11-28"到"2019-12-31"。另外需要注意的是，这里limits参数需要传入的数据格式应该是时间类型(通过class函数可以查看数据类型)。从图中可以看到，实现序列图中时间范围被限定在了"2019-11-28"到"2019-12-31"。
+
+# 自定义标签 
+
+element_text函数可以改变标签，刻度文本的颜色，大小以及角度。使用这个函数可以对于图形进行更加自定义的调节。另外，使用element_blank()函数可以隐藏文本。下面的代码更改轴标签的样式和方向角。如图所示：
+
+```{r}
+data("ToothGrowth")
+ToothGrowth$dose <- as.factor(ToothGrowth$dose)
+p <- ggplot(ToothGrowth, aes(x=dose, y=len)) + geom_boxplot() # print(p)
+p + theme(axis.text.x = element_text(face="bold", color="red",size=12, angle=45),axis.text.y = element_text(face="bold", color="blue", size=12, angle=45))
+```
+
+上面的代码调整的轴刻度的颜色，字体和角度。代码中'axis.text.x = element_text(face="bold", color="red"=12, angle=45)',表示调整x轴的刻度的字体为黑体（bold），调整x轴刻度的文字为红色，大小为12，角度为45度表示调整y轴刻度的字体为黑体，颜色为蓝色，大小为12，角度为45度。从图形中可以看到，坐标轴的刻度的颜色发生了改变，并且文字产生了一定的倾斜。
+
+下面的代码取消了坐标轴的刻度的显示，如图所示：
+```{r}
+
+# 改变轴标记标签的样式
+# 可以是“plain”、“italic”、“bold”或“bold.italic”
+
+# 删除轴标记和标记标签
+p + theme(axis.text.x = element_blank(),  axis.text.y = element_blank(),   axis.ticks = element_blank()) 
+ 
+# 删除x轴标记
+# 删除y轴标记
+```
+上面的代码’element_blank()‘函数表示不显示任何东西。从图形中可以看到，图中x轴和y轴的刻度都取消了。
+
+另外还可以使用element_line函数修改图形的刻度线。下面的代码调整了刻度线的颜色，大小以及种类。如图所示：
+
+```{r}
+# 改变轴线的类型和颜色
+p + theme( axis.line = element_line(colour = "red", size = 1, linetype = 2))
+```
+上面的代码，使用了theme函数调整图形的刻度线。代码'axis.line = element_line(color = "red", size = 1, linetype = 2)'中，color = ’red‘表示将刻x和y的度线的颜色设置为红色。size 参数调整线条的大小为1，linetype参数用于设置线条的种类，这个参数的调整与上文图形线条的调整是一致。从图中可以看到x轴和y轴的刻度线全部变成了虚线，并且线条的颜色被设置成为红色。
+
+如果需要自定义连续变量的坐标轴，可以使用scale_x_continuous和scale_y_continuous函数。其中参数包括name, breaks, labels, limits, trans等等。
+
+如果需要自定义离散变量的坐标轴，可以使用scale_x_discrete函数和scale_y_discrete函数，其中的参数包括name, breaks, labels, limits等等。
+
+这两组函数有很多参数是共同的，包括：
+
+1. name : x 或者 y 轴的标签
+2. breaks : 用于调整坐标轴刻度的间隔
+3. limits : 坐标轴的范围
+4. labels ：修改刻度名称
+
+下面的代码对于离散变量的坐标轴刻度的顺序进行了调整。如图所示：
+```{r}
+p <- ggplot(ToothGrowth, aes(x=dose, y=len)) + geom_boxplot(aes(fill = dose))
+# 绘制图形
+print(p)
+#更改x轴标签和顺序
+p + scale_x_discrete(name ="Dose (mg)", limits=c("2","1","0.5"))
+
+```
+
+上面的代码中，使用scale_x_discrete函数对x轴进行调整。参数name用于指定坐标轴的名称。limits参数指定了坐标轴的范围，因为对应的是离散变量，因此'limits=c("2","1","0.5")'代码表示的就是x轴的顺序，从图中可以看到，dose 为2的组排在第一个，dose为1的组排在第二个，dose为0.5的组排在第三个。图形呈现出降序，通过这样的方式可以起到对图形进行排序的效果。下面的代码对于刻度进行了重新命名。如图所示
+```{r}
+# 更改标记标签
+p + scale_x_discrete(breaks=c("0.5","1","2"), labels=c("D0.5", "D1", "D2"))
+# 选择要显示的项
+
+```
+
+上面的代码同样对坐标轴的进行了调整，并且调整了坐标轴的刻度名称。从图中可以看到，图形中的第一个分组的名称被修改为D0.5,其他被分别设置为D1和D2。另外，还可以通过修改坐标轴范围的方式，对图形中的分组进行筛选，如图所示：
+```{r}
+p + scale_x_discrete(limits=c("0.5", "2"))
+# 或者使用下面的代码，是一样的
+# p + xlim("0.5", "2")  
+```
+
+上面代码将limits参数设置为c("0.5", "2")),没有设置为1的组别。从图中可以看到，图形只出现了两个分组。通过这样的方式可以实现对于图形过滤。
+如果坐标轴对应的是连续变量，则需要使用scale_x_continuous和scale_y_continuous函数。
+```{r}
+# 绘制散点图
+sp <- ggplot(cars, aes(x = speed, y = dist)) + geom_point() 
+ 
+# 改变x轴和y轴的标签和范围
+sp + scale_x_continuous(name="Speed of cars", limits=c(0, 50)) + scale_y_continuous(name="Stopping distance", limits=c(0, 200))
+
+
+```
+
+上面的代码绘制了一副散点图，然后分别使用scale_x_continuous函数和scale_y_continuous函数将图形的坐标轴的范围设置为0到50和0到200.从图中可以看到。图形的坐标轴被设置成为对应的范围。下面的代码对于图形中坐标轴刻度的间隔进行了调整。图形如图所示：
+```{r}
+#  改变坐标轴刻度
+sp + scale_y_continuous(breaks=seq(0, 150, 10))
+
+
+```
+上面的代码调整了breaks参数，设置为一个从0开始到150结束，间隔为10的向量。从图中可以看到，y轴的刻度间隔被设置成为了10，并且坐标轴的范围从0到150。如果不需要坐标轴，还可以去除掉坐标轴。如下图所示：
+
+
+```{r}
+sp + scale_x_continuous(breaks=NULL)
+
+```
+上面的代码中，通过将breaks参数设置为null，去除了坐标轴。从图形中可以看到，x轴在图形中被去掉了。
+如果坐标轴有某些特别的含义，例如是百分比，或有有单位，可以使用使用scales包对坐标轴进行转换。如下图所示
+```{r}
+ 
+require(scales)
+#  
+sp + scale_y_continuous(labels = dollar) # 坐标轴上添加美元符号
+```
+
+上面的代码中将y轴的坐标轴上面的刻度添加了一个美元符号。从图形中可以看到，y轴上刻度的数字前面的添加了一个美元符号。其他的调整还包括percent，scientific.等等。
+更多的调整方法可以查看scales包的官方文档。
+
+ 
+# 图形主题和背景颜色
+
+在本部分会介绍如何改变图形的主题，主题包括图形的背景，颜色，面板(panel)，背景颜色，网格线等等。改变主题的一个简单方式是使用ggplot2自带的一些主题。
+
+这些主题包括：
+
+1. theme_gray(): 灰色背景色和白色网格线
+2. theme_bw(): 白色背景和灰色网格线
+3. theme_linedraw(): 黑色线条围绕着图形
+4. theme_light(): 浅灰色线和坐标轴
+5. theme_minimal(): 没有背景注释
+6. theme_classic(): 经典的主题，有主题轴线，没有网格线(标准图)
+7. theme_void(): 空主题，用于非标准坐标的绘图或绘图
+8. theme_dark(): 黑色背景设计，使颜色更加突出
+
+下面的代码首先绘制了一副箱线图，然后分别设置了不同的主题。
+```{r}
+data("ToothGrowth") # 数据集
+ 
+# 绘图
+p <- ggplot(ToothGrowth, aes(x=supp, y=len)) + geom_boxplot()
+p1 <- p + theme_gray() 
+p2 <- p + theme_bw()
+p3 <- p + theme_linedraw()
+p4 <- p + theme_light()
+p5 <- p + theme_minimal() 
+p6 <- p + theme_classic() 
+p7 <- p + theme_void()
+p8 <- p + theme_dark()
+
+require(gridExtra)
+grid.arrange(p1,p2, p3,p4, ncol = 2, nrow =2) # 多幅图形合并到一副图形
+ 
+
+
+```
+ 上面的代码中，首先绘制了一副基础的箱线图,然后使用不同的主题调整图形。从图中可以看到，第1幅图形是使用了theme_gray()函数。第二幅图使用了theme_bw()函数。第3幅图使用了theme_linedraw()函数。第四幅图使用了theme_light()函数。
+ 
+```{r}
+grid.arrange(p5, p6, p7,p8, ncol = 2, nrow =2)
+ 
+```
+ 上面的代码使用了其他四种主题。从图中可以看，第1幅图形是使用了theme_minimal() 函数。第二幅图使用了theme_classic() 函数。第3幅图使用了theme_void()函数。第四幅图使用了theme_dark()函数。从图中可以看到图形之间的有相当的区别。
+ 
+theme_xx()这一类函数可以接受以下两个参数:
+
+1. base_size:基本字体大小
+2. base_family:基本字体族
+通过这个参数的设置，所有的文本全部会被调整。
+所有的情节文本元素的大小可以很容易地改变一次:
+```{r}
+#  修改文本你大小
+p1 <- p + theme_gray(base_size = 10)
+#  修改文本的大小
+p2 <- p + theme_gray(base_size = 20)
+
+grid.arrange(p1,p2, ncol = 2, nrow =1)
+```
+上面的代码通过base_size参数调整了图形中所有文本的大小。从图中可以看到，第一幅图的文本远远小于第二幅图的文本。
+
+## 自定义图形的背景
+
+theme()函数用于控制图形中的非数据部分，包括:
+1. 线段（Line elements）:轴线、副网格线、主网格线、轴线
+勾出背景颜色等。
+2. 文本元素（Text elements）:图形标题、轴标题、图例标题与文本、轴勾号标签等。
+3. 矩形（Rectangle elements）:图形背景、面板背景、图例背景等。
+
+有一个特定的函数来修改这三个元素中的每一个:
+element_line()用于调整图形线条，element_text()用于调整图形文本，
+element_rect()来更改矩形元素的外观
+
+下面的代码调整了调整了图形的背景。如图所示：
+```{r}
+# 将plot面板背景的颜色改为淡蓝色 ， 网格线的颜色改为白色
+p + theme(
+panel.background = element_rect(fill = "red", colour = "yellow", size = 2, linetype = "solid"),
+panel.grid.major = element_line(size = 0.5,color = 'black', linetype = 3),
+panel.grid.minor = element_line(size = 0.25,color = 'grey',linetype = 1)
+)
+
+```
+上面的代码中，'panel.background = element_rect(fill = "red", colour = "yellow", size = 2, linetype = "solid")'表示将图形的面板的背景的填充颜色设置为红色，图形背景的边框线条颜色设置为黄色，线的种类设置为实线，线的大小设置为2。
+代码'panel.grid.major = element_line(size = 0.5,color = 'black', linetype = 2,)'表示将图形中的主要网格线大小设置为0.5，颜色设置为黑色，线条种类为点构成的虚线。
+代码'panel.grid.minor = element_line(size = 0.25,color = 'grey',linetype = 1)'表示将图形中的次要网格线的大小设置为0.25,颜色设置为灰色，线条种类为灰色。
+
+使用参数可以调整图形背景的颜色。如下图所示：
+```{r}
+# 更改图形背景颜色
+p + theme(plot.background = element_rect(fill = "green"))
+```
+上面的代码将plot.background参数设置为，element_rect(fill = "green").从图中可以清楚地看见，图形的背景颜色被设置成为绿色。
+
+## 删除面板边框和网格线
+
+如果需要不需要显示面板边框和网格线，可以使用element_blank()函数实现。下面的代码删除了面板边框和图形中的网格线如图所示：
+```{r}
+# 隐藏面板边框和网格线
+# 但是要改变轴线
+p + theme(panel.border = element_blank(),
+panel.grid.major = element_blank(),
+panel.grid.minor = element_blank(),
+axis.line = element_line(size = 0.5, linetype = "solid",
+                                   colour = "black"))
+```
+上面的代码中通过调整参数panel.border，panel.grid.major和panel.grid.minor。将其都设置为element_blank()。从而删除了图形中的网格线和面板边框。从图中可以清楚的观察到，图形中的主网格线和次网格线都被删除掉了。
+
+## ggthemes包
+ggthemes包提供了更多的关于图形主题的选项。ggthemes包提供了许多自定义主题。下面的代码分别使用了两种主题绘制箱线图。图形如图所示：
+```{r}
+  
+library(ggthemes) #加载包
+p <- ggplot(ToothGrowth, aes(x = supp, y = len)) + geom_boxplot(aes(fill = supp))
+# 设置主题
+p1 <- p + theme_economist() + scale_fill_economist()
+# theme_stata 主题
+p2 <- p + theme_stata() + scale_fill_stata()
+
+grid.arrange(p1,p2,nrow =1)
+```
+ 
+ 上面的代码分别使用了theme_economist()和theme_stata() 这两种主题.其中theme_economist()是经济学人杂志的图形主题。theme_stata()是基于Stata图方案的主题。从图中可以看到，两个主题有明显的差异。但是两幅图形又具有比较好的可视化效果，非常美观。
+
+
+
+# 文本注释
+
+接下来介绍如何将文本注释添加到使用ggplot2包生成的图形中。通常有两个函数可以用来添加文本注释，但是二者确有一定的产别：
+
+1. geom_text():将文本直接添加到绘图中
+2. geom_label():在文本中绘制一个矩形，使其更容易阅读。
+3. annotate():用于在特定位置添加小文本注释
+的情节
+4. annotation_custom():添加一个相同的静态注释
+
+另外，也可以使用ggrepel包，这是一个专门用于解决文本注释的包。
+
+我们将首先描述如何使用ggplot2官方函数添加文本注释。在后面的部分中，使用ggrepel扩展包来添加注释。
+
+```{r}
+set.seed(1234)
+df <- mtcars[sample(1:nrow(mtcars), 10), ] 
+df$cyl <- as.factor(df$cyl)
+# 绘制散点图
+sp <- ggplot(df, aes(wt, mpg, label = rownames(df)))+ geom_point()
+#添加文本，按组更改颜色
+#改变垂直对齐
+sp + geom_text(aes(label = rownames(df), color = cyl),
+               size = 3, vjust = -1)
+
+```
+上面的代码中，首先绘制了一张散点图，然后使用geom_text函数为散点图的的每一个点添加了注释，上面的是将一个向量映射到label参数，向量的长度和数据集的行数一样。从图中可以看到，图中的每一个点都添加好了注释。下面的代码在一个特定的位置添加了注释，如图所示：
+```{r}
+# 在特定坐标处添加文本
+sp + geom_text(x = 5, y = 20, label = "Scatter plot", color="red", fontface = 2)
+```
+
+上面的代码中，x和y参数分别表示注释的位置，其中label表示的是标签的名称，color用于指定标签的颜色，fontface用于指定的字体。
+
+geom_label()的工作原理类似于geom_text()，但是在每个标签下面绘制一个圆角矩形。当想要标记数据密集的图时，这是非常有用的。
+
+```{r}
+sp + geom_label()
+```
+上面的代码使用了geom_label函数对于图形添加了注释。从图中可以看到，图形中的注释全部被一个矩形包裹着。
+
+关于geom_text()和geom_label()的其他有用参数有:
+
+1. nudge_x 和 nudge_y:可以让注释从对应的点偏离
+还可以使用函数position_nudge()达到这种效果。
+2. check_overlap = TRUE: 用于避免标签的覆盖
+3. hjust和vjust 现在可以是字符向量:“left”、“center”、“right”、“bottom”、“middle”、“top”。新的选项包括“inward”和“outward”，它们将文本对齐到和远离图形的中心
+的位置。
+4. fontface:更改字体。允许的值:1 (normal)、2(粗体)、3(斜体)和4(粗斜体)
+
+## ggrepel 包
+ 
+ 
+在ggrepel包中有两个非常重要的函数：
+1. geom_label_repel
+2. geom_text_repel
+
+这两个函数都可以用来在图形中添加注释。
+
+
+ 
+```{r}
+# 取15个随机点的子集
+set.seed(1234)
+ss <- sample(1:32, 15) 
+df <- mtcars[ss, ]
+
+p <- ggplot(df, aes(wt, mpg)) + geom_point(color = 'red') + theme_minimal(base_size = 10)
+
+# 使用ggplot2::geom_text添加文本注释
+p1 <- p + geom_text(aes(label = rownames(df)), size = 3.5)
+
+p1
+
+```
+
+这一幅图使用使用ggplot2包中的geom_text函数添加注释。
+
+```{r}
+# 使用 ggrepel::geom_text_repel 添加注释
+require("ggrepel")
+set.seed(42)
+p2 <- p + geom_text_repel(aes(label = rownames(df)),
+size = 3.5)
+
+p2
+
+```
+ 这一幅图使用ggrepel包中的geom_text_repel函数添加注释。
+
+```{r}
+# 使用 ggrepel::geom_label_repel 添加注释
+# 通过分组改变颜色
+set.seed(42)
+p3 <- p + geom_label_repel(aes(label = rownames(df),
+fill = factor(cyl)), color = 'white',
+size = 3.5) + theme(legend.position = "bottom")
+p3
+```
+ 这一幅图使用ggrepel包中的geom_label_repel函数添加注释。比较三幅图可一发现。第一幅图中的注释存在重叠的情况，比较第二幅图可以发现，第二幅图中注释并没有重叠的。虽然两幅图形本质上是一样的，但是ggrepel包的geom_text_repel函数能够有效避免文字的覆盖，所以第二幅图的效果更好。在第三幅图中，注释没有任何覆盖的情况，并且注释被一个矩形包裹着。
+ 
+
+# 添加直线
+
+图形中添加直线包括在图形中添加水平线、垂直线和回归线。
+
+可以使用下面的R函数:
+1. geom_hline(yintercept, linetype, color, size):用于水平线
+2. geom_vline(xintercept, linetype, color, size):用于垂直线
+3. geom_abline(intercept, slope, linetype, color, size)):用于回归线，intercept表示截距，slope表示斜率
+4. geom_segment()添加线段
+
+下面的代码再图形中使用者四个函数添加直线。首先添加垂直线和水平线。如图所示：
+```{r}
+# 绘制散点图
+sp <- ggplot(data = mtcars, aes(x = wt, y = mpg)) + geom_point()
+# 在y = 2O处添加水平线;改变线条类型和颜色
+p1 <- sp + geom_hline(yintercept=20, linetype="dashed", color = "red") # 在x = 3处添加垂直线;改变线条类型、颜色和大小
+
+p2 <- sp + geom_vline(xintercept = 3, color = "yellow", size=1.5)
+grid.arrange(p1,p2,nrow =1)
+```
+上面的代码分别绘制了一条水平的红色虚线和垂直的黄色实线。geom_hline函数用于绘制水平线，其中参数yintercept用于指定水平线绘制的位置。geom_vline函数用于添加一条垂直线，xintercept参数表示垂直线的位置。
+ 然后还可以使用geom_abline函数在图形中添加回归线，如图所示：
+```{r}
+
+# 添加回归线
+sp + geom_abline(intercept = 37, slope = -5, color="blue")+ ggtitle("y = -5X + 37")
+
+
+```
+上面的代码添加了一条'y = -5X + 37'的回归线。绘图的函数是geom_abline，其中intercept参数表示线段的解决，slope参数表示图形的斜率。
+
+下面代码使用了geom_segment函数绘制了线段。
+```{r}
+# 添加一个垂直线段
+p1 <- sp + geom_segment(aes(x = 4, y = 15, xend = 4, yend = 27)) # 添加水平线
+p2 <- sp + geom_segment(aes(x = 2, y = 15, xend = 3, yend = 15))
+# 将箭头添加到段的末尾
+require(grid)
+p3 <- sp + geom_segment(aes(x = 5, y = 30, xend = 3.5, yend = 25),
+arrow = arrow(length = unit(0.5, "cm")))
+
+grid.arrange(p1,p2,p3,nrow = 1)
+```
+
+上面的代码中，使用了geom_segment函数来添加线段，函数中参数（x，y）表示图形中线段的起点，(xend，yend)表示线段的终点。并且函数中有一个arrow参数，用于设置图形的箭头。从图中可以看到，第一幅图添加了一条垂直线段，第二幅图添加了一条水平线段。第三幅图添加了一个箭头。
+
+# 图形翻转和反向
+
+如果希望翻转图形，或者使得坐标轴反向，可以使用下面这两个函数：
+
+1. coord_flip() ：翻转图形
+2. scale_x_reverse(), scale_y_reverse() ：将坐标轴的刻度翻转过来
+
+
+下面的代码绘制了三幅图形，对图形进行了反转。如图所示
+```{r}
+set.seed(1234)
+# 直方图
+hp <- qplot(x=rnorm(200), geom="histogram") 
+# 水平直方图
+hp1 <- hp + coord_flip()
+# Y轴颠倒
+hp2 <- hp + scale_y_reverse()
+
+grid.arrange(hp,hp1,hp2,nrow = 1)
+```
+
+上面的代码中，第一幅图是原始图形。第二幅图是将图形中的x轴和y轴进行了变换，第三幅图中，对y轴的坐标进行了翻转。从图中可以看到，图形中坐标轴发生了调转，图形随之也产生了改变。
+
+# 分面
+
+分面根据一个或多个分类变量的值将一个图划分为子图。分面相关的函数式：
+
+1. facet_grid() 
+2. facet_wrap()
+
+这两个函数都可以用来构建分面。其中
+
+1. p + facet_grid(supp ~.):基于supp变量垂直方向分面。
+2. p + facet_grid(.~supp):基于supp变量的水平方向分面。
+3. p + facet_grid(dose~supp)基于dose和supp两个变量在水平方向和垂直方向上分面。
+4. p + facet_wrap(~fl)将facet并排放置到矩形布局中
+
+下面的代码使用了ToothGrowth数据集绘制箱线图并使用supp变量作为分面变量。从图中可以看到。
+```{r}
+# 加载数据并将剂量转换为因子变量
+data("ToothGrowth")
+ToothGrowth$dose <- as.factor(ToothGrowth$dose)
+# 绘制箱线图
+p <- ggplot(ToothGrowth, aes(x=dose, y=len, group=dose)) +
+geom_boxplot(aes(fill=dose)) 
+
+# 图形分面
+p1 <- p + facet_grid(supp ~ .)
+#  图形分面
+p2 <- p + facet_grid(. ~ supp)
+
+
+grid.arrange(p1,p2,nrow = 1)
+```
+
+上面的代码中，'facet_grid(supp ~ .)'表示根据supp变量按行绘制图形。代码'facet_grid(. ~ supp)',表示根据supp变量按照列绘制图形。从图中可以看到，第一幅图按照supp变量的不同，将图形分成了上下两幅图形，而第二幅图则根据supp变量的不同，将图形分成了左右两幅图形。
+
+下面的代码通过两个变量对图形进行分面，如图所示：
+```{r}
+# 将图形根据两个变量分面
+p1 <- p + facet_grid(dose ~ supp)
+# 将图形根据两个变量分面
+p2 <- p + facet_grid(supp ~ dose)
+grid.arrange(p1,p2,nrow = 1)
+```
+代码中使用了两个变量来划分图形，代码'facet_grid(dose ~ supp)' 表示每一行的图形中，都对应同一个dose的值，每一列的图形中都对应同一个supp的值。同样，代码'facet_grid(supp ~ dose)'表示每一行的图形中，都对应同一个supp的值，每一列的图形中都对应同一个dose的值。
+从图中可以清楚的看到，图形分别被划分成为了三行二列和两行三列。
+
+另外，还可以通过调整参数来增加额外的分面。如图所示：
+```{r}
+p + facet_grid(dose ~ supp, margins=TRUE)
+```
+上面的代码调整了参数margins，设置为margins =TREU。从图形中增加了一行图形和一列图形。记为all。其表示的是只考虑一个分面变量时候的图形。举个例子第三列图形表示不考虑supp变量的分面结果.如下图所示：
+```{r}
+p + facet_grid(dose ~ .)
+```
+上面的代码使用了dose变量来划分图形。从图中可以看到，图形与上图最后一列的图形是一样的。
+
+另外，默认情况下，所有子图形都具有相同的刻度。通过将scale设置为free、free_x或free_y，可以使得子图形的刻度自行调整。
+```{r}
+p + facet_grid(dose ~ supp, scales='free')
+```
+上面的代码调整了参数scales，设置为scales='free'。从图中可以看到，图形中三个坐标轴都是不一样的。
+
+另外，还可以调整图形分面的标签。如下图所示
+```{r}
+p + facet_grid(dose ~ supp, labeller=label_both)
+```
+上面的代码调整了图形分面的标签，调整的是labeller参数。代码'labeller=label_both'表示的是在图形分面的标签中添加对应变量的名称。从图中可以看到，图形中的分面标签发生了改变，在名称前面添加了变量的名称。
+
+还可以修改分面标签的外观。如图所示：
+```{r}
+# 更改 文本字体。字体样式的可能值:
+  #'plain', 'italic', 'bold', 'bold.italic'.
+p + facet_grid(dose ~ supp)+
+theme(strip.text.x = element_text(size=12, color="green",
+face="bold.italic"), strip.text.y = element_text(size=12, color="green",
+                                      face="bold.italic"))
+
+```
+上面的代码中调整了分面标签的外观，调整外观的参数是strip.text.x和strip.text.y参数。然后通过element_text函数来调整标签的大小，颜色，字体等等。从图中的可以观察到，标签被设置成为了绿色，字体被修改成为了斜体。另外开可以修改标签周围的矩形外观。如图所示：
+
+```{r}
+# 更改刻面标签周围矩形的外观
+p + facet_grid(dose ~ supp)+
+theme(strip.background = element_rect(colour="black", fill="white",
+                                       size=1.5, linetype=2))
+```
+上面的代码通过strip.background参数调整矩形的外观。从图中可以看到，图形中标签的矩形边框颜色为黑色，填充颜色为白色，线条类型为虚线。
+
+最后，可以使用facet_wrap()函数并排放置放置分面，如下所示:
+```{r}
+bp + facet_wrap(~ dose)
+
+```
+
+上面的代码使用facet_wrap函数对图形进行分面。从图中可以看单，图形按行进行排序。需要注意的是，如果代码为'bp + facet_wrap(~ dose)',图形同样按照行进行排序。下面的代码设置了图形中子图的行数。如下图所示：
+```{r}
+bp + facet_wrap(~ dose, ncol=2)
+```
+上面的代码设置了ncol参数，从图中可以观察到，
+图形被分成了两行。

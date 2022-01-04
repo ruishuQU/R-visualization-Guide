@@ -1,0 +1,253 @@
+---
+title: "添加图形元素"
+output:
+  html_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# 添加图形元素
+
+图形元素包括线条，矩阵，多边形等等。本部的会介绍如何在图形中添加图形元素。在图形中添加图形元素的关键函数如下：
+
+1. geom_polygon(): 添加多边形，填充路径
+2. geom_path(): 添加连线
+3. geom_segment(): 添加单个线段
+4. geom_curve(): 添加曲线
+5. geom_rect(): 添加一个二维矩形。
+6. geom_ribbon :添加区域
+
+这些函数都有一些共同的参数，包括alpha（调整透明度）, color（调整线条颜色）,  linetype（线条种类） and size（大小）。
+
+
+下面的代码使用econimics数据并生了一副时间序列图形，然后再图形中添加了一个矩阵，并且在时间序列线条的周围添加了一个类似于置信区间的区域。如图所示：
+```{r}
+library(ggplot2)
+h <- ggplot(economics, aes(date, unemploy))
+
+# 合并路径，色带和矩形
+h  + geom_rect(aes(xmin = as.Date('1980-01-01'), ymin = -Inf, xmax = as.Date('1985-01-01'), ymax = Inf),
+fill = "#A29B32", color = "#D8DA9E", size =1.5) + geom_ribbon(aes(ymin = unemploy-900, ymax = unemploy+900),
+fill = "#F3BF94")+ geom_path(size = 0.8, color = "red") +
+theme_minimal()
+```
+上面的代码中使用了economics数据集，这个数据集是某个国家经济的时间序列数据。首先使用geom_rect函数添加了一个矩形区域，geom_rect函数中，参数xmin和xmax指定了矩形x轴上的范围，参数ymin和ymanx指定了矩形y轴上的范围。然后使用geom_ribbon函数添加了一个区域，区域的范围为[unemploy-900,unemploy+900],最后使用geom_path绘制了时间序列。从图中可以看到，时间序列图在'1980-01-01'到'1985-01-01'之间添加了一个矩形，并且时间序列曲线的周围存在一个类似于置信区间的区域。需要注意的是，调用不同geom_函数的顺序对于图形的构建是有影响的，如果先使用geom_ribbon函数绘制区域，然后再使用geom_path函数绘制时间序列，则时间序列曲线则会被覆盖表，不可见。
+
+geom_segment函数可以在点(x1, y1)和(x2, y2)之间添加线段和曲线，例如，下面的代码绘制了散点图，并且在使用geom_segment函数在图形中添加线段。图形如图所示：
+
+```{r}
+# 绘制散点图
+i <- ggplot(mtcars, aes(wt, mpg)) + geom_point() # Add segment
+i + geom_segment(aes(x = 2, y = 15, xend = 3, yend = 15))
+
+```
+
+上面的代码绘制了一副散点图，然后使用geom_segment函数添加了一条线段。geom_segment函数中的x和xend参数表示图形中线段x轴的起点和终点。y和yend参数用于表示图形中线段y轴上的起点和终点。也就是说，在点（x，y）和（xend，yend）之间绘制添加线段。从图中可以看到，图形中在x轴2到3之间添加了一条y为15的水平线段。
+
+下面的代码绘制了一个带箭头的线段，以及添加了一条曲线。如图所示：
+```{r}
+# 添加箭头
+require(grid)
+i + geom_segment(aes(x = 5, y = 30, xend = 3.5, yend = 25),
+arrow = arrow()) + geom_curve(aes(x = 2, y = 15, xend = 3, yend = 15))
+```
+
+同样，上面的代码首先使用geom_segment函数添加了一条线段，在这个函数中，添加了参数'arrow = arrow()'。这个时候线段的末端会出现一个箭头。然后使用geom_curve函数添加了一条曲线。从图中可以看到，图形中出现了一条曲线，图形的左下方出现了一条曲线，在x轴的2到3之间。
+
+
+使用这个函数，能够在图形中添加一些新的元素。例如，带箭头的线段可以用于来指明图形中的某个需要注意的部分。在图形中合适的添加这些元素可以使得图形变得更加具有可读性。
+
+# 主标题，轴标签 图例标题
+
+在绘制好图形之后，一个关键的操作是为图形调价标题，标题用于表示绘制的图形是什么，为图形提供必要的文字信息。另外还可以调整坐标轴的名称，以告诉读者坐标轴的含义。这类调整的关键函数包括：
+
+1. ggtitle() ：设置图形标题
+2. xlab() ： 设置x轴的标签
+3. ylab() ： 设置y轴的标签
+4. labs() :修改坐标轴（axis）、图例（legend）和图形标签
+
+下面的代码首先使用ToothGrowth数据集创建了一个箱线图，如图所示:
+
+```{r}
+# 将变量dose从数值转换为因子变量
+ToothGrowth$dose <- as.factor(ToothGrowth$dose)
+p <- ggplot(ToothGrowth, aes(x=dose, y=len, fill = dose)) + geom_boxplot()
+
+p
+```
+
+上面的箱线图是一副基础的箱线图，没有对于图形进行任何的修改。以下函数可以用来更改图形的标题和标签:
+
+1. p + ggtitle("Main title"): 在图形之上添加标题。
+2. p + xlab("X axis label"): 改变X坐标轴的标签。 
+3. p + ylab("Y axis label"): 改变Y轴的标签 。
+4. p + labs(title = "Main title", x = "X axis label", y = "Y axis label"):使用labs 函数调整图形标题和坐标轴的标签。
+
+需要注意的是，labes函数可以同时调整图形标题和坐标轴的标签。也就是说可以使用这个函数替代ggtitle函数，xlab函数和ylab函数。
+
+下面的代码调整了箱线图的标题和坐标轴名称。如图所示
+```{r}
+ 
+# 更改标题和轴标签
+p <- p +labs(title="Dose vs Teeth-Length", x ="Dose-Mg", y = "Teeth-Length")
+p
+```
+
+上面的代码使用labs函数调整了坐标轴的标签和图形的主题。使用title参数将图形的标题设置成为'Dose vs Teeth-Length',将x轴的标签设置为'Dose-Mg',将y轴的标签设置为
+'Teeth-Length'。下面的代码使用了ggtitle(), xlab(), ylab()函数绘图了同样的图形。如图所示：
+
+```{r}
+p + ggtitle("Dose vs Teeth-Length") + xlab("Dose-Mg") + ylab("Teeth-Length")
+```
+
+上面的代码使用ggtitle函数将图形的标题设置为'Dose vs Teeth-Length',使用xlab函数将x轴的标签设置为'Dose-Mg',使用ylab函数将y轴的标签设置为'Teeth-Length'。可以看到，图。。与图是一样的。
+
+## 改变标签的外观
+
+如果需要更改标题或者轴标签的外观(颜色、大小和字体)，可以使用函数theme()和element_text()。其中，函数element_blank()可以用来隐藏标签。下面的代码使用theme函数对图形的标签颜色，大小进行了修改，如图所示：
+```{r}
+ #改变标签的外观。
+# 改变字体
+p + theme(
+plot.title = element_text(color="red", size=12, face="bold.italic",hjust = 0.5), axis.title.x = element_text(color="blue", size=12, face="bold"), axis.title.y = element_text(color="blue", size=12, face="bold")
+)
+
+```
+
+上面的代码使用theme函数调整了图形的标题和轴标签，其中plot.title参数用于调整图形标题。代码'element_text(color="blue", size=15, face="bold.italic")'表示调整图形的颜色为红色，大小设置为15，字体设置为'bold.italic',并且将标题放到图形中央。
+
+可以设置的字体包括，"plain", "italic", "bold", "bold.italic".
+
+axis.title.x参数用于调整图形的x轴，代码'element_text(color="red", size=12, face="bold")'表示修改将x轴的标签设置为蓝色，设置大小为12，字体设置为'bold'。同样axis.title.y函数用于调整图形的y找，'element_text(color="#993333", size=12, face="bold")'表示修改y轴的标签颜色为蓝色， 大小为12，字体为'bold'。从图中可以看到，图形的标题显示在图形的上方中央，并且标题的显示为红色，同样从图形中可以看到对于坐标轴的标签的改变。
+
+另外，如果不需要标题和标签，则可以去除掉，如图所示：
+```{r}
+#  隐藏标签
+p + theme(plot.title = element_blank(),
+axis.title.x = element_blank(), axis.title.y = element_blank())
+```
+上面的代码去除了图形的标题和坐标轴的标签。使用的函数是element_blank()，表示不显示某个元素。从图中可以看到，图形中的标题和标签全部被去除掉了。
+
+
+## 修改图例
+
+使用labs函数可以很方便的修改图例，例如上文所绘制箱线图的代码中，将dose变量映射到fill参数，表示将这个变量映射到图形的颜色。从图。。。可以可以，图例中显示出了变量不同值所对应的的颜色。下面的代码修改了图形的标签，如图所示：
+```{r}
+p + labs(fill = "Dose-Mg")
+```
+
+上面的代码使用了labs函数对于图例标题的进行了修改，通过将fill参数设置为'Dose-Mg
+ '。表示将图例的标题设置为'Dose-Mg'。同理修改其他参数的图例，例如color，只需要在labs中修改对应的参数即可。
+
+# 修改图例的位置和外貌
+
+如果需要调整图例的位置，同样使用的是theme函数，通过调整legend.position参数来调整图形中图例的位置：
+```{r}
+ToothGrowth$dose <- as.factor(ToothGrowth$dose)
+p <- ggplot(ToothGrowth, aes(x=dose, y=len, fill=dose))+
+geom_boxplot()
+# 改变图例的位置: "left","top", "right", "bottom", "none"
+p + theme(legend.position="left")
+
+```
+上面的代码中，使用theme函数调整设置legend.position参数为‘left’，表示将图形中图例的位置放置在图形的左边。位置选项还包括'right','bottom','top'。另外还可以使用一个向量来表示图里的位置，例如，下面的代码将图例放在图形的正下方。如图所示：
+
+```{r}
+#图例的位置可以通过坐标设置 c(x, y)
+p + theme(legend.position = c(0.5, 0.2))
+
+```
+上面的代码设置legend.position参数为一个响亮。向量中分别表示x和y轴的位置，其中(0,0)表示图形的最左下角，(1,1)表示图形的最右上角。
+
+有的时候不需要显示图例，这个时候可以将图例删除掉。如图所示：
+```{r}
+# 去除图例
+p + theme(legend.position = "none")
+```
+下面的代码设置legend.position参数为'none'，表示不显示图形的图例。如图所示，图形中的图例被删除掉了。
+
+更进一步，还可以调整图形的颜色，如下图所示：
+```{r}
+# 改变图例标题和标签的外观
+p + theme(legend.title = element_text(colour="blue"), legend.text = element_text(colour="red"),legend.background = element_rect(fill="lightblue"))
+
+```
+上面的代码中，'legend.title = element_text(colour="red")'表示将图例的标题的颜色设置为红色。代码'legend.text = element_text(colour="red")'表示将图例中的文字显示出红色。最后，代码'legend.background = element_rect(fill="lightblue")'表示将图例的背景设置为浅蓝色。如图所示，图形中的图例颜色发生了明显的改变。
+
+另外，还可以修改图例的顺序以及图例的名称。下面的代码修改了图例的顺序。结果如图所示：
+```{r}
+# 更改图例项的顺序
+p + scale_fill_discrete(labels=c("2", "0.5", "1"))
+
+```
+上面的代码使用了scale_fill_discrete将图例的顺序进行了调整。从图中可以看到，图例的顺序从原来的(0.5,1,2)改变成为(2,0.5,1)。另外还可调整图例的名称，如下图所示：
+```{r}
+# 设置图例的名称和标签
+p + scale_fill_discrete(name = "Dose", labels = c("A", "B", "C"))
+```
+上面代码使用scale_fill_discrete函数将图例修改为了('A','B','C')。从图中可以观察到，图例从原来的(0.5,1,2)改变成为了('A','B','C')
+
+## 使用guides函数修改图例
+
+guides是一个专门用于调整图例的函数，可以使用函数guides()设置或删除特定美学的图例(填充、颜色、大小、形状等)。下面的代码创建具有多个美学的散点图。点的颜色和形状由因子变量cyl和gear。点的大小由变量qsec控制。使用函数guide_legend()函数来更改图例的的顺序。
+```{r}
+
+#设置cyl变量和gear变量为因子类型
+mtcars$cyl<-as.factor(mtcars$cyl)
+mtcars$gear <- as.factor(mtcars$gear)
+# 绘制图形
+ p <- ggplot(data = mtcars,aes(x = mpg, y = wt, color = cyl, size = qsec, shape = gear))+ geom_point()
+ p
+
+```
+
+上面的代码首先绘制了一副散点图。从图中可以看到，散点图有三个图例，因为有三个变量cyl，qsec和gear分别映射到散点图的颜色，大小以及点的形状。下面的代码调整了这三个图例的顺序。如图所示：
+```{r}
+# 使用guide_legend()更改图例的顺序
+p + guides(color = guide_legend(order=1), size = guide_legend(order=3),
+shape = guide_legend(order=2))
+
+```
+上面的代码'color = gguide_legend(order=1)',表示将color对应的图例设置为第一个。同样代码'shape = guide_legend(order=2)'表示将shape对应的图例排在第二个。比较图。。和图可以发现。三个图例的顺序发生了改变。
+
+当有多个图例的时候，可以选择不显示某个图例。如下面的代码所示：
+
+```{r}
+# 修改图例
+p+guides(color = FALSE, size = FALSE)
+```
+
+在下面的代码中，color=FALSE,size=FALSE分别表示不显示color和size这个图例。从图中可以看到，图形只显示了关于图形shape的图例。
+
+
+另外，如果是将一个连续变量映射到颜色参数，可以使用函数guide_colourbar()函数来更改颜色图例的顺序。如下图所示：
+```{r}
+# 连续变量作为颜色的情况:使用guide_colourbar()
+qplot(data = mpg, x = displ, y = cty, size = hwy, colour = cyl, shape = drv) +
+guides(color = guide_colourbar(order = 1), alpha = guide_legend(order = 2), size = guide_legend(order = 3))
+```
+在上面的代码中,将color对应的图例排列在第一个。
+
+使用scale_xx函数也可以删除特定的图例。如下图所示
+```{r}
+# 删除点形状的图例
+p + scale_shape(guide=FALSE) # 删除尺寸图例
+
+```
+上面的代码'scale_shape(guide=FALSE)'，表示不显示关于形状的图例。
+
+```{r}
+p + scale_size(guide=FALSE) # 去除颜色图例
+
+```
+上面的代码'scale_size(guide=FALSE)'，表示不显示关于大小的图例。
+
+
+```{r}
+p + scale_color_manual(values=c('#999999','#E69F00','#56B4E9'), guide=FALSE)
+```
+
+上面的代码'scale_color_manual(values=c('#999999','#E69F00','#56B4E9'), guide=FALSE)'，表示不显示关于颜色的图例。

@@ -1,0 +1,612 @@
+---
+title: "单变量图形绘制"
+output:
+  html_document: default
+  word_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+在绘制统计图形的过程中，有时候我们感兴趣的数据特征只有一个，也就是说，只对一个变量绘制图形。这种情况是常常出现的。例如，对于学校内的学生的身高感兴趣。身高就是我们所关心的一个特征，对于身高这个特征所可以绘制的图形可以使直方图，条形图。这两个图形都可以用来很好的理解学生身高的分布。当然还有其他关于一个变量的图形，其中包括：面积图，密度图，频率多边形，点图,ECDF图，QQ图，计数条形图。
+
+其中面积图表或面积图显示图形的定量数据。它基于折线图。轴和线之间的区域通常用颜色，纹理和阴影来强调。通常将两个或更多个数量与面积图进行比较。面积图用于表示累计总数，使用数字或百分比（在这种情况下为堆积面积图）随时间推移。使用面积图显示相关属性中随时间变化的趋势。面积图类似于绘图表，除了绘制线下面的区域用颜色填充以指示体积。如果包含多个属性，则将第一个属性绘制为带有颜色填充的行，然后是第二个属性，依此类推。
+
+密度图和直方图是类似的图形，密度图是数值变量分布的一种表示。它使用核密度估计来显示变量的概率密度函数。它是直方图的平滑版本，用于相同的概念。直方图是的精确表示分布的数值数据。直方图用于显示数据的分布，首次由皮尔逊引入。它与条形图不同，条形图关联两个变量，但直方图只涉及一个。要构建直方图，第一步是“ bin ”（或“ 箱”）值的范围 - 即，将整个值范围划分为一系列间隔 - 然后计算每个间隔中落入多少值。箱通常被指定为连续的，不重叠的间隔一个变量。箱（间隔）必须相邻，并且通常（但不是必须）具有相同的尺寸。直方图可以被认为是简单的核密度估计，其使用内核来平滑区间上的频率。这产生了更平滑的概率密度函数，其通常将更准确地反映基础变量的分布。密度估计可以绘制为直方图的替代，并且通常绘制为曲线而不是一组框。然而，当需要对其统计特性进行建模时，直方图在应用中是优选的。核密度估计的相关变化很难用数学方法描述，而对于每个箱独立变化的直方图来说很简单。
+
+频率多边形图是另一种频率分布图。在频率多边形中，观察的数量在间隔的中点用单个点标记。然后直线连接每组点。频率多边形可以轻松比较同一组轴上的两个或多个分布。 
+
+点图不等同于散点图，点图(Dot Plot)，是一种简单的柱状图，用于统计相对较小的数据集，这些数据集的值属于多个离散的箱子(类别)。点图类似于条形图，因为每个点的“条形”的高度等于特定类别中的项目数。
+
+在统计学中，Q-Q（分位数 - 分位数）图是概率图，其是通过将它们的分位数相对于彼此绘制来比较两个概率分布的图形方法。首先，选择分位数的一组区间。图上的点（x，y）对应于针对第一分布（x坐标）的相同分位数绘制的第二分布（y坐标）的分位数之一。因此，该线是具有参数的参数曲线，该参数是分位数的间隔的数量。
+
+
+单变量的图形有很多，最常用的图形之一是直放图和密度图，因为，了解数据的第一步是了解数据的分布，分布往往可以通过直方图和密度图体现出来。在本章节中，会对各种单变量的图形进行介绍。
+
+# 面积图（area plot）
+
+面积图首次试的绘制是William Playfair，在其1786年出版的《The Commercial and Political Atlas》书中绘制了大量的统计图形。其中也包括几幅面积图。
+第一幅图是英国国债利息的变化。第二幅图是丹麦和挪威的出口和进口从1700到1780。
+
+<!-- ![](/Users/milin/Downloads/面积图.jpg) -->
+
+<!-- ![](/Users/milin/写书/面积图1.png) -->
+
+面积图用于表示累计总数，使用数字或百分比（在这种情况下为堆积面积图）随时间推移。使用面积图显示相关属性中随时间变化的趋势。面积图类似于绘图表，绘制线下面的区域用颜色填充以指示体积。
+
+面积图表示随着时间的推移在一个或多个量的变化。它类似于折线图。在面积图和折线图中，绘制数据点，然后通过线段连接，以显示数个不同时间的数量值。但是，面积图与折线图不同，因为x轴和直线之间的区域用颜色或阴影填充。
+
+当您想要显示随时间变化的趋势时，但不关心显示确切的值，面积图是一个很好的选择。
+
+## 面积图的绘制方式
+
+面积图对于可视化一个或多个随时间变化的变量很有用。我们可以使用许多可用的绘图包之一在R中创建面积图。在本文中，我们将研究如何使用ggplot2包在R中创建面积图。
+
+在绘制图形之前，首选需要准备好所使用的数据，这里使用R自带的数据及进行绘制图形。
+
+
+使用ggplot2绘制面积图有几个关键的函数，这些函数分别是：
+
+1. geom_area() ，使用geom_area函数用于指定绘制面积图
+2. stat_bin()
+
+另外，绘制面积图的一些关键的参数包括：alpha, color, fill, linetype, size。 下面的代码中显示出了最简单的面积图的绘制方式，绘图结果如图。。所示
+```{r}
+require(ggplot2)
+require(ggthemes)
+ sunspotyear <- data.frame(
+        Year     = as.numeric(time(sunspot.year)),
+        Sunspots = as.numeric(sunspot.year)
+      )
+    ggplot(sunspotyear, aes(x = Year, y = Sunspots)) +
+geom_area()
+
+
+```
+上面的代码中使用了ggplot2包进行图形的绘制，所使用的的数据集是sunspot.year，这个数据及是R中自带的一个数据集。这个数据及描述的是从1700年到1988年太阳黑子的年数(四舍五入到一位数)，然后将数据整理为一个数据框。然后就可以开始绘制图形。使用ggplot函数用于指定所使用的的数据集，x轴对应的数据，y轴对应的数据。在这里绘制面积图，x轴用于表示时间，y轴线用于表示太阳黑子的数目。
+
+
+上面还提到过关于图形的很多参数，包括alpha, color, fill, linetype, size。其中alpha用于描述图形的透明度，这个参数的设置为一个数值，越小表示图形是越透明的，下面将alpha参数设置成为0.2，绘制出的图形如下图所示：
+```{r}
+    ggplot(sunspotyear, aes(x = Year, y = Sunspots)) +
+geom_area(alpha= 0.2,fill = "red")
+```
+
+上面的图形使用了alpha参数，从绘图的结果可以看出。图形的区域全部变成了浅色，更加透明了,将alpha值设置为0.2，使其透明度达到80%,这样就可以看到穿过该区域的网格线。需要注意的是，alpha这个参数常常被用于解决数据重叠的情况，例如，在绘制散点图的时候，可能有很多点重合在一些，这个时候，那些被重合的点没有办法通过图形表达出来。这个时候设置alpha参数，调整图形的透明度，这样的话图形中数据数据比较集中的区域颜色会更加深一点，从而解决数据重合的问题。
+
+参数color用于指定面积图中线条的颜色，fill参数用于描述区域中的颜色。linetype用于表示线条的种类，size用于表示线条的大小。修改颜色和线条的参数，绘图结果如下所示:
+```{r}
+    ggplot(sunspotyear, aes(x = Year, y = Sunspots)) +
+geom_area(colour = "black",fill ='red',linetype=2)
+```
+
+上面的代码中对于面积图的一些参数进行了调整，对于线条的颜色进行了设置，设置线条的颜色为黑色。然后对线条的种类进行设置，设置线条的类型为虚线。最后，对区域的颜色也进行了设定。设定区域的颜色为红色。需要注意的是，默认情况下y轴对应于权重值的计数。如果你想要改变图以使密度在y轴上，R代码如下。
+
+```
+geom_area(aes(y = ..density..), stat ="bin")
+```
+
+## 绘制堆叠的面积图
+
+
+在很多分析的时候，想要了解的是不同情况下的面积图。这个时候可以将不同情况的面积图分别绘制出来，绘制多张面积图。但是，很好的绘图方法是通过堆叠的方式，将多张面积图会旨在同一张统计图表中。这里使用的是gcookbook保重的uspopage数据集记性绘制堆叠的面积图。这个数据及是美国1900年到2002年的人口普查的数据。数据集中第一个特征Year表示年份，第二个特征AgeGroup 表示年龄段，第三个特征Thousands表示人数。通过堆叠图的方式可以会出不同年份，不同的年龄段的人口人数。
+```{r,message=FALSE,warning=FALSE}
+require(gcookbook)
+require(tidyverse)
+
+data("uspopage")
+uspopage %>% head(3)
+
+ggplot(uspopage, aes(x = Year, y = Thousands, fill = AgeGroup)) +
+      geom_area(colour ='black')
+```
+上面的代码绘制出了不同年龄段，每一年的人口数量。从图中可以清楚地了解到不同年份的人口的多少，并且可以了解到不同年份，不同年龄段的人数的占比。然后，还可以进一步的优化这个图形。通过调整线条的粗细，调整图形的透明度以及调整图形的配色。绘图结果如图。。所示
+```{r}
+ ggplot(uspopage, aes(x = Year, y = Thousands, fill = AgeGroup)) +
+      geom_area(colour = "black", size = .1, alpha = .4) +
+      scale_fill_brewer(palette = "Pastel1")
+```
+
+上面的代码中对图形的几个细节进行了调整，首先，设置线条的颜色为黑色，然后调整线条的粗细，设置size=0.1。从图中可以看到图形的线条变得更加细了，然后调整图形的透明度，设置了alpha 为0.4，表示有60%的透明度。最后设置的配色，通过scale_fill_brewer函数进行配色的调整。设置参数palette = "Pastel1"，表示指定Pastel1这种配色，这种配色方式的图形颜色更加的浅。还有很多其他的配色方式，包括：BrBG, PiYG, PRGn, PuOr, RdBu, RdGy, RdYlBu, RdYlGn, Spectral，Accent, Dark2, Paired, Pastel1, Pastel2, Set1, Set2, Set3等等。在绘制图形的时候，可以多尝试使用几种配色，选择最合适的配色即可。
+
+由于每个填充区域都是用多边形绘制的，所以轮廓线包括左右两边。这可能会让人分心或产生误导。要去掉它(图4-22)，首先绘制没有轮廓的堆叠区域(通过保留颜色为默认NA值)，然后在顶部添加一个geom_line():
+```{r}
+ ggplot(uspopage, aes(x = Year, y = Thousands, fill = AgeGroup,
+                         order = dplyr::desc(AgeGroup))) +
+geom_area(colour = NA, alpha = .4) + scale_fill_brewer(palette = "Pastel1") + geom_line(position = "stack", size = .2)
+```
+
+上面的代码去除了左右两面的线段，这样可以使得轮廓图更加的美观。
+
+## 比例堆叠面积图
+
+有的时候在分析中对于数据的绝对值并不关心，更关心过的是不同情况下占比的多少，也就是比例的变化。普通的堆叠面积图并不能很明显的看出哪个部分占比更多，就以上文的图形距离，在1900年，哪一个年龄段的人群的占比最多，从图形似乎很难给出答案。这个时候就需要绘制比例堆叠面积图。绘制比例堆叠面积图的方式很简单，使用geom_area(position = "fill")即可。
+```{r}
+ ggplot(uspopage, aes(x = Year, y = Thousands, fill = AgeGroup)) +
+      geom_area(position = "fill",colour = "black", size = .1, alpha = .4) +
+      scale_fill_brewer(palette = "Pastel1")
+```
+
+上面的代码中则绘制出了比例堆叠的面积图，图中并没有显示数据的绝对数值，而是通过比例的形式体现出来，这个可以很容易的了解到不同类别占比的对少。从图中可以发现，在1900年5-14年龄段的人群占比是最多的。
+
+需要注意的是，当position="fill"时，y值将从0缩放到1。要将标签打印为百分比，请使用scale_y_continuous(标签= scales::percent)，
+```{r}
+ ggplot(uspopage, aes(x = Year, y = Thousands, fill = AgeGroup)) +
+      geom_area(position = "fill",colour = "black", size = .1, alpha = .4) +
+      scale_fill_brewer(palette = "Pastel1")+
+      scale_y_continuous(labels = scales::percent)
+```
+
+上面的代码将y轴变成了百分比的形式。
+
+
+# 密度图 
+
+
+密度图表示数值变量的分布。它使用核密度估计来显示变量的概率密度函数。
+
+
+密度图用于研究一个或几个变量的分布。逐个检查变量的分布是数据分析过程中了解数据的一个重要的步骤。密度图提供了大量的信息。存在几种分布形状，下面是6种最常见的形状的说明：
+![](/Users/milin/Documents/density.jpg)
+
+
+第一个密度图显示的是双峰分布，如果数据的密度图显示出双峰分布，通常表明数据中有两个不同的组。也意味着可以将数据划分成为两个部分。例如，考试分数往往是正态分布的单峰。然而，成绩有时会分为双峰分布，关于高分的一个峰和关于低分的一个峰。这就意味着，班级中有两组不同的学生。一组学生成绩更高，一组学生成绩较低。出现这种现象的原因可能有很多，可能是一个小组没有为考试做准备。另一组可能已经过度准备了。
+
+两个峰值也可能表明数据是正弦曲线。如果怀疑数据可能遵循类似波浪的模式，可以创建散点图以仔细检查正弦模式。你也可以做一个滞后处理;如果滞后处理数据之后，绘制图形呈现出椭圆形，则可以确认数据是正弦曲线。
+
+第二个密度图显示的是有很多峰，一般称为梳子密度图（comb Density plot），梳子分布通常表示已应用于变量或其他错误的舍入。作为第二步，直方图允许比较几个变量的分布。不要超过3或4，过多的峰这会使数字混乱和不可读。
+
+
+第三个密度图显示出一个峰，但是边缘上似乎还有没有显示出来的峰值。一般称这种图为边缘密度图（edge density plot），如果出现这种图意味着数据收集得并不完全，或者在数据处理的过程中丢失了数据。
+
+第四个密度图最接近正态分布。正态分布的密度曲线是最常出现的。在概率论中，正态（或高斯或高斯或拉普拉斯 - 高斯）分布是非常常见的连续概率分布。正态分布在统计学中很重要，并且通常在自然科学和社会科学中用于表示其分布未知的实值随机变量。
+
+![](/Users/milin/Downloads/normal.png)
+
+
+第五幅图显示的是偏态密度图（skewed density plot），偏态密度图图形的结构与正态分布的密度图非常的相似，但是偏态密度图不具备对称性。偏态分为左偏和右偏，一个左偏分布有很长的左尾。左倾分布也称为负偏态分布。那是因为数字线上的负方向有一条长尾。平均值也在峰值的左侧。
+一个右偏分布有很长的右尾。右倾分布也称为正偏差分布。那是因为数字线上的正方向有一条长尾。该平均也峰值的右侧。
+
+![](/Users/milin/Downloads/US.png)
+
+正太态分布是最简单的分布，以便了解统计数据。现实生活中的分布通常是倾斜的。太多的偏斜，许多统计技术都不起作用。对于偏态分布，最常用的处理方法就是对数据取对数。
+
+最后一幅图显示的是平均分布密度图（uniform density plot）。对于正态分布而言，数据更加集中于中间部分，较少的分散在两边。然而对于评分分布密度，情况则不一样，数据是比较平均的分布的。
+
+以上是6中比较常见的密度图。通过密度图，可以从整体上了解数据的异常。另外，对于二分类问题，密度图还可以做变量的筛选。举一个最简单的例子，想要通过年龄来分辨此人是否带有某种疾病，在数据分析的过程中，可以分别绘制患病者和为患病者的年龄的分布。如果年龄的分布是一样的，说明年龄对于是否患病没有预测能力。如果年龄的分布区别很大，极端情况是在某一个范围内，比如小于40岁全部患病，大于40岁全部不患病。这个时候说明年龄对于判断是否患病很有用，或者说年龄能够判断是否患病。
+
+下面的图形显示出了汽车不同的气缸（cylinders）的行驶里程数。从图中可以清楚的看到，不同的气缸行驶的里程数的区别还是很大的：
+```{r}
+library(ggplot2)
+theme_set(theme_classic())
+
+# Plot
+g <- ggplot(mpg, aes(cty))
+g + geom_density(aes(fill=factor(cyl)), alpha=0.8) + 
+    labs(title="Density plot", 
+         subtitle="City Mileage Grouped by Number of cylinders",
+         caption="Source: mpg",
+         x="City Mileage",
+         fill="# Cylinders")
+```
+
+需要注意的是，比较不同的直方图处理上面这种方式之外，还可以绘制镜像直方图（The mirror density plot）：
+```{r}
+# Libraries
+library(ggplot2)
+library(hrbrthemes)
+
+# Dummy data
+data <- data.frame(
+  var1 = rnorm(1000),
+  var2 = rnorm(1000, mean=2)
+)
+
+# Chart
+p <- ggplot(data, aes(x=x) ) +
+  # Top
+  geom_density( aes(x = var1, y = ..density..), fill="#69b3a2" ) +
+  geom_label( aes(x=4.5, y=0.25, label="variable1"), color="#69b3a2") +
+  # Bottom
+  geom_density( aes(x = var2, y = -..density..), fill= "#404080") +
+  geom_label( aes(x=4.5, y=-0.25, label="variable2"), color="#404080") +
+  theme_ipsum() +
+  xlab("value of x")
+p
+```
+
+
+需要注意的是，不要再同一张图中比较多余4组的密度图。如果密度图太多图形变得混乱，难以理解。而是使用小提琴情节，箱线图，山脊线图。
+```{r}
+# library
+library(ggridges)
+library(ggplot2)
+library(viridis)
+library(hrbrthemes)
+
+# Plot
+ggplot(lincoln_weather, aes(x = `Mean Temperature [F]`, y = `Month`, fill = ..x..)) +
+  geom_density_ridges_gradient(scale = 3, rel_min_height = 0.01) +
+  scale_fill_viridis(name = "Temp. [F]", option = "C") +
+  labs(title = 'Temperatures in Lincoln NE in 2016') +
+  theme_ipsum() +
+    theme(
+      legend.position="none",
+      panel.spacing = unit(0.1, "lines"),
+      strip.text.x = element_text(size = 8)
+    )
+```
+
+
+接下来从简单的开始，一步步介绍密度图的绘制。
+
+## 基础的密度图
+
+核密度估计对于可视化连续变量的分布是有用的。函数geom_density()用于创建一个密度图。还可以使用函数geom_vline()为平均值添加一行。
+
+使用ggplot2绘制密度图的核心函数是， geom_density()，使用这个函数用于指定绘制密度图。用于自定义的相关的参数包括。alpha, color, fill, linetype, size.开始绘制一个最简单的密度图,所用的数据集是R中的cars数据集：
+
+```{r}
+library(ggplot2)
+wdata = data.frame(
+sex = factor(rep(c("F", "M"), each=200)),
+weight = c(rnorm(200, 55), rnorm(200, 58))) 
+ 
+
+a <- ggplot(data = wdata,aes(x = weight))
+
+a + geom_density()
+# Change line color and fill color, add mean line
+a + geom_density(color = "black", fill = "gray")+ geom_vline(aes(xintercept=mean(weight)),
+            color="#FC4E07", linetype="dashed", size=1)
+```
+
+上面的代码中绘制出了最基本的密度图。在绘制密度图的时候，首先需要的是使用ggplot2函数指定好数据集，然后指定好对应的x轴。然后调用geom_density函数则可以绘制出基本的密度图。
+
+在第二幅图中，设定了一些图形的参数。使用color参数指定了图形中线条的颜色，使用fill参数制定了密度图中密度区域的颜色。geom_vline函数用于绘制垂直线。处置线的位置为weight数据平均值的位置。垂直线的颜色指定为红色，线段的种类设置为虚线。线段的大小，seze设置为1。以上是关于密度图基础的绘制方法。
+
+
+## 绘制多组密度图
+
+如果需要多组密度图，可以通过将不同的密度图设置不同的颜色用于区别不同的密度图。可以让不同的密度图的填充颜色不一样。也可以让不同的密度图的线条的颜色不一样等等。
+首先绘制不同颜色线条的密度图。实现的方式是使用color参数用于指定一个分类特征。这里使用的数据集是iris数据集：
+```{r}
+a <- ggplot(data = iris,aes(Sepal.Length))
+ a + geom_density(aes(color = Species))
+
+```
+
+上面的代码中绘制出不同Species（物种）的Sepal.Length（花萼长度）。不同的Species密度图的线条被设置成为了不同的颜色，这样可以比较容易的区分不同的密度图。从结果中可以看出，不同物种的花萼长度的分布是有明显的区别的。
+
+然后设置不同的填充颜色，来区分不同的密度图，所使用到的参数是fill参数：
+```{r}
+a + geom_density(aes(fill = Species))
+```
+
+上面的代码使用了不同的填充颜色来区分不同密度图的。需要注意的是可以同时指定填充颜色和线段的颜色。：
+
+```{r}
+a + geom_density(aes(fill = Species,color = Species))
+```
+
+上面的代码同时设定了填充颜色和密度图的线条颜色。这里的设定是将填充颜色和线段的颜色指定为同一种。理论上是将填充颜色和线段颜色指定不一样的，但是没有必要这样做。
+
+需要注意的是，如果想要调整图形的配色，可以使用如下的一些函数：
+
+ 
+- scale_fill_manual()， scale_fill_manual():使用自定义填充的颜色
+- scale_fill_brewer()， scale_fill_brewer():使用RColor-中的调色板调整填充颜色
+- scale_fill_， scale_fill_族函数，来调整填充颜色
+
+下面的代码分别使用不同的方式调整图形的线条颜色：
+```{r}
+a + geom_density(aes(fill = Species)) +scale_fill_manual(values=c("red", "green","black"))+ theme_minimal()
+```
+
+使用scale_fill_manual函数可以自定义的设置图形的颜色，上面的代码中分别将三种密度图的颜色设置成为了红色，绿色和黑色。使用这种方式可以非常方便的调整自己想要的颜色。另外需要提的是，指定颜色的方式可以使对应颜色的英文单词,可以是数字，还可以是16进制的颜色代码表，例如#999999。这几种方式都可以用于指定颜色。
+
+然后使用scale_fill_brewer来调整图形的颜色：
+```{r}
+a + geom_density(aes(fill = Species,color = Species)) +scale_fill_brewer(palette = "BrBG")+ theme_minimal()
+```
+
+配色的调整方式有很多的，通过查看scale_fill_brewer，这个函数的帮助可以了解更多的配色方式。
+
+最后一种调整图形颜色的方式是使用scale_color族函数，使用族函数可以更加快捷的指定美观的配色，这些配色包括excel表的配色（scale_fill_excel()），灰色配色（scale_fill_grey()），经济学人杂志的配色（scale_fill_economist），等等。
+```{r}
+a + geom_density(aes(fill = Species)) +scale_fill_excel() + theme_minimal()
+
+
+a + geom_density(aes(fill = Species)) +scale_fill_economist() + theme_minimal()
+
+```
+
+上面的代码分别使用了经济学人的配色和excel表的配色。通过上面这几种方式可以很方便的调整图形填充的颜色。另外，需要指出的是，如果希望调整图形线条的颜色。同样可以使用相似的方式，例如使用scale_color_manual()函数可以用于指定不同线条的颜色：
+
+```{r}
+a + geom_density(aes(color = Species)) +scale_color_manual(values=c("red", "green","black"))+ theme_minimal()
+```
+
+上面的代码使用了scale_color_manual()函数将三组密度图的颜色分别指定为红色，绿色和黑色。最后稍微提一点，这里使用了一个主题函数theme_minimal，主题函数定了关于图形的很多细节，选择适当的制图函数可以使用最少的代码让图形更加的美观。关于主题函数更多的内容会在后文进一步介绍。
+
+
+
+## 多组密度图的绘制
+
+当我们要绘制多组密度图的时候，特征是密度图的个数超过了4组的时候，直接绘制密度图则非常的不合适了。调整的方式是将密度图换成箱线图，小提琴图或者山脊图。箱线图，小提琴图会在其他的章节进行介绍，这里会介绍山脊图的绘图，山脊图常常被用于可视化多组的密度图。
+
+绘制山脊图所使用的包是ggridges，这个包是ggplot2的一个扩展包，其同样遵循ggplot2的图形语法。绘制山脊图的关键函数是geom_density_ridges。接下来绘制一个基础的山脊图：
+```{r}
+library(ggridges)
+library(ggplot2)
+ 
+# Diamonds dataset is provided by R natively
+#head(diamonds)
+ 
+# basic example
+ggplot(diamonds, aes(x = price, y = color,fill = color)) +
+  geom_density_ridges() +
+  theme_ridges() + 
+  theme(legend.position = "none")
+```
+
+上面的代码中使用了ggplot2中的dianmonds数据集，使用山脊图绘制出不同且各颜色类型的钻石的价格分布。
+
+下面的代码不同部门工资的分布，当必须在相同的水平刻度上绘制多个数据段时，可以使用脊线图。它呈现轻微重叠。Ridgeline图对于可视化分类变量随时间或空间的分布非常有用。密度图的重叠可以通过调整比例值来控制。比例定义下曲线的峰值接触上面曲线的程度。
+```{r}
+library("ggridges")
+library("tidyverse")
+OrchardSprays_data <- OrchardSprays
+ggplot(OrchardSprays_data, aes(x=decrease,y=treatment,fill=treatment))+
+  geom_density_ridges_gradient(scale=3) + theme_ridges()+
+  scale_y_discrete(expand = c(0.3, 0)) +
+  scale_x_continuous(expand = c(0.01, 0))+
+  labs(x="Response in repelling honeybees",y="Treatment")+
+  ggtitle("Density estimation of response by honeybees to a treatment for scale=3")+
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+
+使用密度图可以非常方便的对于多组分布进行可视化，是非常有效的一种可视化手段。
+
+## 密度图的其他调整
+
+
+在绘制多组密度图的时候，图形很多时候可能会重叠。这个时候没有办法了解到重叠部分密度图所包含的信息，图形变得不可读。一个简单的解决办法是调整图形的透明度：
+```{r}
+a + geom_density(aes(fill = Species,color = Species)) +scale_colour_economist() + theme_minimal()
+
+
+a + geom_density(aes(fill = Species,color = Species,alpha=0.4)) +scale_colour_economist() + theme_minimal()
+```
+
+上面的代码中调整了alpha参数，设定为alpha=0.4，通过透明度的调整，可以观察到不同密度图的全貌。从而使得更好的了解数据。
+
+之前提到过，当存在多组密度图的时候，将多组密度图放在同一张图中并不是一个很好的选择。可以选择山脊图进行多组密度图的可视化。但是，还有另外一种方式进行处理，可视化多组密度图。这种方法叫做分面，将一张大图分别划分成为不同的小图。利用的函数是facet_wrap。
+```{r}
+ggplot(data=diamonds, aes(x=price, group=color, fill=color)) +
+    geom_density(adjust=1.5) +
+    theme_ipsum() +
+    facet_wrap(~color) +
+    theme(
+      legend.position="none",
+      panel.spacing = unit(0.1, "lines"),
+      axis.ticks.x=element_blank()
+    )
+```
+
+上面的代码使用了facet_wrap函数将图形划分成为了多个子图。这种方式同样是对多个图形进行可视化的方法。
+还有一种解决方法，是堆叠组。这样可以查看给定值最常用的组，但是很难理解不在图表底部的组的分布。
+```{r}
+p <- ggplot(data=diamonds, aes(x=price, group=cut, fill=cut)) +
+    geom_density(adjust=1.5, position="fill") +
+    theme_ipsum()
+```
+
+
+
+另外，密度图常常还会在绘制散点图的时候使用，将边缘密度添加到散点图的x轴和y轴。对散点图添加边缘密度所使用的包是ggExtra。添加边缘密度的核心函数是ggMarginal（）：
+
+```{r}
+# library
+library(ggplot2)
+library(ggExtra)
+ 
+# The mtcars dataset is proposed in R
+head(mtcars)
+ 
+# classic plot :
+p <- ggplot(diamonds, aes(x=x, y=price, color=color, size=color)) +
+      geom_point() +
+      theme(legend.position="none")
+ 
+p1 <- ggMarginal(p, type="density")
+p1
+```
+
+
+上面的代码对散点图的x轴和y轴分别添加了密度图，分别用于显示x轴与y轴数据的分布密度。通过编辑密度图的方式可以让图形表达出更多的信息。在散点图中添加边际密度图可以让图形表达出变量之间的关系，还可以了解到不同数据其本身的分布。
+
+
+# 直方图
+
+直方图与密度图非常的类似，这两种图形都表达了相似的信息。直方图是数字变量分布的精确图形表示。它仅作为输入数字变量。将变量切割成几个箱，每个箱的观察次数由柱的高度表示。直方图是通过描述在某些值范围内发生的观察频率来粗略评估给定变量的概率分布。
+
+
+在绘制直返图的时候，有几点需要注意的：
+
+- 尝试几个bin大小，可能会导致非常不同的结论。
+- 不要使用奇怪的颜色。它没有提供更多的见解。
+- 不要把它与条形图混淆。条形图为每个分类变量组提供一个值。在这里，我们只有一个数字变量，我们查看它的分布。
+- 不要在同一直方图中比较超过3组。图形变得混乱，难以理解。而是使用小提琴情节，箱线图，山脊线图或使用小倍数。
+- 使用不相等的箱宽
+
+
+连续变量的直方图可以使用geom_bar()或完成geom_histogram()。使用时geom_histogram()，您可以使用该bins选项控制条的数量。否则，您可以使用设置每个bin所涵盖的范围binwidth。值的值与binwidth构建直方图的连续变量的比例相同。因为，geom_histogram使设施以控制数bins以及binwidth，它是建立在连续变量直方图的优先选择。
+
+```{r}
+library(ggplot2)
+theme_set(theme_classic())
+
+# Histogram on a Continuous (Numeric) Variable
+g <- ggplot(mpg, aes(displ)) + scale_fill_brewer(palette = "BrBG")
+
+g + geom_histogram(aes(fill=class), 
+                   binwidth = .1, 
+                   col="black", 
+                   size=.1) +  # change binwidth
+  labs(title="Histogram with Auto Binning", 
+       subtitle="Engine Displacement across Vehicle Classes")  
+
+g + geom_histogram(aes(fill=class), 
+                   bins=5, 
+                   col="black", 
+                   size=.1) +   # change number of bins
+  labs(title="Histogram with Fixed Bins", 
+       subtitle="Engine Displacement across Vehicle Classes") 
+```
+
+上面的代码中，对于同一组数据绘制出了不同的两幅图。不同的地方在于第一幅图调整的是binwidth，这个参数用于指定箱子的宽度。可以指定为数值，也可以指定从x开始计算宽度的函数。而bins这个参数用于指定箱子的数目。
+
+
+接下来会从基础的内容开始，介绍直方图的绘制。
+
+
+## 基础的直方图
+
+使用ggplot2绘制直方图所使用的的关键函数是geom_histogram（）函数，构建直方图相对简单。输入中只需要一个数字变量。请注意，使用此代码触发警告消息：我们需要处理bin宽度。
+```{r}
+library(ggplot2)
+ 
+# dataset:
+data=data.frame(value=rnorm(100))
+
+# basic histogram
+p <- ggplot(data, aes(x=value)) + 
+  geom_histogram()
+p
+```
+
+上面的代码绘制出了一个最简单的直方图。结果中输出的信息`stat_bin()` using `bins = 30`. Pick better value with `binwidth`.表示可以指定直方图箱子的数量。如果箱子的数量越多，则直方图变得越细。下面进行调整:
+```{r}
+data=data.frame(value=rnorm(100))
+
+# basic histogram
+p <- ggplot(data, aes(x=value)) + 
+  geom_histogram(bins = 100)
+p  
+```
+
+
+上面的代码设置了bins==100，从图中可以看到，直方图的变得非常的细。另外调整bindwidth参数同样可以达到这个效果。以上是关于直方图最简单的绘制方式。接下来介绍分组直方图的绘制。
+
+
+## 分组直方图的绘制
+
+直方图显示的数值变量的分布。一个常见的任务是通过几个组比较这种分布。如果您拥有的组或变量的数量相对较少，则可以使用一点透明度在同一轴上显示所有这些，以确保不隐藏任何数据。
+```{r}
+a <- ggplot(data = iris,aes(Sepal.Length))
+
+
+a + geom_histogram(aes(fill = Species,alpha = 0.8, position = 'identity')) +scale_fill_manual(values=c("red", "green","black"))+ theme_minimal()
+```
+
+其实创建多组直方图的方式与创建多组密度图的方式非常的相似。上面的代码则绘制出了三组数据的直方图。
+
+如果直方图的数据有非常多的组，同样可以使用上文提到过的分面的方式来进行展示：
+```{r}
+ggplot(data=diamonds, aes(x=price, group=color, fill=color)) +
+    geom_histogram(position = "identity") +
+    theme_ipsum() +
+    facet_wrap(~color) +
+    theme(
+      legend.position="none",
+      panel.spacing = unit(0.1, "lines"),
+      axis.ticks.x=element_blank()
+    )
+```
+
+上面的代码绘制出了diamonds数据集中不同颜色的钻石的价格的分布。通过分面的方式同样可以非常直观的比较多组分布。如果需要比较的分布只有两组，还有另外一种方式进行绘制。也就是绘制镜像直方图：
+```{r}
+data <- data.frame(
+  var1 = rnorm(1000),
+  var2 = rnorm(1000, mean=2)
+)
+p <- ggplot(data, aes(x=x) ) +
+  geom_histogram( aes(x = var1, y = ..density..), fill="#69b3a2" ) +
+  geom_label( aes(x=4.5, y=0.25, label="variable1"), color="#69b3a2") +
+  geom_histogram( aes(x = var2, y = -..density..), fill= "#404080") +
+  geom_label( aes(x=4.5, y=-0.25, label="variable2"), color="#404080") +
+  theme_ipsum() +
+  xlab("value of x")
+p
+```
+
+镜像直方图会分别在坐标轴y的正方向和坐标轴的负方向分别绘制两幅直方图，这种方式能够有效地避免不同的直方图产生重合的问题，可以更好的比较不同的直方图之间的区别。
+
+## 合并直方图与密度图
+
+有的时候，希望能同时的观察数据的直方图和密度图。此时可以将直方图和密度图绘制到同一张图型上面。合并直方图和密度图需要同时使用到绘制直方图的函数和绘制密度图的函数，需要注意的是如果想要合并，需要制定一个参数，也就是在geom_histogram函数中指定“y = ..density..”。
+```{r}
+p <- ggplot(iris, aes(x=Sepal.Width)) + geom_histogram(aes(y = ..density.., 
+            fill = ..count..), binwidth=0.2) + geom_density()  
+p
+```
+
+上面的代码使用了iris函数，同时绘制了关于Sepal.Width的密度图和直返图。
+
+```{r}
+library(Sleuth3) # data
+library(ggplot2) # plotting
+
+# load data
+finches <- Sleuth3::case0201
+# finch histograms by year with overlayed density curves
+ggplot(finches, aes(x = Depth, y = ..density..)) + 
+  # plotting
+  geom_histogram(bins = 20, colour = "#80593D", fill = "#9FC29F", boundary = 0) +
+  geom_density(color = "#3D6480") + 
+  facet_wrap(~Year) +
+  # formatting
+  ggtitle("Severe Drought Led to Finches with Bigger Chompers",
+          subtitle = "Beak Depth Density of Galapagos Finches by Year") +
+  labs(x = "Beak Depth (mm)", caption = "Source: Sleuth3::case0201") +
+  theme(plot.title = element_text(face = "bold")) +
+  theme(plot.subtitle = element_text(face = "bold", color = "grey35")) +
+  theme(plot.caption = element_text(color = "grey68"))
+```
+
+上面的代码使用到了Sleuth3包中的case0201数据集，这个数据及是上世纪80年代，生物学家彼得·格兰特(Peter Grant)和罗斯玛丽·格兰特(Rosemary Grant)在达芙妮·梅杰(Daphne Major)的加拉帕戈斯群岛(Galapagosisland)捕捉并测量了超过20代雀类的所有鸟类。对于这份数据集想要研究的是，1977年，一场严重的干旱导致植被枯萎，仅存的食物来源是一颗大而坚硬的种子，雀类通常忽略了这一点。那些喙更大、喙更结实、能打开这些坚硬种子的鸟，是否更有可能在那一年存活下来?它们是否倾向于将这种特征传给后代?这些数据是89只雀在干旱前一年(1976年)和干旱后一年(1978年)捕获的喙的深度(喙基部的高度)。上面的代码绘制出了不同年份的喙基部的高度的直方图和密度图。
+
+
+# 频率图（Frequency Polygon ）
+
+频率多边形是频率分布图的另一种类型。在频率多边形中，观测值的个数由一个区间中点处的一个点来标记。然后一条直线连接每一组点。
+
+频率多边形非常接近直方图图，也可以用来可视化连续变量的分布。频率多边形可以消除直方图中可能出现的突然变化，并且有助于证明所研究变量的连续性。像直方图一样，频率多边形用于显示连续变量的整个频率分布（计数）。它们必须在两端都关闭，因为曲线下面积代表所有数据。
+
+直方图与频率多边形的区别在于:
+
+-直方图使用条形图
+-频率多边形使用直线。
+
+因此频率多边形图形表达的信息与直方图与密度图比较类似，这种图形使用得并不多。使用ggplot2绘制频率多边形图的核心函数是geom_freqpoly()，构建评率多边形图形的方式也和构建直方图的方式非常的类似：
+
+```{r}
+ggplot(diamonds, aes(price, fill = color)) +
+  geom_histogram(binwidth = 500)
+
+ggplot(diamonds, aes(price, stat(density), colour = color)) +
+  geom_freqpoly(binwidth = 500)
+```
+
+
+上面的代码分别绘制了关于diamonds数据集中不同颜色的钻石的价格的直方图和频率多边形的图形。
+
+
+# 总结
+
+本章节主要介绍了单变量图形的介绍。对于单个变量，常常关心的是数据的分布，了解数据分布的图形有很多，比较长使用的图形是密度图和直方图。本章节还介绍了常见的几种数据分布

@@ -1,0 +1,1027 @@
+---
+title: "R语言绘图包"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+在R中绘图最常用的是ggplot2包，因此在ggplot2包的基础之上，有很多的扩展包，这些包扩展了ggplot2的功能。有时使用这些扩展包能够更加高效，简洁的绘制出高质量的统计图形。在本章节，会介绍几个常用的扩展包，当然，前面的章节介绍过的扩展包，在本章节就不再介绍，例如gganimate。另外，还介绍几个比较常用的绘图的包。
+
+
+
+
+<!-- # gganimate -->
+<!--  gganimate扩展了所实现的图形语法,ggplot2包括动画描述。它通过提供一系列新的语法类来实现这一点,这些类可以添加到绘图对象中,以便自定义它应该如何随时间变化。 -->
+
+<!-- transition_*() 定义数据应如何分散以及它与时间的关系。 -->
+<!-- view_*() 定义位置比例应如何沿动画变化。 -->
+<!-- shadow_*() 定义如何在给定时间点呈现来自其他时间点的数据。 -->
+<!-- enter_*()/ exit_*()定义新数据应如何显示以及在动画过程中旧数据应如何消失。 -->
+<!-- ease_aes() 定义了在过渡期间应该如何缓和不同的美学。 -->
+
+
+<!-- ## 一个例子 -->
+<!-- 以上所有可能看起来有点抽象。让我们尝试一个人为的例子： -->
+
+<!-- ```{r} -->
+
+<!-- #  -->
+<!-- library(ggplot2) -->
+<!-- library(gganimate) -->
+
+<!-- ggplot(mtcars, aes(factor(cyl), mpg)) +  -->
+<!--   geom_boxplot() +  -->
+<!--   # Here comes the gganimate code -->
+<!--   transition_states( -->
+<!--     gear, -->
+<!--     transition_length = 2, -->
+<!--     state_length = 1 -->
+<!--   ) + -->
+<!--   enter_fade() +  -->
+<!--   exit_shrink() + -->
+<!--   ease_aes('sine-in-out') -->
+<!-- ``` -->
+
+<!-- 在这里,我们将一个简单的燃料消耗箱图作为汽缸的函数,并让它在汽车中可用的齿轮数之间转换。由于这是一个离散的分割(gear最好描述为有序因子),我们使用transition_states并提供用于转换和状态视图的相对长度。由于并非所有数据组合都存在,因此缺少一个框。我们定义当一个框出现时它应该淡入视图,而当它消失时应该缩小。最后,我们决定使用正弦缓和来实现我们所有的美学(这里只是y在改变) -->
+
+<!-- gganimate可在CRAN上使用,可以安装install.packages('gganimate')。如果您希望安装开发版本,可以使用devtools直接从github安装： -->
+<!-- ``` -->
+<!-- # install.packages('devtools')  -->
+<!-- devtools::install_github('thomasp85/gganimate') -->
+<!-- ``` -->
+
+
+<!-- ## 又一个例子 -->
+<!-- gganimate在README中无法涵盖所有可能的内容,但动画很有趣,所以至少还有一个： -->
+
+<!-- ```{r} -->
+<!-- library(gapminder) -->
+
+<!-- ggplot(gapminder, aes(gdpPercap, lifeExp, size = pop, colour = country)) + -->
+<!--   geom_point(alpha = 0.7, show.legend = FALSE) + -->
+<!--   scale_colour_manual(values = country_colors) + -->
+<!--   scale_size(range = c(2, 12)) + -->
+<!--   scale_x_log10() + -->
+<!--   facet_wrap(~continent) + -->
+<!--   # Here comes the gganimate specific bits -->
+<!--   labs(title = 'Year: {frame_time}', x = 'GDP per capita', y = 'life expectancy') + -->
+<!--   transition_time(year) + -->
+<!--   ease_aes('linear') -->
+<!-- ``` -->
+
+<!-- 在这个例子中,我们看到它的使用transition_time()可以用于连续变量,例如year。通过这种转变,没有必要提供转换和状态长度,因为“转换变量”直接提供了这种转换(例如,与2000年到2005年相比,它应该花费两倍于1980年和1990年之间的转换)。我们还看到在标题中使用字符串文字插值。gganimate允许您指定用于评估内部标题的变量,并且不同的转换提供要使用的不同类型的信息。 -->
+
+
+<!-- ## 我的动画在哪里？ -->
+<!-- gganimate模仿ggplot2渲染其输出的方式,因为渲染是在gganim打印对象时自动完成的。在引擎盖下,animate()调用函数,该函数渲染帧并将帧传递给渲染器函数,这些函数负责将它们组合到最终动画中。默认渲染器```gifski_renderer()```返回一个gif_image对象,该对象是围绕gif文件路径的简单包装器。如果animate()已经使用函数(类似于)可以隐式调用print该gif_image对象的一部分。为了将动画保存到特定位置,您可以使用默认采用上次渲染动画并将其写入文件的函数。last_animation()ggplot2::last_plot()anim_save()ggplot2::ggsave -->
+
+
+
+
+<!-- # esquisse -->
+<!-- 让您快速浏览数据以提取其所包含的信息。您只能创建简单的图表,您将无法使用自定义比例和ggplot2的所有功能。这只是开始！ -->
+
+<!-- ``` -->
+<!-- remotes :: install_github("dreamRs/esquisse") -->
+
+<!-- install.packages(esquisse) -->
+<!-- ``` -->
+
+<!-- 然后通过RStudio菜单启动插件,如果您data.frame的环境中没有,ggplot2则使用数据集。 -->
+
+
+<!-- 通过RStudio菜单启动插件或使用： -->
+
+<!-- ``` -->
+<!-- esquisse :: esquisser() -->
+<!-- ``` -->
+
+<!-- # GGRAPH -->
+
+<!-- 关系数据的图形语法 -->
+<!-- ggraph是ggplot2 旨在支持网络,图形和树木等关系数据结构的扩展。虽然它建立在它的基础ggplot2和它的API 之上,但它带有它自己的一组geom,facet等,以及在语法中添加布局的概念。 -->
+
+<!-- ```{r} -->
+
+<!-- # devtools :: install_github(' thomasp85 / ggraph ') -->
+<!-- library(ggraph) -->
+<!-- #> Loading required package: ggplot2 -->
+<!-- library(tidygraph) -->
+<!-- #>  -->
+<!-- #> Attaching package: 'tidygraph' -->
+<!-- #> The following object is masked from 'package:stats': -->
+<!-- #>  -->
+<!-- #>     filter -->
+
+<!-- # Create graph of highschool friendships -->
+<!-- graph <- as_tbl_graph(highschool) %>%  -->
+<!--     mutate(Popularity = centrality_degree(mode = 'in')) -->
+
+<!-- # plot using ggraph -->
+<!-- ggraph(graph, layout = 'kk') +  -->
+<!--     geom_edge_fan(aes(alpha = stat(index)), show.legend = FALSE) +  -->
+<!--     geom_node_point(aes(size = Popularity)) +  -->
+<!--     facet_edges(~year) +  -->
+<!--     theme_graph(foreground = 'steelblue', fg_text_colour = 'white') -->
+<!-- ``` -->
+
+
+<!-- 核心概念 -->
+<!-- ggraph 建立在三个易于理解的核心概念之上： -->
+
+<!-- 布局 定义了节点在绘图上的放置方式,也就是说,它是将关系结构转换为图形中每个节点的x和y值。ggraph可以访问所有可用的布局功能,igraph并提供自己的大量选择,如蜂巢图,树图和圆形包装。 -->
+<!-- 节点 是关系结构中的连接实体。这些可以使用geom_node_*()geom系列绘制。某些节点geoms对于某些布局更有意义,例如geom_node_tile()对于树图和冰柱图,而其他节点geoms更通用,例如geom_node_point()。 -->
+<!-- 边缘 是关系结构中的实体之间的连接。这些可以使用geom_edge_*()包含针对不同场景的许多不同边缘类型的geom族来可视化。有时边缘是由布局暗示的(例如使用树图)并且不需要绘制,但通常需要某种线条。 -->
+
+
+
+
+<!-- <!-- # ggrepel --> -->
+
+
+<!-- <!-- 概观 --> -->
+<!-- <!-- ggrepel为ggplot2提供geoms以排斥重叠的文本标签： --> -->
+
+<!-- <!-- geom_text_repel() --> -->
+<!-- <!-- geom_label_repel() --> -->
+<!-- <!-- 文本标签相互远离数据点,远离绘图区域的边缘 --> -->
+<!-- <!-- ```{r} --> -->
+<!-- <!-- library(ggrepel) --> -->
+
+<!-- <!-- ggplot(mtcars,aes(wt,mpg,label  = rownames(mtcars)))+  --> -->
+<!-- <!--   geom_text_repel()+  --> -->
+<!-- <!--   geom_point(color  =  ' red ')+  --> -->
+<!-- <!--   theme_classic(base_size  =  16) --> -->
+<!-- <!-- ``` --> -->
+
+
+<!-- <!-- ``` --> -->
+<!-- <!-- # The easiest way to get ggrepel is to install it from CRAN: --> -->
+<!-- <!-- install.packages("ggrepel") --> -->
+
+<!-- <!-- # Or get the the development version from GitHub: --> -->
+<!-- <!-- # install.packages("devtools") --> -->
+<!-- <!-- devtools::install_github("slowkow/ggrepel") --> -->
+
+<!-- <!-- # Or use the install-github.me service --> -->
+<!-- <!-- source("https://install-github.me/slowkow/ggrepel") --> -->
+
+<!-- <!-- ``` --> -->
+
+
+<!-- <!-- ```{r} --> -->
+<!-- <!-- library(ggrepel) --> -->
+<!-- <!-- set.seed(42) --> -->
+
+<!-- <!-- dat <- subset(mtcars, wt > 2.75 & wt < 3.45) --> -->
+<!-- <!-- dat$car <- rownames(dat) --> -->
+
+<!-- <!-- p <- ggplot(dat, aes(wt, mpg, label = car)) + --> -->
+<!-- <!--   geom_point(color = "red") --> -->
+
+<!-- <!-- p1 <- p + geom_text() + labs(title = "geom_text()") --> -->
+
+<!-- <!-- p2 <- p + geom_text_repel() + labs(title = "geom_text_repel()") --> -->
+
+<!-- <!-- gridExtra::grid.arrange(p1, p2, ncol = 2) --> -->
+<!-- <!-- ``` --> -->
+
+<!-- <!-- 选项 --> -->
+<!-- <!-- 可供选择geom_text()和GEOM_LABEL()也可用于geom_text_repel()与geom_label_repel(),包括size,angle,family,fontface,等。 --> -->
+
+<!-- <!-- ggrepel为geom_text_repel和提供了额外的选项geom_label_repel： --> -->
+
+
+<!-- <!-- 选项	默认	描述 --> -->
+<!-- <!-- force	1	重叠文本标签之间的排斥力 --> -->
+<!-- <!-- direction	"both"	移动文本标签“默认”(“默认”),“x”或“y”方向 --> -->
+<!-- <!-- max.iter	2000	尝试解决重叠的最大迭代次数 --> -->
+<!-- <!-- nudge_x	0	调整文本标签的起始x位置 --> -->
+<!-- <!-- nudge_y	0	调整文本标签的起始y位置 --> -->
+<!-- <!-- box.padding	0.25 lines	在文本标签周围填充 --> -->
+<!-- <!-- point.padding	0 lines	在标记数据点周围填充 --> -->
+<!-- <!-- segment.color	"black"	线段颜色 --> -->
+<!-- <!-- segment.size	0.5 mm	线段厚度 --> -->
+<!-- <!-- segment.alpha	1.0	线段透明度 --> -->
+<!-- <!-- arrow	NULL	将线段渲染为箭头 grid::arrow() --> -->
+
+
+
+<!-- <!-- 例子 --> -->
+<!-- <!-- 隐藏一些标签 --> -->
+<!-- <!-- 将标签设置为空字符串""以隐藏它们。所有数据点都排斥非空标签。 --> -->
+<!-- <!-- ```{r} --> -->
+<!-- <!-- set.seed(42) --> -->
+
+<!-- <!-- dat2 <- subset(mtcars, wt > 3 & wt < 4) --> -->
+<!-- <!-- # Hide all of the text labels. --> -->
+<!-- <!-- dat2$car <- "" --> -->
+<!-- <!-- # Let's just label these items. --> -->
+<!-- <!-- ix_label <- c(2,3,16) --> -->
+<!-- <!-- dat2$car[ix_label] <- rownames(dat2)[ix_label] --> -->
+
+<!-- <!-- ggplot(dat2, aes(wt, mpg, label = car)) + --> -->
+<!-- <!--   geom_point(color = ifelse(dat2$car == "", "grey50", "red")) + --> -->
+<!-- <!--   geom_text_repel() --> -->
+
+<!-- <!-- ``` --> -->
+<!-- <!-- 不要从数据点排斥标签 --> -->
+<!-- <!-- 设置point.padding = NA为防止标签排斥远离数据点。 --> -->
+
+<!-- <!-- 现在标签彼此远离并远离图的边缘。 --> -->
+
+<!-- <!-- ```{r} --> -->
+<!-- <!-- set.seed(42) --> -->
+<!-- <!-- ggplot(dat, aes(wt, mpg, label = car)) + --> -->
+<!-- <!--   geom_point(color = "red") + --> -->
+<!-- <!--   geom_text_repel(point.padding = NA) --> -->
+<!-- <!-- ``` --> -->
+
+
+<!-- <!-- 将标签限制在特定区域 --> -->
+<!-- <!-- 使用选项xlim并将ylim标签约束到特定区域。限制在数据坐标中指定。使用NA当不存在下或上在特定方向上的约束。 --> -->
+
+<!-- <!-- 这里我们还用于grid::arrow()将段渲染为箭头。 --> -->
+
+
+<!-- <!-- 对齐顶部或底部边缘的标签 --> -->
+<!-- <!-- 使用hjust或vjust整齐地证明文本： --> -->
+
+<!-- <!-- hjust = 0 用于左对齐 --> -->
+<!-- <!-- hjust = 0.5 为中心 --> -->
+<!-- <!-- hjust = 1 用于右对齐 --> -->
+<!-- <!-- 有时标签不完美对齐。尝试使用direction = "x"限制标签移动到x轴(左和右)或direction = "y"限制移动到y轴(向上和向下)。默认是direction = "both"。 --> -->
+
+<!-- <!-- 还可以尝试使用xlim()和ylim()来增加绘图区域的大小,以便所有标签都能够舒适地贴合。 --> -->
+
+<!-- <!-- ```{r} --> -->
+<!-- <!-- set.seed(42) --> -->
+
+<!-- <!-- ggplot(mtcars, aes(x = wt, y = 1, label = rownames(mtcars))) + --> -->
+<!-- <!--   geom_point(color = "red") + --> -->
+<!-- <!--   geom_text_repel( --> -->
+<!-- <!--     nudge_y      = 0.05, --> -->
+<!-- <!--     direction    = "x", --> -->
+<!-- <!--     angle        = 90, --> -->
+<!-- <!--     vjust        = 0, --> -->
+<!-- <!--     segment.size = 0.2 --> -->
+<!-- <!--   ) + --> -->
+<!-- <!--   xlim(1, 6) + --> -->
+<!-- <!--   ylim(1, 0.8) + --> -->
+<!-- <!--   theme( --> -->
+<!-- <!--     axis.line.y  = element_blank(), --> -->
+<!-- <!--     axis.ticks.y = element_blank(), --> -->
+<!-- <!--     axis.text.y  = element_blank(), --> -->
+<!-- <!--     axis.title.y = element_blank() --> -->
+<!-- <!--   ) --> -->
+<!-- <!-- ``` --> -->
+
+<!-- <!-- 垂直对齐文本nudge_y并允许标签水平移动direction = "x"： --> -->
+<!-- <!-- ```{r} --> -->
+<!-- <!-- set.seed(42) --> -->
+
+<!-- <!-- dat <- mtcars --> -->
+<!-- <!-- dat$car <- rownames(dat) --> -->
+
+<!-- <!-- ggplot(dat, aes(qsec, mpg, label = car)) + --> -->
+<!-- <!--   geom_text_repel( --> -->
+<!-- <!--     data          = subset(dat, mpg > 30), --> -->
+<!-- <!--     nudge_y       = 36 - subset(dat, mpg > 30)$mpg, --> -->
+<!-- <!--     segment.size  = 0.2, --> -->
+<!-- <!--     segment.color = "grey50", --> -->
+<!-- <!--     direction     = "x" --> -->
+<!-- <!--   ) + --> -->
+<!-- <!--   geom_point(color = ifelse(dat$mpg > 30, "red", "black")) + --> -->
+<!-- <!--   scale_x_continuous(expand = c(0.05, 0.05)) + --> -->
+<!-- <!--   scale_y_continuous(limits = c(NA, 36)) --> -->
+<!-- <!-- ``` --> -->
+
+
+<!-- <!-- 对齐左边缘或右边缘的标签 --> -->
+<!-- <!-- 设置direction为“y”并尝试hjust0.5,0和1： --> -->
+<!-- <!-- ```{r} --> -->
+<!-- <!-- set.seed(42) --> -->
+
+<!-- <!-- p <- ggplot(mtcars, aes(y = wt, x = 1, label = rownames(mtcars))) + --> -->
+<!-- <!--   geom_point(color = "red") + --> -->
+<!-- <!--   ylim(1, 5.5) + --> -->
+<!-- <!--   theme( --> -->
+<!-- <!--     axis.line.x  = element_blank(), --> -->
+<!-- <!--     axis.ticks.x = element_blank(), --> -->
+<!-- <!--     axis.text.x  = element_blank(), --> -->
+<!-- <!--     axis.title.x = element_blank(), --> -->
+<!-- <!--     plot.title   = element_text(hjust = 0.5) --> -->
+<!-- <!--   ) --> -->
+
+<!-- <!-- p1 <- p + --> -->
+<!-- <!--   xlim(1, 1.375) + --> -->
+<!-- <!--   geom_text_repel( --> -->
+<!-- <!--     nudge_x      = 0.15, --> -->
+<!-- <!--     direction    = "y", --> -->
+<!-- <!--     hjust        = 0, --> -->
+<!-- <!--     segment.size = 0.2 --> -->
+<!-- <!--   ) + --> -->
+<!-- <!--   ggtitle("hjust = 0") --> -->
+
+<!-- <!-- p2 <- p +  --> -->
+<!-- <!--   xlim(1, 1.375) + --> -->
+<!-- <!--   geom_text_repel( --> -->
+<!-- <!--     nudge_x      = 0.2, --> -->
+<!-- <!--     direction    = "y", --> -->
+<!-- <!--     hjust        = 0.5, --> -->
+<!-- <!--     segment.size = 0.2 --> -->
+<!-- <!--   ) + --> -->
+<!-- <!--   ggtitle("hjust = 0.5 (default)") --> -->
+
+<!-- <!-- p3 <- p + --> -->
+<!-- <!--   xlim(0.25, 1) + --> -->
+<!-- <!--   scale_y_continuous(position = "right") + --> -->
+<!-- <!--   geom_text_repel( --> -->
+<!-- <!--     nudge_x      = -0.35, --> -->
+<!-- <!--     direction    = "y", --> -->
+<!-- <!--     hjust        = 1, --> -->
+<!-- <!--     segment.size = 0.2 --> -->
+<!-- <!--   ) + --> -->
+<!-- <!--   ggtitle("hjust = 1") --> -->
+
+<!-- <!-- gridExtra::grid.arrange(p1, p2, p3, ncol = 3) --> -->
+<!-- <!-- ``` --> -->
+
+<!-- <!-- 使用nudge_x和水平对齐文本hjust,并允许标签垂直移动direction = "y"： --> -->
+<!-- <!-- ```{r} --> -->
+<!-- <!-- set.seed(42) --> -->
+
+<!-- <!-- dat <- subset(mtcars, wt > 2.75 & wt < 3.45) --> -->
+<!-- <!-- dat$car <- rownames(dat) --> -->
+
+<!-- <!-- ggplot(dat, aes(wt, mpg, label = car)) + --> -->
+<!-- <!--   geom_text_repel( --> -->
+<!-- <!--     data          = subset(dat, wt > 3), --> -->
+<!-- <!--     nudge_x       = 3.5 - subset(dat, wt > 3)$wt, --> -->
+<!-- <!--     segment.size  = 0.2, --> -->
+<!-- <!--     segment.color = "grey50", --> -->
+<!-- <!--     direction     = "y", --> -->
+<!-- <!--     hjust         = 0 --> -->
+<!-- <!--   ) + --> -->
+<!-- <!--   geom_text_repel( --> -->
+<!-- <!--     data          = subset(dat, wt < 3), --> -->
+<!-- <!--     nudge_x       = 2.7 - subset(dat, wt < 3)$wt, --> -->
+<!-- <!--     segment.size  = 0.2, --> -->
+<!-- <!--     segment.color = "grey50", --> -->
+<!-- <!--     direction     = "y", --> -->
+<!-- <!--     hjust         = 1 --> -->
+<!-- <!--   ) + --> -->
+<!-- <!--   scale_x_continuous( --> -->
+<!-- <!--     breaks = c(2.5, 2.75, 3, 3.25, 3.5), --> -->
+<!-- <!--     limits = c(2.4, 3.8) --> -->
+<!-- <!--   ) + --> -->
+<!-- <!--   geom_point(color = "red") --> -->
+<!-- <!-- ``` --> -->
+
+
+<!-- <!-- 数学表达式 --> -->
+<!-- <!-- ```{r} --> -->
+<!-- <!-- d <- data.frame( --> -->
+<!-- <!--   x    = c(1, 2, 2, 1.75, 1.25), --> -->
+<!-- <!--   y    = c(1, 3, 1, 2.65, 1.25), --> -->
+<!-- <!--   math = c( --> -->
+<!-- <!--     NA, --> -->
+<!-- <!--     "integral(f(x) * dx, a, b)", --> -->
+<!-- <!--     NA, --> -->
+<!-- <!--     "lim(f(x), x %->% 0)", --> -->
+<!-- <!--     NA --> -->
+<!-- <!--   ) --> -->
+<!-- <!-- ) --> -->
+
+<!-- <!-- ggplot(d, aes(x, y, label = math)) + --> -->
+<!-- <!--   geom_point() + --> -->
+<!-- <!--   geom_label_repel( --> -->
+<!-- <!--     parse       = TRUE, # Parse mathematical expressions. --> -->
+<!-- <!--     size        = 8, --> -->
+<!-- <!--     box.padding = 2 --> -->
+<!-- <!--   ) --> -->
+<!-- <!-- ``` --> -->
+
+
+
+# ggstatsplot
+
+ggstatsplot是ggplot2包的一个扩展。这个包主要用于在图形中添加丰富的统计信息。在数据探索过程中，数据可视化可统计分析建模常常是两个过程，可视化可以为建模提供某些洞见，而建模的结果会建议使用不同的可视化方法。ggstatsplot这个包可以将这两个过程合并起来，绘制统计信息更加丰富的图形，使得数据探索过程更加的简单。
+
+下表列举了可以绘制的图形。如表所示：
+
+
+功能	情节	描述
+ggbetweenstats	小提琴情节	用于组/条件之间的比较
+ggwithinstats	小提琴情节	用于组/条件内的比较
+gghistostats	直方图	用于分发数字变量
+ggdotplotstats	点图/图表	用于分发标记的数字变量
+ggpiestats	饼状图	对于分类数据
+ggbarstats	条形图	对于分类数据
+ggscatterstats	散点图	用于两个变量之间的相关性
+ggcorrmat	相关矩阵	用于多个变量之间的相关性
+ggcoefstats	点须图	用于回归模型
+
+
+目前,这个包同样仅支持最常见的统计测试类型： t-test / anova的参数,非参数,鲁棒和贝叶斯版本,相关性分析,列联表 分析和回归分析。
+
+下表总结了该软件包目前支持的所有不同类型的分析 
+
+功能	描述	参数	非参数	强大的	贝叶斯因子
+ggbetweenstats	在组/条件比较之间	是	是	是	是
+ggwithinstats	在组/条件比较中	是	是	是	是
+gghistostats, ggdotplotstats	分配数字变量	是	是	是	是
+ggcorrmat	相关矩阵	是	是	是	没有
+ggscatterstats	两个变量之间的相关性	是	是	是	是
+ggpiestats, ggbarstats	分类变量之间的关联	是	NA	NA	是
+ggpiestats, ggbarstats	分类变量水平的等比例	是	NA	NA	是
+ggcoefstats	回归模型系数	是	没有	是	没有
+
+
+
+统计报告
+对于图中报告的所有统计检验,默认模板遵循APA 黄金标准进行统计报告。例如,以下是Yuen测试修剪均值(稳健t检验)的结果：
+
+如何下载：
+``` 
+# needed package to download from GitHub repo
+utils::install.packages(pkgs = "remotes")
+
+# downloading the package from GitHub
+remotes::install_github(
+  repo = "IndrajeetPatil/ggstatsplot", # package path on GitHub
+  dependencies = TRUE, # assumes you have already installed needed packages
+  quick = TRUE # skips docs, demos, and vignettes
+)
+```
+
+
+ggbetweenstats这个函数可以创建小提琴图,一个箱线图,或两种的混合之间。最简单的函数调用看起来像这样。下面的代码使用ggbetweenstats函数绘制了一副简单的图形.如图所示：
+
+```{r}
+library(ggplot2)
+library(tidyverse)
+# 加载包
+library(ggstatsplot)
+
+# 设置随机种子
+set.seed(21456)
+
+#绘制图形
+ggstatsplot::ggbetweenstats(
+  data = diamonds %>% sample_frac(0.1),
+  x = cut,
+  y = price,
+  messages = T
+) 
+```
+上面的代码使用了diamonds数据集绘制了变量cut和price之间的小提琴图。图形的plot.type参数可以指定要绘制的图形，默认同时绘制小提琴图和箱线图。从输出的信息可以看到'Bartlett's test for homogeneity of variances for factor cut: p-value = < 0.001'表示对于不同组别的数据进行了巴特利特的检验。p value非常小，说明拒绝原假设。从图中可以看到，图形的输出信息非常的丰富，不仅绘制出了图形，还给出了相当多的统计信息，包括均值，样本量，F统计量，p value等等。
+
+另外,这个函数返回的类是ggplot的对象,因此可以使用ggplot2函数进一步修改。
+
+还可以指定许多其他参数,以使图形表达更多的信息。此外,这一次我们将使用一个只有两个级别的分组变量。该函数将自动从进行方差分析切换到进行t检验。
+
+type (of test)参数表示采用的统计检验方法，接受以下缩写:“p”(参数)或“np”(非参数)或“r”(鲁棒性)或“bf”(贝叶斯因子)。
+
+下面的代码对图形进行了更多的调整.
+
+```{r}
+library(ggplot2)
+
+# 绘制图形
+ggstatsplot::ggbetweenstats(
+  data = diamonds %>% sample_frac(0.1) %>% filter(cut %in% c('Ideal','Fair')),
+  x = cut,
+  y = price,
+  notch = TRUE, # 显示缺口箱线图
+  mean.plotting = TRUE, # 是否显示每个组的平均值
+  mean.ci = TRUE, # 是否显示均值的置信区间
+ # mean.label。size = 2.5，表示标签的平均尺寸
+  type = "parametric", # 要运行哪种类型的测试
+ 
+  xlab = "cut of diamonds ", # 标记x轴变量
+  ylab = "price of diamonds", # 标记y轴变量
+  title = "Dataset: diamonds", #标题
+  ggtheme = ggthemes::theme_fivethirtyeight(), #选择不同的主题
+  ggstatsplot.layer = FALSE, # 关闭ggstatsplot主题层
+  package = "wesanderson", # 调色板对应的包
+  palette = "Darjeeling1", # 选择调色板
+  messages = FALSE
+)
+
+```
+
+上面的代码对于图形进行了更多的调整。图中显示了两个类别的小提琴图和箱线图，这个时候采取的是t检验，p value同样非常的小，此时拒绝原假设，认为两组的数值存在差异。图形还显示了很多信息，包括均值，执行区间等等。
+
+<!-- 此外,这个函数还有一个grouped_函数，例如grouped_ggbetweenstats。这个函数可以很容易地在单个分组变量上重复相同的操作: -->
+<!-- ```{r} -->
+<!-- # for reproducibility -->
+<!-- set.seed(21456) -->
+
+
+<!-- # plot -->
+<!-- ggstatsplot::grouped_ggbetweenstats( -->
+<!--   data = dplyr::filter( -->
+<!--     .data = ggstatsplot::movies_long, -->
+<!--     genre %in% c("Action", "Action Comedy", "Action Drama", "Comedy") -->
+<!--   ), -->
+<!--   x = mpaa, -->
+<!--   y = length, -->
+<!--   grouping.var = genre, # grouping variable -->
+<!--   pairwise.comparisons = TRUE, # display significant pairwise comparisons -->
+<!--   pairwise.annotation = "p.value", # how do you want to annotate the pairwise comparisons -->
+<!--   p.adjust.method = "bonferroni", # method for adjusting p-values for multiple comparisons -->
+<!--   conf.level = 0.99, # changing confidence level to 99% -->
+<!--   ggplot.component = list( # adding new components to `ggstatsplot` default -->
+<!--     ggplot2::scale_y_continuous(sec.axis = ggplot2::dup_axis()) -->
+<!--   ), -->
+<!--   k = 3, -->
+<!--   title.prefix = "Movie genre", -->
+<!--   caption = substitute(paste( -->
+<!--     italic("Source"), -->
+<!--     ":IMDb (Internet Movie Database)" -->
+<!--   )), -->
+<!--   palette = "default_jama", -->
+<!--   package = "ggsci", -->
+<!--   messages = FALSE, -->
+<!--   nrow = 2, -->
+<!--   title.text = "Differences in movie length by mpaa ratings for different genres" -->
+<!-- ) -->
+<!-- ``` -->
+
+
+
+ggwithinstats函数与ggbetweenstats具有相同的功能,ggwithinstats用于重复测量设计,从下面的示例可以看出,ggwithinstats和ggbetweenstats绘图结构之间的唯一区别是现在通过路径连接组以突出显示这些数据彼此配对的事实。
+```{r}
+# 设置随机种子，加载包
+set.seed(21456)
+library(WRS2)
+
+# 绘制图形
+ggstatsplot::ggwithinstats(
+  data = WRS2::WineTasting,
+  x = Wine,
+  y = Taste,
+  sort = "descending", # 排序
+  sort.fun = median, #y变量值
+  pairwise.comparisons = TRUE,
+  pairwise.display = "s",
+  pairwise.annotation = "p",
+  title = "Wine tasting",
+  caption = "Data from: `WRS2` R package",
+  ggtheme = ggthemes::theme_fivethirtyeight(),
+  ggstatsplot.layer = FALSE,
+  messages = FALSE
+)
+
+```
+
+从上面的图中可以看到，不同组之间添加了一条链线。ggwithinstats函数还有对应的函数grouped_ggwithinstats体,这个函数可以更快地在单个分组变量中重复相同的分析。ggbetweenstats函数同样也有类似的函数，如下图所示
+```{r}
+# 设置随机种子
+set.seed(21456)
+
+# 获取整洁格式的数据
+data_bugs <- ggstatsplot::bugs_long %>%
+  dplyr::filter(.data = ., region %in% c("Europe", "North America"))
+
+# plot
+ggstatsplot::grouped_ggwithinstats(
+  data = dplyr::filter(data_bugs, condition %in% c("LDLF", "LDHF")),
+  x = condition,
+  y = desire,
+  xlab = "Condition",
+  ylab = "Desire to kill an artrhopod",
+  grouping.var = region,
+  outlier.tagging = TRUE,
+  outlier.label = education,
+  # # ggtheme = hrbrthemes::theme_ipsum_tw(),
+  ggstatsplot.layer = FALSE,
+  messages = FALSE
+)
+
+```
+从图形中可以看到，图中绘制了单个变量分组的图形。
+
+
+ggscatterstats函数可以创建一个散点图,其边缘分布覆盖在轴(from ggExtra::ggMarginal)上,并且来自字幕中的统计测试结果：
+
+```{r}
+ggstatsplot::ggscatterstats(
+  data = ggplot2::msleep %>% na.omit(),
+  x = sleep_rem,
+  y = awake,
+  xlab = "REM sleep (in hours)",
+  ylab = "Amount of time spent awake (in hours)",
+  title = "Understanding mammalian sleep",
+  messages = FALSE
+)
+
+```
+
+从图中可以看到，绘制了一副散点图，添加了边缘直方图。图形上方和下方都显示了关于数据的一些统计信心。可以用的边际分布包括直方图，箱图，密度，小提琴，密度+直方图。
+还可以可以指定其他参数的数量来修改这个基本图。如下图所示
+```{r}
+# 设置随机种子
+set.seed(21456)
+
+# plot
+ggstatsplot::ggscatterstats(
+  data = dplyr::filter(.data = ggstatsplot::movies_long, genre == "Action"),
+  x = budget,
+  y = rating,
+  type = "robust", # 需要运行的测试类型
+  conf.level = 0.99, # 置信区间的显著性水平
+  xlab = "Movie budget (in million/ US$)", # x轴的标签
+  ylab = "IMDB rating", # y轴的标签
+  label.var = "title", # 标记数据点
+  label.expression = "rating < 5 & budget > 100", # 决定要标记哪些点的表达式
+  line.color = "yellow", # 改变回归线的颜色
+  title = "Movie budget and IMDB rating (action)", # 标题
+  caption = expression( # 图形说明
+    paste(italic("Note"), ": IMDB stands for Internet Movie DataBase")
+  ),
+ 
+  ggstatsplot.layer = FALSE, #关闭ggstatsplot主题层
+  marginal.type = "density", # 要显示的边缘分布类型
+  xfill = "#0072B2", # 为x轴边缘分布填充颜色
+  yfill = "#009E73", # 为y轴边缘分布填充颜色
+  xalpha = 0.6, # x轴边缘分布的透明度
+  yalpha = 0.6, #y轴边缘分布的透明度
+  centrality.para = "median", # 显示集中趋势线
+  messages = T #显示输出信息
+)
+```
+
+从图中可以看到，图形的信息更加的丰富，代码中分别显示了x对应变量的中位数和y变量对应的分位数。边际分布通过填充的密度图来表示。
+
+
+<!-- 此外,还有一个grouped_此功能的变体,可以轻松地在单个分组变量上重复相同的操作。另请注意,与其他函数相反,此函数不返回ggplot对象,您可以使用ggplot.component参数提前进行任何修改(可用于所有函数,但对此特定函数尤其有用)： -->
+
+<!-- ```{r} -->
+<!-- # for reproducibility -->
+<!-- set.seed(21456) -->
+
+<!-- # plot -->
+<!-- ggstatsplot::grouped_ggscatterstats( -->
+<!--   data = dplyr::filter( -->
+<!--     .data = ggstatsplot::movies_long, -->
+<!--     genre %in% c("Action", "Action Comedy", "Action Drama", "Comedy") -->
+<!--   ), -->
+<!--   x = rating, -->
+<!--   y = length, -->
+<!--   label.var = title, -->
+<!--   label.expression = length > 200, -->
+<!--   conf.level = 0.99, -->
+<!--   k = 3, # no. of decimal places in the results -->
+<!--   xfill = "#E69F00", -->
+<!--   yfill = "#8b3058", -->
+<!--   xlab = "IMDB rating", -->
+<!--   grouping.var = genre, # grouping variable -->
+<!--   title.prefix = "Movie genre", -->
+<!--   ggtheme = ggplot2::theme_grey(), -->
+<!--   ggplot.component = list( -->
+<!--     ggplot2::scale_x_continuous(breaks = seq(2, 9, 1), limits = (c(2, 9))) -->
+<!--   ), -->
+<!--   messages = FALSE, -->
+<!--   nrow = 2, -->
+<!--   title.text = "Relationship between movie length by IMDB ratings for different genres" -->
+<!-- ) -->
+
+<!-- ``` -->
+
+
+
+<!-- ggpiestats此函数创建一个分类或名义变量的饼图,其结果来自列联表分析包括在图的副标题中。如果只输入一个分类变量,则从单样本比例测试得到结果将显示为副标题。 -->
+
+<!-- 以下是理论问题是关于单个名义变量的不同级别的比例的示例 -->
+<!-- ```{r} -->
+<!-- # for reproducibility -->
+<!-- set.seed(21456) -->
+
+<!-- # plot -->
+<!-- ggstatsplot::ggpiestats( -->
+<!--   data = ggplot2::msleep, -->
+<!--   x = vore, -->
+<!--   title = "Composition of vore types among mammals", -->
+<!--   messages = FALSE -->
+<!-- ) -->
+<!-- ``` -->
+<!-- 此函数还可用于研究两个分类变量之间的交互： -->
+
+<!-- ```{r} -->
+<!-- # for reproducibility -->
+<!-- set.seed(21456) -->
+
+<!-- # plot -->
+<!-- ggstatsplot::ggpiestats( -->
+<!--   data = mtcars, -->
+<!--   x = am, -->
+<!--   y = cyl, -->
+<!--   conf.level = 0.99, # confidence interval for effect size measure -->
+<!--   title = "Dataset: Motor Trend Car Road Tests", # title for the plot -->
+<!--   stat.title = "interaction: ", # title for the results -->
+<!--   legend.title = "Transmission", # title for the legend -->
+<!--   factor.levels = c("1 = manual", "0 = automatic"), # renaming the factor level names (`x`) -->
+<!--   facet.wrap.name = "No. of cylinders", # name for the facetting variable -->
+<!--   slice.label = "counts", # show counts data instead of percentages -->
+<!--   package = "ggsci", # package from which color palette is to be taken -->
+<!--   palette = "default_jama", # choosing a different color palette -->
+<!--   caption = substitute( # text for the caption -->
+<!--     paste(italic("Source"), ": 1974 Motor Trend US magazine") -->
+<!--   ), -->
+<!--   messages = FALSE # turn off messages and notes -->
+<!-- ) -->
+
+<!-- ``` -->
+
+使用ggbarstats函数可以绘制出条形图,下面的代码绘制了一副堆叠的条形图。如图所示：
+```{r}
+# 设置随机种子
+set.seed(21456)
+
+# 绘制图形
+ggstatsplot::ggbarstats(
+  data = ggstatsplot::movies_long,
+  x = mpaa,
+  y = genre,
+  sampling.plan = "jointMulti",
+  title = "MPAA Ratings by Genre",
+  xlab = "movie genre",
+  perc.k = 1,
+  x.axis.orientation = "slant",
+  # ggtheme = hrbrthemes::theme_modern_rc(),
+  ggstatsplot.layer = FALSE,
+  ggplot.component = ggplot2::theme(axis.text.x = ggplot2::element_text(face = "italic")),
+  palette = "Set2",
+  messages = FALSE
+)
+
+```
+
+
+
+使用gghistostats函数可以使用单样本测试来可视化单个变量的分布并检查其均值是否与指定值明显不同。如图所示
+```{r}
+ggstatsplot::gghistostats(
+  data = ToothGrowth, # 数据集
+  x = len, # 感兴趣的分布的数值变量
+  xlab = "Tooth length", # 坐标轴名称
+  title = "Distribution of Tooth Length", # 标题
+  fill.gradient = TRUE, # 使用梯度颜色
+  test.value = 10, # 单样本试验的比较值
+  test.value.line = TRUE, # 在测试值处显示一条垂直线
+  type = "bayes", #一个样本t检验 
+  bf.prior = 0.8, # 计算贝叶斯因子的先验宽度
+  messages = FALSE # 关掉数据信息
+)
+
+```
+
+
+
+使用gghistostats函数可以绘制出棒棒糖图.如图所示：
+```{r}
+# 设置随机种子
+set.seed(21456)
+
+# plot
+ggdotplotstats(
+  data = dplyr::filter(.data = gapminder::gapminder, continent == "Asia"),
+  y = country,
+  x = lifeExp,
+  test.value = 55,
+  test.value.line = TRUE,
+  test.line.labeller = TRUE,
+  test.value.color = "red",
+  centrality.para = "median",
+  centrality.k = 0,
+  title = "Distribution of life expectancy in Asian continent",
+  xlab = "Life expectancy",
+  messages = FALSE,
+  caption = substitute(
+    paste(
+      italic("Source"),
+      ": Gapminder dataset from https://www.gapminder.org/"
+    )
+  )
+)
+
+```
+
+<!-- 与此包中的其余函数一样,此函数的grouped_变体也有助于为单个分组变量的所有级别循环相同的操作。 -->
+
+<!-- ```{r} -->
+<!-- # for reproducibility -->
+<!-- set.seed(21456) -->
+
+<!-- # removing factor level with very few no. of observations -->
+<!-- df <- dplyr::filter(.data = ggplot2::mpg, cyl %in% c("4", "6")) -->
+
+<!-- # plot -->
+<!-- ggstatsplot::grouped_ggdotplotstats( -->
+<!--   data = df, -->
+<!--   x = cty, -->
+<!--   y = manufacturer, -->
+<!--   xlab = "city miles per gallon", -->
+<!--   ylab = "car manufacturer", -->
+<!--   type = "nonparametric", # non-parametric test -->
+<!--   grouping.var = cyl, # grouping variable -->
+<!--   test.value = 15.5, -->
+<!--   title.prefix = "cylinder count", -->
+<!--   point.color = "red", -->
+<!--   point.size = 5, -->
+<!--   point.shape = 13, -->
+<!--   test.value.line = TRUE, -->
+<!--   # ggtheme = ggthemes::theme_par(), -->
+<!--   messages = FALSE, -->
+<!--   title.text = "Fuel economy data" -->
+<!-- ) -->
+<!-- ``` -->
+ 
+使用ggcorrmat函数可以使用用最少量的代码制作相关图(相关系数矩阵)。只要使用默认的参数就可以生成出版物级别的相关矩阵。但是,为了探索可用的选项,让我们改变一些默认值。例如,可以修改多个参数以改变相关矩阵的外观。如下图所示：
+
+```{r}
+# 设置随机种子
+set.seed(21456)
+
+# 默认情况下，该函数输出相关图
+ggstatsplot::ggcorrmat(
+  data = ggplot2::msleep,
+  corr.method = "robust", #计算相关性的方法
+  sig.level = 0.001, #阈值的意义
+  p.adjust.method = "holm", # 多重比较的p值调整方法
+  cor.vars = c(sleep_rem, awake:bodywt), # 可以选择一个变量范围
+  cor.vars.names = c(
+    "REM sleep", # 变量的名称
+    "time awake",
+    "brain weight",
+    "body weight"
+  ),
+  matrix.type = "upper", # 可视化矩阵类型
+  colors = c("#B2182B", "white", "#4D4D4D"),
+  title = "Correlalogram for mammals sleep dataset",
+  subtitle = "sleep units: hours; weight units: kilograms"
+)
+
+```
+
+
+# ggfortify
+
+这个包可以使用一行代码来实现繁琐的可视化。
+该软件包提供fortify和autoplot功能,允许自动ggplot2可视化流行的R包的统计结果。查看我们的R Journal论文,了解有关架构的更多详细信息。还有autoplotly包,可以使用plotly.js样式自动生成交互式可视化。
+
+运用 ggplot2::autoplot
+这是最简单的方法{ggfortify}。autoplot使用受支持的实例调用应根据其类型输出适当的绘图,如标准plot函数所做的那样。
+```{r}
+library(ggfortify)
+autoplot(AirPassengers)
+```
+ 
+您可以指定一些选项来控制绘图的外观。与统计类的情况一样,有一些对象需要绘制,例如实际值,预测值和置信区间等。因此,每个绘图选项都有一个点分隔格式<target name>.<ggplot option name>,如ts.colour和conf.int.linetype。
+
+这些选项通常可用于类似类型的实例。例如,ts.colour适用于所有时间序列喜欢(没有单独的选项,如xts.colour和timeSeries.colour,等)。要检查可用选项,请使用help(autoplot.ts)或help(autoplot.*)用于任何其他对象。
+
+
+```{r}
+set.seed(1)
+p <- autoplot(kmeans(iris[-5], 3), data = iris)
+# 绘制图形
+p
+```
+
+
+想要不同的情节？
+在内部,autoplot调用一个名为ggplot2::fortify将传递的实例转换为的泛型函数data.frame。为所有支持的类{ggfortify}定义fortify函数。如果你想要一个不同类型的情节,你可以fortify用来获得data.frame,然后ggplot以正常方式打电话。
+
+以下示例显示了计算每个k均值聚类的记录的条形图。
+
+```{r}
+df <- fortify(kmeans(iris[-5], 3), data = iris)
+head(df)
+ggplot(df, aes(x= cluster, fill = cluster)) + geom_bar()
+```
+
+ 
+
+http://rpubs.com/liam/ggfortify
+
+<!-- # ggiraph -->
+
+<!-- ggiraph是一个允许您创建动态ggplot图形的工具。这允许您向图形添加工具提示,动画和JavaScript动作。该软件包还允许在闪亮应用程序中使用时选择图形元素。 -->
+
+<!-- 通过以下美学,将交互性添加到ggplot几何,图例和主题元素中： -->
+
+<!-- tooltip：鼠标悬停在元素上时显示的工具提示。 -->
+<!-- onclick：单击元素时要执行的JavaScript函数。 -->
+<!-- data_id：要与元素关联的id(用于悬停和单击操作) -->
+
+
+
+<!-- 创建交互式图形时需要了解的事项： -->
+
+<!-- 1. 而不是使用geom_point,使用geom_point_interactive,而不是使用geom_sf,geom_sf_interactive...提供至少一个美学tooltip,data_id并onclick创建互动元素。 -->
+<!-- 2. girafe使用ggplot对象调用函数,以便将图形转换为Web交互式图形。 -->
+
+<!-- ```{r} -->
+<!-- library(ggplot2) -->
+<!-- library(ggiraph) -->
+<!--  data  <-  mtcars  -->
+<!-- data$carname  <- row.names(data) -->
+
+<!-- gg_point  = ggplot(data  =  data)+  -->
+<!--     geom_point_interactive(aes(x  =  wt,y  =  qsec,color  =  disp,tooltip  =  carname,data_id  =  carname))+  -->
+<!--   theme_minimal() -->
+
+<!-- girafe(ggobj  =  gg_point) -->
+<!-- ``` -->
+
+<!-- # plotROC -->
+
+<!-- 使用ggplot从R生成交互式ROC图 -->
+<!-- 大多数ROC曲线图模糊了截止值并抑制了多条曲线的解释和比较。这试图通过提供绘图和交互工具来解决这些缺点。提供的功能是为Web使用和打印版本生成交互式ROC曲线图。还包括一个交互式Shiny应用程序。 -->
+
+<!-- ``` -->
+<!--  devtools :: install_github("sachsmc / plotROC ”) -->
+<!-- ``` -->
+
+<!-- 安装后,交互式Shiny应用程序可以在本地运行。 -->
+
+<!-- ``` -->
+<!-- shiny_plotROC() -->
+
+<!-- ``` -->
+
+
+
+<!-- 命令行基本用法 -->
+<!-- 我首先创建一个示例数据集。有2个标记,一个是中度预测,另一个不是预 -->
+
+<!-- ```{r} -->
+<!-- library(plotROC) -->
+<!-- set.seed(2529) -->
+<!-- D.ex <- rbinom(200, size = 1, prob = .5) -->
+<!-- M1 <- rnorm(200, mean = D.ex, sd = .65) -->
+<!-- M2 <- rnorm(200, mean = D.ex, sd = 1.5) -->
+
+<!-- test <- data.frame(D = D.ex, D.str = c("Healthy", "Ill")[D.ex + 1],  -->
+<!--                    M1 = M1, M2 = M2, stringsAsFactors = FALSE) -->
+<!-- ``` -->
+<!-- Roc Geom -->
+<!-- 接下来,我使用该ggplot函数来定义美学,以及geom_roc添加ROC曲线图层的功能。该geom_roc功能需要美观d的疾病状态和m标记。疾病状态不需要编码为0/1,但如果不是,则stat_roc假设(带警告)排序顺序中的最低值表示无疾病状态。stat_roc并且geom_roc默认情况下链接,stat用于进行经验ROC曲线的基础计算,以及由ROC曲线层组成的geom。 -->
+<!-- ```{r} -->
+<!-- basicplot <- ggplot(test, aes(d = D, m = M1)) + geom_roc() -->
+<!-- basicplot -->
+<!-- ``` -->
+
+
+<!-- 多条ROC曲线 -->
+<!-- 如果您的数据集中有分组因子,或者您在同一主题上测量了多个标记,则可能希望在同一图上绘制多个ROC曲线。plotROC完全支持ggplot2完成的分面和分组。在示例数据集中,我们以成对方式测量了2个标记： -->
+
+<!-- ```{r} -->
+<!-- head(test) -->
+
+<!-- ``` -->
+
+<!-- 这些数据采用宽格式,2个标记分为2列。ggplot需要长格式,标记结果为单列,第三个变量标识标记。我们提供melt_roc执行此转换的功能。参数是数据框,标识疾病状态列的名称或索引,以及标识标记的名称或索引的向量。可选地,names参数提供要分配给标记的名称向量,替换它们的列名。结果是长格式的数据帧。 -->
+
+
+<!-- ```{r} -->
+<!-- longtest <- melt_roc(test, "D", c("M1", "M2")) -->
+<!-- head(longtest) -->
+<!-- ``` -->
+
+<!-- 然后,数据集可以传递给ggplot函数,标记名称作为分组或分面变量给出。 -->
+
+<!-- ```{r} -->
+<!-- ggplot(longtest, aes(d = D, m = M, color = name)) + geom_roc() + style_roc() -->
+<!-- ``` -->
+
+
+# quantmod
+
+http://rpubs.com/liam/quantmod
+
+
+<!-- # ggedit -->
+
+<!-- ggedit is aimed to interactively edit ggplot layers, scales and themes aesthetics -->
+<!-- ```  -->
+<!-- install.packages('ggedit') -->
+<!-- ``` -->
+
+
+<!-- ``` -->
+<!-- library(ggedit) -->
+<!-- library(ggplot2) -->
+<!-- p <- ggplot(mtcars, aes(x = hp, y = wt)) + geom_point() + geom_smooth() -->
+<!-- p2 <- ggedit(p) -->
+<!-- names(p2) # will show you which objects are available. -->
+<!-- plot(p2) # shows the updated plot (it is available in the first element of p2) -->
+
+<!-- ``` -->
+
+<!-- # ggvis -->

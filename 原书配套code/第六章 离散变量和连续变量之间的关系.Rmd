@@ -1,0 +1,3004 @@
+---
+title: "离散变量和连续变量之间的图形"
+output:
+  word_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+离散变量是有关于计数的变量。例如掷骰子的结果，结果的点数是1到6之间的一个值。这个结果的数值是能够切割的，不可能有骰子的结果是1.5。而连续变量则是记录的是一连串的数值，比如时间，价格，体重。连续变量是能够分割的，例如，0.5秒，0.5k等等都是合理的。但是连续变量和离散变量之间的界限并不绝对，连续变量可以会转换成为离散变量，转换的方法则是分箱，数据分箱是一种数据预处理技术，用于减少轻微数据误差的影响.因此，有的时候对于两个连续变量同样会使用本章节所绘制的图形进行可视化。
+
+本章节会介绍离散变量和连续变量之间的图形，这些图形包括箱线图，小提琴图，圆形条形图等等。每一种图形都有其优点和适用的场景，例如在绘制适用直方图的方式绘制多组直方图并不是一个很好的选择，多组直方图会使得图形过于混乱，导致图形的信息难以被观察理解，可以选择绘制分面的图形或者适用山脊图。而有些图形，虽然本章节介绍了，但还是不推荐适用此类图形进行可视化，例如，饼图。事实上，饼图并不是一个对于数据进行可视化的好的选择。饼图是一个分为扇区的圆圈，每个扇区代表整体的一部分。它通常用于显示百分比，其中扇区的总和等于100％。问题是人类在阅读角度方面非常糟糕。在相邻的饼图中，尝试确定哪个组是最大的组并尝试按值排序。您可能很难这样做，这就是必须避免使用饼图的原因。
+
+总而言之，本章节会详细的介绍离散变量与连续变量之间的相关图形的绘制，当然，在本部分只要适用的也是ggplot2这个包进行图形的构建，并且本章节也会对图形的各种细节进行调整。但是关于绘图细节的调整本章节不会系统的介绍，在后面的章节，会有专门的一部分来介绍ggplot2绘图的细节设置。
+
+
+
+# 箱线图
+
+箱线图是研究分布的一个很好的工具。它还可以显示多个组中的数据分布，以及中值、数据范围和异常值(如果有的话)。框内的中间的线表示中值。箱体顶部为75%分位数，箱体底部为25%分位数。线的端点(又称须)的距离为1.5*IQR，其中IQR或四分位间距为25 - 75个百分位之间的距离（IQR即表示75%分位数- 25%分位数）。胡须外的点被标记为点，通常被认为是极端点。下图显示了箱线图的原理
+
+![](/Users/milin/写书/boxplot.png)
+
+boxplot给出了关于一个或多个数值变量的很好的总结。从上图中可以观察到，boxplot由几个元素组成：
+
+- 将框分成2部分的线表示数据的中值。
+- 方框的两端显示上（Q3）和下（Q1）四分位数。如果第三个四分位数是15（75%分位数），则意味着75％的观察值低于15。
+- 四分位数和三分之一的区别称为四分位数范围（IQR）
+- 极端线显示Q3 + 1.5xIQR至Q1-1.5xIQR（不包括异常值的最高值和最低值）。
+- 超出极限线的点（或其他标记）显示了异常值。
+
+Boxplot可能是最常用的图表类型之一，用于比较几个组的数据分布，还有比较常用的场景是来识别数据中的异常值。但是，应该记住的是，在绘制箱线图的时候，数据的分布会被隐藏在每个框后面。
+箱线图可以汇总多个组的数值变量的分布信息。问题是，信息的总结也意味着丢失信息，这可能是一个陷阱。如果我们考虑下面的箱形图，很容易得出结论，该组C的值高于其他组。但是，我们无法看到每组中点的基本分布或它们的观察数量，并且，在箱线图中，正态分布看起来可能与双峰分布完全相同。下面这个例子很清楚的可以说明这个问题，首先绘制了一副箱线图，图中的数据是构造的，图形的绘制代码如下：
+
+```{r}
+# 加载数据包
+library(tidyverse)
+library(hrbrthemes)
+library(viridis)
+library(plotly)
+
+#  创建一个数据集
+data <- data.frame(
+  name=c( rep("A",500), rep("B",500), rep("B",500), rep("C",20), rep('D', 100)  ),
+  value=c( rnorm(500, 10, 5), rnorm(500, 13, 1), rnorm(500, 18, 1), rnorm(20, 25, 4), rnorm(100, 12, 1) )
+)
+
+# 绘制图形
+data %>%
+  ggplot( aes(x=name, y=value, fill=name)) +
+    geom_boxplot() +
+    scale_fill_viridis(discrete = TRUE) +
+    theme_ipsum() +
+    theme(
+      legend.position="none",
+      plot.title = element_text(size=11)
+    ) +
+    ggtitle("Misleading Boxplot") +
+    xlab("a")
+```
+
+上面的代码中，首先创建了一个数据框，数据框有两个变量，name和value，其中name是离散变量，value 是连续变量。然后使用ggplot进行绘制图形，使用代码```ggplot( aes(x=name, y=value, fill=name))```将数据x映射为name，y映射为value，箱线图的填充颜色使用name来映射，表示不同的name的箱线图使用不同的颜色。然后使用geom_boxplot()函数表示绘制箱线图。以上则可以绘制出基础的箱线图。
+
+后面的代码是对于图形进行的一些调整。scale_fill_viridis（）函数来自于包viridis，这个包中提供了很多关于图形的配色。scale_fill_viridis（）表示使用的是viridis的配色，因为，name是离散变量，所以这里指定scale_fill_viridis（）函数的discrete参数为TRUE。
+
+theme_ipsum()是一个主题函数，这个函数来自于ggplot2 的一个拓展包，hrbrthemes。使用主题函数可以快速的对于图形的细节进行调整，例如，图形的字体，图形的排版等等细节。使用合适的主题可以减号很多关于图形的调整的工作量。然后使用theme函数对于图形细节进行了额外的调整，legend.position="none"表示不显示图例，因为不同的颜色表示不同的name，name通过横坐标即可以知道，不需要图例来额外的表达这个信息。plot.title = 
+element_text(size=11)用于调整的标题文字的大小。ggtitle（）函数用于设置图形的标题。xlab（）函数用于设置x轴的名称。
+
+从绘制好的图形中可以看到，c组的值相比于其他租的值是最高的，另外还可以发现，A组合D组存在一些极端值。当时，关于数据的其他一些信息，从图中则很难观察到了。
+
+这个时候如果使用的数据量不是太大，在箱图上添加扰动点可以使图形更具洞察力。下面的代码上上面的图形中增加了扰动点：
+
+```{r}
+# 绘制图形
+data %>%
+  ggplot( aes(x=name, y=value, fill=name)) +
+    geom_boxplot() +
+    scale_fill_viridis(discrete = TRUE) +
+    geom_jitter(color="red", size=0.5, alpha=0.5) +
+    theme_ipsum() +
+    theme(
+      legend.position="none",
+      plot.title = element_text(size=11)
+    ) +
+    ggtitle("A boxplot with jitter") +
+    xlab("")
+
+```
+
+上面的代码为箱线图增加了扰动点，增加扰动点的方式非常的简单，这也是使用ggplot的一个优势，对图形的修改非常简单。在箱线图中增加扰动点只需要添加一个新的几何变换，添加的代码为geom_jitter（）。在这里设置了一些扰动点的参数，color用于设置点的颜色，size用于设置点的大小，alpha用于设置点的透明度。
+
+从绘制好的图形可以观察到。这里出现了一些新模式。与组C相比，其它组具有更大的样本量。这是一个无法直接从箱线图中获取的信息。此外，看起来组B有一个双峰分布（bimodal distribution）：点分为2组：y = 18和y = 13。
+
+如果 的样本量较大，添加扰动点则并不是一个合适的选择，因为扰动点会重叠，使得数字无法解释。另一种选择是小提琴图，它描述了每组数据的分布：
+```{r}
+# 计算不同name分组的样本量
+sample_size = data %>% group_by(name) %>% summarize(num=n())
+
+# 绘制图形
+data %>%
+  left_join(sample_size) %>%
+  mutate(myaxis = paste0(name, "\n", "n=", num)) %>%
+  ggplot( aes(x=myaxis, y=value, fill=name)) +
+    geom_violin(width=1.4) +
+    geom_boxplot(width=0.1, color="grey", alpha=0.2) +
+    scale_fill_viridis(discrete = TRUE) +
+    theme_ipsum() +
+    theme(
+      legend.position="none",
+      plot.title = element_text(size=11)
+    ) +
+    ggtitle("A boxplot with jitter") +
+    xlab("")
+```
+
+上面的代码绘制了小提琴图。在上面的代码中，首先对数据进行了处理，关于数据处理相关的内容，在前面的章节有介绍过。这里使用了group_by函数对于数据进行了汇总，计算出每一个类别的样本量，并赋值了一个新的变量sample_size。然后使用了left_join函数对于data数据集和sampel_size数据进行了左连接，然后使用mutate生成了一个新的变量myaxis。后面的绘制图形的代码与上文是相似的，需要注意的是，这里首先使用了geom_violin函数，表示绘制小提琴图。然后使用了geom_boxplot函数在绘制小提琴图的基础之上，在小提琴图中添加了箱线图。
+
+从图形当中， 这里很清楚，这些组具有不同的分布。群体的双峰分布B变得明显。与箱形图相比小提琴图是一种显示信息的有效方式，箱线图并不能很好的显示数据的分布。
+
+在上一个图表中，每个组的样本大小在x轴上指示，在组名称下方。这是一种很好的做法，数据量表明c组并不具有代表性。
+但是，有时更好地选择是在图形中显示数据点本身。一个很好的选择是显示原始数据的半小提琴图。
+```{r}
+
+# 创建一个新的图层,用于绘制半边的小提琴图
+geom_flat_violin <- function(mapping = NULL, data = NULL, stat = "ydensity",
+                        position = "dodge", trim = TRUE, scale = "area",
+                        show.legend = NA, inherit.aes = TRUE, ...) {
+  layer(
+    data = data,
+    mapping = mapping,
+    stat = stat,
+    geom = GeomFlatViolin,
+    position = position,
+    show.legend = show.legend,
+    inherit.aes = inherit.aes,
+    params = list(
+      trim = trim,
+      scale = scale,
+      ...
+    )
+  )
+}
+
+# 一个新的统计变换
+GeomFlatViolin <-
+  ggproto("GeomFlatViolin", Geom,
+          setup_data = function(data, params) {
+            data$width <- data$width %||%
+              params$width %||% (resolution(data$x, FALSE) * 0.9)
+
+            #ymin，ymax，xmin和xmax为每个组定义边界矩形
+            data %>%
+              group_by(group) %>%
+              mutate(ymin = min(y),
+                     ymax = max(y),
+                     xmin = x,
+                     xmax = x + width / 2)
+
+          },
+
+          draw_group = function(data, panel_scales, coord) {
+            # 找到路线的起点
+            data <- transform(data, xminv = x,
+                              xmaxv = x + violinwidth * (xmax - x))
+
+            # 确保已正确排序以绘制轮廓
+            newdata <- rbind(plyr::arrange(transform(data, x = xminv), y),
+                             plyr::arrange(transform(data, x = xmaxv), -y))
+
+            # 将第一个点和最后一个点设置为相同
+            newdata <- rbind(newdata, newdata[1,])
+
+            ggplot2:::ggname("geom_flat_violin", GeomPolygon$draw_panel(newdata, panel_scales, coord))
+          },
+
+          draw_key = draw_key_polygon,
+
+          default_aes = aes(weight = 1, colour = "grey20", fill = "white", size = 0.5,
+                            alpha = NA, linetype = "solid"),
+
+          required_aes = c("x", "y")
+)
+
+
+ # 绘制图形
+data %>%
+  sample_frac(0.5) %>%
+  ggplot(aes(x = name, y = value, fill = name)) + 
+    geom_flat_violin(scale = "count", trim = FALSE, width=2) + 
+    scale_fill_viridis(discrete = TRUE) + 
+    geom_dotplot(binaxis = "y", dotsize = 0.8, stackdir = "down", binwidth = 0.3, position = position_nudge(-0.025)) + 
+    theme_ipsum() +
+    theme(
+      legend.position = "none"
+    ) + 
+    ylab("value")
+```
+
+上面这个图形的绘制比较复杂。其中geom_flat_violin（）函数定义了一个新的图层，用于绘制半边的小提琴图。GeomFlatViolin表示一个新的统计变换，其会被在其中geom_flat_violin（）函数中调用。然后可以开始绘制图形。首先使用了sample_frac函数对于数据集进行抽样，抽样的比例为50%。调用 geom_flat_violin（）函数用于绘制半边的小提琴图：
+```{r}
+data %>% # 绘制图形
+  sample_frac(0.5) %>%
+  ggplot(aes(x = name, y = value, fill = name)) + 
+    geom_flat_violin(scale = "count", trim = FALSE, width=2) 
+```
+
+在绘制了半边的小提琴图之后，再在小提琴图的左边添加点图，以显示数据的原始情况。
+```{r}
+data %>% # 绘制图形
+  sample_frac(0.5) %>%
+  ggplot(aes(x = name, y = value, fill = name)) + 
+    geom_flat_violin(scale = "count", trim = FALSE, width=2) + 
+    scale_fill_viridis(discrete = TRUE) + 
+    geom_dotplot(binaxis = "y", dotsize = 0.8, stackdir = "down", binwidth = 0.3, position = position_nudge(-0.025)) + 
+    theme_ipsum() + # 设置主题
+    theme(
+      legend.position = "none"
+    ) + 
+    ylab("value")
+```
+
+上面的代码中，使用了geom_dotplot函数用于绘制点图,函数中对很多参数进行了设置。
+binaxis用于指定点在数据轴的方向，dotsize用于指定数据点的大小，stackdir用于指定从哪个方向进行叠加点，binwidth的含义与直方图中的含义是一样的，binwidth 箱子（bin）的宽度。可以指定为数值。position用于调整点图的偏移情况。
+
+通过上面的代码，则绘制出了关于数据的半小提琴图。
+
+另外，需要注意的是，箱线图是了解数据分布的一个方式，并且，箱线图可以非常好的识别出极端值。
+
+线图极端值的判定标准是基于四分位数和四分位数距离。四分位数具有一定的稳定性，多达25%的数据可以任意变远而不会对四分位数造成很大的干扰。因此，异常值不会影响箱线图的数据形状。
+ 
+```{r}
+data <- data.frame( # 创建数据框
+  name=c( rep("A",500), rep("B",500), rep("B",500), rep("C",20), rep('D', 100)  ),
+  value=c( rnorm(500, 10, 5), rnorm(500, 13, 1), rnorm(500, 18, 1), rnorm(20, 25, 4), rnorm(100, 12, 1) )
+)
+
+# 绘制图形
+data %>%
+  ggplot( aes(x=name, y=value, fill=name)) +
+    geom_boxplot() +
+    scale_fill_viridis(discrete = TRUE) +
+    theme_ipsum() +
+    theme(
+      legend.position="none",
+      plot.title = element_text(size=11)
+    ) +
+    ggtitle("Extreme value") +
+    xlab("")
+```
+ 
+ 从上面的图形可以看到，箱线图之外有一些数据点，这些数据点可以被认为是极端值。判断的标准其实是很简单的。箱线图将框分成2部分的线表示数据的中值。方框的两端显示上（Q3）和下（Q1）四分位数。如果第三个四分位数是15（75%分位数），则意味着75％的观察值低于15。四分位数和三分之一的区别称为四分位数范围（IQR）极端线显示Q3 + 1.5xIQR至Q1-1.5xIQR（不包括异常值的最高值和最低值）。超出极限线的点（或其他标记）显示了异常值。这个标准通常而言是很合理的。
+
+
+
+上面的例子提到，从直方图没有办法很好的观察到数据的分布，并且没有办法知道数据中的样本量。添加扰动点可以解决这些问题，另外，设置varwidth=T调整框的宽度，使其与所包含的观察数成正比。
+```{r}
+data <- data.frame( # 创建数据框
+  name=c( rep("A",500), rep("B",500), rep("B",500), rep("C",20), rep('D', 100)  ),
+  value=c( rnorm(500, 10, 5), rnorm(500, 13, 1), rnorm(500, 18, 1), rnorm(20, 25, 4), rnorm(100, 12, 1) )
+)
+
+# 绘制图形
+data %>%
+  ggplot( aes(x=name, y=value, fill=name)) +
+    geom_boxplot(varwidth=T) +
+    scale_fill_viridis(discrete = TRUE) +
+    theme_ipsum() +
+    theme(
+      legend.position="none",
+      plot.title = element_text(size=11)
+    ) +
+    ggtitle("varwidth=T") +
+    xlab("")
+
+```
+上面的代码对于varwidth参数进行了调整。如果参数设置为varwidth=TRUE，则表示箱线图方框的宽度与组中观察到的数量的平方根成比例。从中可以看到，B租的数据量最多，而C租的数据量最少。
+
+在方框图所提供的信息之上，点图可以以每个组的汇总统计信息的形式提供更清晰的信息。这些点是交错的，每个点代表一个观察结果。因此，在下表中，给定制造商的点的数量将匹配源数据中该制造商的行数。
+
+箱线图存在一些变体，下面的代码绘制了塔夫特箱线图（Tufte's Box Plot）。塔夫特箱线图在修改方框图时所描述的可视显示的量化信息。有四种变体：
+
+1. 表示中位数的点，表示四分位数范围的间隙，以及须线。
+
+2. 表示四分位数范围的偏移线和表示中位数的间隙。
+
+3. 表示四分位数范围的线，表示中位数的间隙，以及表示最小值和最大值的点
+
+4. 表示四分位数范围的宽线，表示中位数的间隙，以及表示最小值和最大值的线。
+
+```{r}
+
+# 加载包
+library(ggthemes)
+library(ggplot2)
+ 
+# 绘制图形
+data %>%
+  ggplot( aes(x=name, y=value, fill=name)) +
+    geom_tufteboxplot() +
+    scale_fill_viridis(discrete = TRUE) +
+    theme(
+      legend.position="none",
+      plot.title = element_text(size=11)
+    ) +
+    ggtitle("Tufte's Box Plot") +
+    xlab("")+theme_tufte() # 设置图形的主题
+
+
+```
+
+上面的代码绘制了箱线图的一种变体。其中点表示中位数，点周围的间隙表示的是四分位数范围，点周围的线条表示的是最大值最小值的范围。上文是对箱线图一个总的介绍，接下来开始从基础的开始介绍箱线图的绘制。
+
+##  绘制基础的箱线图
+
+在ggplot2包中使用的是geom_boxplot()函数来绘制的箱线图。关于箱线图需要注意的是重新排序分组是获得更具洞察力的理解的重要一步。此外，显示抖动点是避免隐藏底层分布的好方法。箱线图总结了连续变量的分布。它显示其中位数，第一和第三四分位数及其异常值。
+
+使用绘制箱线图ggplot2绘制箱线图的关键函数是geom_boxplot()
+
+使用geom_boxplot() 绘制箱线图有许多关键的参数，其中包括：
+
+• outlier.colour, outlier.shape, outlier.size: 这几个参数分别用于修改异常值点的颜色，异常值点的形状，异常值的点的大小
+
+• notch:逻辑值。如果为真，则绘制一个缺口箱形图。notch在中位数周围显示一个置信区间，该置信区间通常基于中位数+/- 1.58*IQR/sqrt(n)。缺口用于比较组;如果缺口
+两个盒子没有重叠，这是一个强有力的证据，表明中间值不同。
+
+使用geom_boxplot()。必须为Y轴指定定量变量，为X轴（一个组）指定定性变量。下面的代码绘制了简单的条形图：
+```{r}
+# 加载包
+library(ggplot2)
+ 
+# 使用mtcars数据集
+ 
+# 创建箱线图
+ggplot(mtcars, aes(x=as.factor(cyl), y=mpg)) + 
+    geom_boxplot(fill="slateblue", alpha=0.2) + 
+    xlab("cyl")
+
+
+ 
+```
+在上面的代码中，使用的数据集是mtcars数据集，数据来源于1974年美国《汽车趋势》杂志，包括32辆汽车(1973-74型)的油耗和10个方面的汽车设计和性能。绘制图形首先还是使用ggplot函数，指定需要使用的数据集，以及对应的映射关系，需要注意的是x对应的应该是离散变量，而y对应的应该是连续变量。然后使用geom_boxplot函数指定绘制的图形为箱线图，并且定义箱线图的填充颜色为'slateblue'，透明度alpha为0.2。通过这样的方式可以绘制一个基础的箱线图。接下来介绍一些关于箱线图的调整和扩展。
+
+## 调整参数
+
+箱线图的参数调整包括很多，outlier.colour, outlier.shape, outlier.size， 这几个参数分别用于修改异常值点的颜色，异常值点的形状，异常值的点的大小。
+notch参数为逻辑值。如果为真，则绘制一个缺口箱形图。
+关于缺口的注意事项是，如果箱线图用于比较组，如果两组之间没有重叠，则中位数会显着不同。也就是说，如果希望比较不同箱线图的中位数，则设置缺口参数可以更加方便的进行比较。下面的代码对于缺口进行了设置：
+
+```{r}
+#加载包
+library(ggplot2)
+ 
+# 使用mpg数据集
+ 
+# geom_boxplot为自定义外观提出了几个参数
+ggplot(mpg, aes(x=class, y=hwy)) + 
+    geom_boxplot(
+        
+        # 调整颜色
+        color="black",
+        fill="red",
+        alpha=0.2,
+        
+        # 设置是否有缺口
+        notch=TRUE,
+        notchwidth = 0.8,
+        
+        # 极端值的情况
+        outlier.colour="black",
+        outlier.fill="red",
+        outlier.size=3
+    
+    )
+```
+
+上面的代码中，使用了mpg数据集，这个数据集包含了EPA在http://fueleconomy.gov上提供的燃油经济性数据的子集。它只包含1999年至2008年间每年都有新车发布的车型——这被用作汽车受欢迎程度的一个指标。
+在上面的代码中，在绘制箱线图的时候，参数设置中，color='black'，也就是箱线图的线条为黑色；fill='red'指的是箱线图的填充颜色为红色。然后调整nothc=TRUE用于设置箱线图的缺口，notchwidth参数用于调整缺口的大小。最后调整的参数是有关于极端值的参数，其中outlier.colour和outlier.fill参数调整了极端值的颜色，然后outlier.size这个参数调整了极端值的大小。
+
+从图形中可以非常清楚的观察到不同组别之间的中位数的大小。一种更好的方式是对箱线图的组别的顺序进行调整，这个可以更加方便的进行观察。
+
+## 调整箱线图组别的顺序
+
+重新排序ggplot2图表中的组可能很困难。这是因为ggplot2考虑了factor级别的顺序，而不是在数据框中观察到的顺序。解决方案之一是，可以使用sort()或对输入数据框使用arrange()进行排序，它不会对ggplot2输出产生任何影响。
+
+这篇章节解释了如何通过几个例子重新排序数据中的的因素水平。下面的例子基于2个虚拟的数据集：
+```{r}
+# 加载包
+library(ggplot2)
+library(dplyr)
+
+# 创建数据集
+data <- data.frame(
+  name=c("north","south","south-east","north-west","south-west","north-east","west","east"),
+  val=sample(seq(1,10), 8 )
+)
+data
+ 
+```
+上面的代码中创建了一个数据框，数据框中有两个变量name和val，其中name是离散变量，其中一共有8个不同的值。在对于数据的因子水平进行处理会使用到的包是Forecars包。Forecats库是从库tidyverse特别提出来处理R.它提供了一套能够解决与因子相关问题的方法。其中fact_reorder()函数允许根据数据的值重新排序因子。
+```{r}
+# 加载包
+library(forcats)
+
+# 按照另一列的值重新排序：
+data %>%
+  mutate(name = fct_reorder(name, val)) %>%
+  ggplot( aes(x=name, y=val)) +
+    geom_bar(stat="identity", fill="#f68060", alpha=.6, width=.4) +
+    coord_flip() +
+    xlab("") +
+    theme_bw()
+ 
+```
+
+上面的代码中首先使用mutate函数对name变量进行处理，使用fct_recorder函数对这个变量的顺序进行排序，排序的方式是根据不同name对应的val的大小进行排序。然后使用排序之后的数据绘制的条形图。从条形图可以看到，条形图的值是按照从大到小进行排序的。当然如果希望的是升序排序，则需要加入desc函数，代码如下：
+
+```{r}
+# 绘制图形
+data %>%
+  mutate(name = fct_reorder(name, desc(val))) %>%
+  ggplot( aes(x=name, y=val)) +
+    geom_bar(stat="identity", fill="#f68060", alpha=.6, width=.4) +
+    coord_flip() +
+    xlab("") +
+    theme_bw()
+```
+
+上面的代码中，同样对name变量的因子顺序进行了排序，这里使用了desc函数，表示根据val的值进行升序排序。然后绘制条形图，从条形图可以观察到，图形的顺序是升序排列的。
+
+
+如果每个因子级别有多个值，则可以指定要应用的函数来确定顺序。默认是使用中位数，但可以使用每组的数据点数进行分类：
+
+```{r}
+# 使用中数来定义顺序，然后绘制图形
+mpg %>%
+  mutate(class = fct_reorder(class, hwy, .fun='median')) %>%
+  ggplot( aes(x=reorder(class, hwy), y=hwy, fill=class)) + 
+    geom_boxplot() +
+    xlab("class") +
+    theme(legend.position="none") +
+    xlab("")
+ 
+```
+
+上面的代码绘制了排序后的箱线图，首先依然是对于数据的因子顺序进行排序。代码'fct_reorder(class, hwy, .fun='median')'表示对于class变量根据hwy进行排序，排序的方式是根据不同class中hwy的中位数值的大小进行排序。从图形可以看到，这个时候箱线图的顺序会根据箱线图的中位数的大小进行排序。当然，可以使用平均值，或者其他的一些统计指标。下面的代码根据不同箱线图的数据量的大小进行排序。
+
+```{r}
+# 使用每组的观察次数
+mpg %>%
+  mutate(class = fct_reorder(class, hwy, .fun='length' )) %>%
+  ggplot( aes(x=class, y=hwy, fill=class)) + 
+    geom_boxplot() +
+    xlab("class") +
+    theme(legend.position="none") +
+    xlab("") +
+    xlab("")
+```
+
+根据数据量大小进行排序的箱线图的代码与上文根据中位数进行排序的代码非常的相似，只不过fct_reorder函数中的.fun参数改为了,.fun='length'。length函数用于计算向量的长度，这里可以用于计算不同类别中数据的长度，也就是数据量的大小。
+
+最后一个常见的操作是为因子的级别提供特定的顺序，可以使用以下fct_relevel()函数执行此操作：
+```{r}
+# 自定义顺序，然后排序
+p <- data %>%
+  mutate(name = fct_relevel(name, 
+            "north", "north-east", "east", 
+            "south-east", "south", "south-west", 
+            "west", "north-west")) %>%
+  ggplot( aes(x=name, y=val)) +
+    geom_bar(stat="identity") +
+    xlab("")
+p
+```
+
+上面的代码直接指定了因子的顺序，这种方式经常也会使用到。使用这种方式可以非常自定义的条形图形的顺序。还有另外一种方式可以实现对于图形的排序。
+
+方法2，使用mutate()函数dplyr允许创建新变量或修改现有变量。可以使用它来重新创建具有特定顺序的因子。这里有两个例子：
+
+1. 第一个用于arrange()对数据框进行排序，并按照所需顺序对因子进行重新排序。
+2. 第二个指定了逐个给出级别的因子的自定义顺序。
+
+下面使用上文创建的数据集作为示例：
+```{r}
+data %>%
+  arrange(val) %>%    # 首先按val排序。 排序数据框，但不排序因子级别
+  mutate(name=factor(name, levels=name)) %>%   
+  ggplot( aes(x=name, y=val)) +
+    geom_segment( aes(xend=name, yend=0)) +
+    geom_point( size=4, color="orange") +
+    coord_flip() +
+    theme_bw() +
+    xlab("")
+ 
+
+```
+
+在上面的代码中，首先使用arrange函数对于数据集根据val变量进行排序，然后使用mutate函数对于因子的顺序进行设置。然后绘制了棒棒糖图，棒棒糖图的含义和条形图的含义是一样的。从图中可以看到，图形根据val的值的大小进行了排序。使用这种方法如果希望是升序，则只需要在对数据进行排序的时候使用升序排序即可。同样，还可以使用自定义的排序方式。
+
+```{r}
+data %>% # 使用自定义的方式进行排序，然后绘制图形
+  arrange(val) %>%
+  mutate(name = factor(name, levels=c("north", "north-east", "east", "south-east", "south", "south-west", "west", "north-west"))) %>%
+  ggplot( aes(x=name, y=val)) +
+    geom_segment( aes(xend=name, yend=0)) +
+    geom_point( size=4, color="orange") +
+    theme_bw() +coord_flip()+
+    xlab("")
+```
+
+上面的代码使用了自定义的因子水平，同样首先需要对于数据集进行排序，然后使用factor函数调整变量的因子水平。然后绘制棒棒糖图，从图中可以看到，图形的排序顺序和因子的排序水平是一致的。
+
+
+
+最后，还有地三种方法，可以使用scale_x_discrete()，函数，这个函数可以调整坐标轴的顺序，从而，可以调整箱线图的顺序。这个函数可以调整坐标轴那些坐标要显示，例如c(“0.5”，“2”)。还可以调整坐标轴的顺序，例如从c(“0.5”，“1”，“2”)到c(“2”，“0.5”，“1”)。下面的代码通过调整坐标轴的方式调整了箱线图的顺序。
+
+```{r}
+mpg %>% # 通过调整坐标轴的方式进行排序
+  ggplot( aes(x=class, y=hwy, fill=class)) + 
+    geom_boxplot() +
+    xlab("class") +
+    theme(legend.position="none") +
+    xlab("") +
+    xlab("") + scale_x_discrete(limit = c("pickup","suv","minivan","2seater","subcompact","midsize","compact"))
+```
+
+上面的代码中，没有对于数据集进行任何的处理，只是在绘制图形的代码的最后加上了```scale_x_discrete(limit = c("pickup","suv","minivan","2seater","subcompact","midsize","compact"))```。这行代码指定了坐标轴的顺序，其中pickup为第一组箱线图，compact为第二组箱线图。
+需要注意的是scale_x_discrete()函数用于调整离散变量的坐标轴。scale_x_continuous（）函数用于调整连续变量的坐标轴。
+
+
+
+## 调整颜色
+
+箱线图总结了连续变量的分布,在绘制箱线图的过程中，可以应用不同的颜色标度。使用以下函数可以手动更改箱线图的颜色，这些函数包括：
+
+1. scale_color_manual()， scale_fill_manual():使用自定义颜色
+2. scale_color_brewer()， scale_fill_brewer():使用RColor-中的调色板
+3. scale_color_*， scale_fill_*: 调色函数
+
+下面的例子说明了boxplot中最常用的颜色的调整方式。注意使用RcolorBrewer包和viridis包自动生成漂亮的调色板。
+```{r}
+# 加载包
+library(ggplot2)
+ 
+# 使用的数据集是mtcars数据集
+ 
+# 调整了颜色
+ggplot(mpg, aes(x=class, y=hwy)) + 
+    geom_boxplot(color="red", fill="orange", alpha=0.2)
+ 
+```
+上面的代码通过颜色参数的设置调整的箱线图的颜色。使用参数color='red'指定了箱线图的线条颜色为红色。使用了fill='orange'指定了箱线图的填充颜色为橘色。
+
+```{r}
+# 为每个组设置不同的颜色
+ggplot(mpg, aes(x=class, y=hwy, fill=class)) + 
+    geom_boxplot(alpha=0.3) +
+    theme(legend.position="none")
+
+```
+在这个图形中，通过将数据中的class变量映射到fill，最后的图形中，不同的class对应的箱线图则会不一样。通过这样的方式进行的调整，在绘图的过程中代码会自动的调整颜色。也就是说，并不能确定某一个组别是什么颜色的。如果希望认为的指定不同的分组是不同的颜色，则需要使用scale_colour_manual函数。
+```{r}
+# 使用scale_fill_manual函数调整了颜色
+ggplot(mpg, aes(x=class, y=hwy, fill=class)) + 
+    geom_boxplot(alpha=0.3) +
+    theme(legend.position="none")+
+  scale_fill_manual(values = c(1,2,3,4,5,6,7))
+
+
+```
+
+上面的代码中，使用了scale_fill_manual函数手动的指定了箱线图中每一个组别的颜色，因为图形中的箱线图一共有7个组别，因此，scale_fill_manual函数中的value参数这设置了一个长度为7的向量，其中每一个数字都表示了一种颜色。数字与颜色的对应关系如下图所示：
+![](/Users/milin/写书/color_number.png)
+出了可以通过数字的表示颜色，另外还有两种方式可以表示颜色，使用颜色的英文来表示和使用表示颜色的十六进制代码。
+
+![](/Users/milin/写书/16进制颜色.png)
+十六进制颜色代码图 由RGB参数转换而来，前两个数字表示红色（R）的值，后四个数字依次代表绿色（G）和蓝色（B）的值。从00到FF是十六进制的范围。由于十六进制颜色的代码非常的多，本书没有将所有的代码列出来，这些内容在在互联网上可以非常容易的找到，如果有需要的时候直接进行查找即可。下面的的代码中使用了16进制的颜色代码进行颜色设置：
+```{r}
+# 通过十六进制代码调整颜色
+ggplot(mpg, aes(x=class, y=hwy, fill=class)) + 
+    geom_boxplot(alpha=0.3) +
+    theme(legend.position="none")+
+  scale_fill_manual(values = c("#FFB6C1","#8B008B","#0000FF","#FF8C00","#FFD700","#556B2F","#F5F5DC"))
+
+```
+
+上面的代码中，使用了16进制颜色代码设置了以下浅红色（LightPink），深洋红色（DarkMagenta）,纯蓝（Blue）,深橙色(DarkOrange),金(Gold),橄榄土褐色(OliveDrab),米色(Beige)其中颜色。通过对应的英文名称同样可以设置：
+```{r}
+# 通过颜色单词调整颜色
+ggplot(mpg, aes(x=class, y=hwy, fill=class)) + 
+    geom_boxplot(alpha=0.3) +
+    theme(legend.position="none")+
+  scale_fill_manual(values = c("LightPink","DarkMagenta","Blue","DarkOrange","Gold","OliveDrab","Beige"))
+
+```
+
+上面的代码使用的不同颜色的对应因为对颜色进行的指定。在对颜色进行调整的时候，使用上文的这三种方式可以进行设置。如果不需要指定颜色，可以对于图形的配色进行调整，选择不同的调色板，可以让图形呈现出不同的颜色。调整图形的调色板所使用的的函数是scale_fill_brewer,可以选择的调色包括BrBG, PiYG, PRGn, PuOr, RdBu, RdGy, RdYlBu, RdYlGn, Spectral等等，图。。有详细的介绍，下面的代码对于图形使用了不同的配色。
+
+```{r}
+#  绘制图形 并且去除了图例，设置了BuPu配色
+ggplot(mpg, aes(x=class, y=hwy, fill=class)) + 
+    geom_boxplot(alpha=0.3) +
+    theme(legend.position="none") +
+    scale_fill_brewer(palette="BuPu")
+ 
+
+```
+
+上面的代码中使用了scale_fill_brewer这个函数进行调整图形的配色。这里选择的调色板是BuPu。如果觉得这一种配色并不是很满意，可以多尝试几种调色板：
+```{r}
+#  绘制图形，选择YlGnBu配色
+ggplot(mpg, aes(x=class, y=hwy, fill=class)) + 
+    geom_boxplot(alpha=0.3) +
+    theme(legend.position="none") +
+    scale_fill_brewer(palette="YlGnBu")
+```
+在上面的代码中，使用了YlGnBu这一种调色板。另外，稍微提一下，```theme(legend.position="none")```这一行代码的含义是，不显示图形的图例。更多图形参数的内容会在后面的章节进行讲解。
+
+RColorBrewer包是用R管理颜色的不可避免的工具。它提供了几种调色板，如附图所示。
+
+调色板有3种类型：
+1. 顺序调色板适用于从低到高的有序数据。亮度区别主导了这些方案的外观，浅色为低数据值，深色为高数据值。
+2. 不同的调色板同样强调数据范围两端的临界值和极值。低强度和高极端强调暗色，具有对比色调。
+3. 定性调色板并不意味着图例之间的大小差异，而色调用于创建类之间的主要视觉差异。定性方案最适合表示名义或分类数据。
+
+![](/Users/milin/Documents/Rcolor.jpg)
+
+scale_color_*族函数有一些的配色调整，例如scale_colour_excel是关于excel的配色，scale_color_grey()函数是关于灰色调的配色。
+```{r}
+# 使用配色函数
+ggplot(mpg, aes(x=class, y=hwy, fill=class)) + 
+    geom_boxplot(alpha=0.3) +
+    theme(legend.position="none") +
+  scale_fill_grey()
+```
+
+上面的代码中，使用了scale_fill_grey()，从图中可以看出，图形整体呈现出一种灰色调。当然，还有很多其他的配色可以选择，使用这样的配色函数，在绘制图形的过程中也是非常方便的一种选择。
+
+如果想突出显示一个组，突出显示图表所传达的主要信息是数据可视化中的重要一步。如果分析的过程中希望侧重于研究某特定群组，则应在箱线图中突出显示。
+
+为此，首先使用mutate存储二进制信息的位置创建一个新列：以描述是否需要突出显示。然后，使用scale_fill_manual和scale_alpha_manual这两个函数实现这样的效果，如下图所示。
+```{r}
+# 加载包
+library(ggplot2)
+library(dplyr)
+library(hrbrthemes)
+
+# 使用mpg 数据集
+mpg %>% 
+  
+  # 添加一个名为“type”的列:是否要突出显示组?
+  mutate( type=ifelse(class=="subcompact","Highlighted","Normal")) %>%
+  
+  # Build the boxplot. In the 'fill' argument, give this column
+  ggplot( aes(x=class, y=hwy, fill=type, alpha=type)) + 
+    geom_boxplot() +
+    scale_fill_manual(values=c("red", "grey")) +
+    scale_alpha_manual(values=c(1,0.1)) +
+    theme_ipsum() +
+    theme(legend.position = "none") +
+    xlab("")
+```
+
+上面的代码中，首先创建了一个新的变量，用这个变量来表示某一个组别是否需要被突出显示。然后在绘制图形的过程中使用ggplot来描述数据的映射，其中alpha参数和fill参数用于指定为新的变量（这个变量用于描述某一个组别是否需要突出显示），然后调用geom_boxplot()函数用于绘制箱线图。接下来的代码是绘制突出某一突出组的关键代码，使用scale_fill_manual用于指定不同组别之间的颜色，并且使用scale_alpha_manual函数用于指定不同组别的之间的透明度。将不需要突出显示的箱线图的透明度调低一点，最后显示的效果就会是那些我们希望突出显示的组别会比较的明显。这样就实现了所需要的效果。
+
+
+
+## 分组箱线图
+
+如果需要构造分组的箱线图，可以将分类变量映射到fill这个参数，则可以通过不同的颜色来表示不同的分组。下面的代码中在这里，我们可视化7组（称为A到G）和2个子组（称为低和高）的箱线图。
+```{r}
+#  加载包
+library(ggplot2)
+ 
+#  创建一个数据框
+variety=rep(LETTERS[1:7], each=40)
+treatment=rep(c("high","low"),each=20)
+note=seq(1:280)+sample(1:150, 280, replace=T)
+data=data.frame(variety, treatment ,  note)
+ 
+# 分组箱线图
+ggplot(data, aes(x=variety, y=note, fill=treatment)) + 
+    geom_boxplot()
+```
+
+上面的代码中，生成了一份数据及，数据集中两个离散变量variety,treatment以及一个连续变量note。然后再绘图的过程中调整了参数fill='treatment'，则绘制的箱线图则会根据不同的颜色来表示treatment变量对应值的箱线图。出了这一种方式，还有另外一种方法，就是使用分面来绘制图形：
+```{r}
+# 绘制分组的箱线图
+p1 <- ggplot(data, aes(x=variety, y=note, fill=treatment)) + 
+    geom_boxplot() +
+    facet_wrap(~treatment)
+p1
+
+```
+创建分面指的是根据某种规则创建多幅图形，将各个分组的图形都单独的绘制出来。构建分面函数是facet_wrap函数，上面的代码中~treatment表示根据treatment变量来分组，根据treatment变量的不同值绘制不同的图形。
+
+
+
+## 调整箱线图的宽度
+
+箱线图（Boxplots）隐藏了类别样本大小。解决此问题的一种方法是构建宽度与样本大小成比例的箱形图。箱线图（Boxplot）经常被批评为隐藏每个类别的基础分布。由于隐藏了各个数据点，因此也无法知道每个类别可用的样本数量。
+
+在下面的例子中，修改varwidth选项，使得箱线图框宽度与样本大小成比例。最重要的是，将精确的样本大小添加到X轴标签中以获得更高的准确性。
+
+```{r}
+# 加载包
+library(ggplot2)
+ 
+#  创建
+names <- c(rep("A", 20) , rep("B", 5) , rep("C", 30), rep("D", 100))
+value <- c( sample(2:5, 20 , replace=T) , sample(4:10, 5 , replace=T), sample(1:7, 30 , replace=T), sample(3:8, 100 , replace=T) )
+data <- data.frame(names,value)
+ 
+#  准备标签数据
+my_xlab <- paste(levels(data$names),"\n(N=",table(data$names),")",sep="")
+ 
+# plot
+ggplot(data, aes(x=names, y=value, fill=names)) +
+    geom_boxplot(varwidth = TRUE, alpha=0.2) +
+    theme(legend.position="none") +
+    scale_x_discrete(labels=my_xlab)
+
+```
+在上面的代码中，首先创建了一份数据集，数据集中有两个变量，分别为names和value。然后使用这一份图形进行绘制图形。在绘制箱线图的过程中，修改varwidth选项，使得箱线图框宽度与样本大小成比例。设置的方式是条形geom_boxplot函数中varwidth=TRUE。这样的调整使得箱线图的宽会与样本量的平方成比例。从图中可以看到。有些箱子因为数据量比较多会宽一点，有些箱子数据量比较好则会显得比较细。
+
+
+## 构建连续变量的箱线图
+
+假设我们想研究2个数值变量之间的关系。可以在不同的箱中切割它们,也就是先对于连续变量进行分箱，然后再来创建箱线图。
+
+在下面的例子中，使用了ggplot2包中的diamonds数据集。对数据集中的carat变量以0.5的宽度进行分箱。然后，我们只需要将新创建的变量提供给ggplot函数的X参数。
+```{r}
+#  加载包
+library(ggplot2)
+library(dplyr)
+library(hrbrthemes)
+
+# 使用diamonds数据集绘制图形
+p <- diamonds %>%
+  
+  # 添加一个名为“bin”的 新变量
+  mutate( bin=cut_width(carat, width=0.5, boundary=0) ) %>%
+  
+  #  绘制图形
+  ggplot( aes(x=bin, y=price) ) +
+    geom_boxplot(fill="#69b3a2") +
+    theme_ipsum() +
+    xlab("Carat")
+p
+```
+
+在上面的代码中，首先对于diamonds数据集进行了处理，创建了一个新的变量，bin，这个变量是carat变量分箱之后的结果。然后再进一步绘制箱线图。其实，绘制两个连续变量的箱线图，本质上是线对于连续变量进行分箱，然后其他绘制图形的方法与上文所介绍的一样。
+
+## 添加平均值
+
+Ggplot2允许使用该stat_summary()函数显示每个组的平均值。在绘图之前不再需要计算数据的平均值。下面的代码中，在绘制箱线图的同时，在箱线图中添加了数据的平均值，并且将平均值用点来表示。
+```{r}
+#  加载包
+library(ggplot2)
+ 
+# 创建一个数据集
+names=c(rep("A", 20) , rep("B", 8) , rep("C", 30), rep("D", 80))
+value=c( sample(2:5, 20 , replace=T) , sample(4:10, 8 , replace=T), sample(1:7, 30 , replace=T), sample(3:8, 80 , replace=T) )
+data=data.frame(names,value)
+ 
+# 绘制图形
+p <- ggplot(data, aes(x=names, y=value, fill=names)) +
+    geom_boxplot(alpha=0.7) +
+    stat_summary(fun.y=mean, geom="point", shape=20, size=4, color="red", fill="red") +
+    theme(legend.position="none") +
+    scale_fill_brewer(palette="Set1")
+p
+```
+
+在上面的代码中，使用了一个新的函数，stat_summary函数。使用这个函数在箱线图中添加平均值，在这个函数中，fun.y=mean表示计算数据的平均值，当然，还可以计算其他统计量，将mean改为计算其他统计量的函数即可。geom='point'表示平均值使用点来表示。shape参数用于指定点的形状，size用于指定点的大小，color和fill用于指定点的颜色。
+
+## 添加抖动点
+
+ggplot2可以轻松地在箱子顶部添加抖动点。由于箱线图无法观潮到数据的分布，而添加抖动点可以弥补这个缺点，通过抖动点可以观察到数据的分布情况。但是需要注意的是，如果数据量比较大的时候，数据可能会覆盖，这个时候需要设置好图形的透明度。添加抖动点的函数是geom_jitter（），在绘制好箱线图的之后添加这个函数，即可在箱线图中添加扰动点：
+
+```{r}
+# 加载包
+library(tidyverse)
+library(hrbrthemes)
+library(viridis)
+
+
+# 绘制图形
+iris %>%
+  ggplot( aes(x=Species, y=Sepal.Length, fill=Species)) +
+    geom_boxplot() +
+    scale_fill_viridis(discrete = TRUE, alpha=0.6) +
+    geom_jitter(color="black", size=0.4, alpha=0.9) +
+    theme_ipsum() +
+    theme(
+      legend.position="none",
+      plot.title = element_text(size=11)
+    ) +
+    ggtitle("A boxplot with jitter") +
+    xlab("")
+```
+
+
+上面的代码中使用了iris数据集，代码中scale_fill_viridis函数用于调整箱线图中不同分组颜色的配色。geom_jitter函数用于添加抖动点，其中参数color用于描述抖动点的颜色，size用于指定抖动点的大小，alpha用于指定抖动点的透明度。theme_ipsum（）函数是用于设置图形主题，theme函数用于调整图形的细节，legend.position="none"的含义是不显示图形的图例。plot.title = element_text(size=11)，表示调整图形中文字的大小为size=11.最后使用了ggtitle对图形进行命名。
+
+箱线图是一种比较多组数据范围的一个常用的图形，但是箱线图也有其缺陷，其不能很好的观察到数据的一个分布情况。小提琴图是箱线图的一个拓展，很好的弥补了箱线图的缺点。
+
+
+# 小提琴图
+
+小提琴图类似于箱形图，但显示了组内的密度。在箱线图中提供的信息不多,而小提琴图则可以表达更多的数据信息，小提琴图允许可视化一个或多个组的数字变量的分布，它们非常适合大型数据集。
+
+小提琴图允许可视化一个或多个组的数字变量的分布。每个“小提琴”代表一个组或一个变量。形状代表变量的密度估计：特定范围内的数据点越多，小提琴对该范围的影响就越大。它非常接近箱线图，但可以更深入地了解分布情况。
+ 
+下面的代码显示人们如何看待概率的例子。例如“极有可能”这个短语被认为对应多大的概率，每一个人对词语的理解都不一样，有些人认为极有可能等价于99%的可能性，有些人则认为是80%的概率。下面的例子中所使用的的数据集则记录了人们对于词汇中概率的认知。小提琴图可以使用geom_violin()绘制，下面的例子中绘制了关于不同概率有关的词汇对应概率大小的小提琴图。
+```{r}
+# 加载包
+library(tidyverse)
+library(hrbrthemes)
+library(viridis)
+
+# 从github中获取数据
+data <- read.table("https://raw.githubusercontent.com/zonination/perceptions/master/probly.csv", header=TRUE, sep=",")
+data <- data %>% 
+  gather(key="text", value="value") %>%
+  mutate(text = gsub("\\.", " ",text)) %>%
+  mutate(value = round(as.numeric(value),0)) %>%
+  filter(text %in% c("Almost Certainly","Very Good Chance","We Believe","Likely","About Even", "Little Chance", "Chances Are Slight", "Almost No Chance"))
+
+# 绘制图形
+data %>%
+  mutate(text = fct_reorder(text, value)) %>%
+  ggplot( aes(x=text, y=value, fill=text, color=text)) +
+    geom_violin(width=2.1, size=0.2) +
+    scale_fill_viridis(discrete=TRUE) +
+    scale_color_viridis(discrete=TRUE) +
+    theme_ipsum() +
+    theme(
+      legend.position="none"
+    ) +
+    coord_flip() +
+    xlab("") +
+    ylab("Assigned Probability (%)")
+```
+
+在上面的代码手，首先使用read.table获取数据集。然后使用gather函数将原始数据的宽格式转变成为了长数据格式。然后对于数据集中的test变量进行了处理，将text变量中的'\\.'字符全部删除掉。然后对value变量进行了处理，将value变量转变成为了数值变量,其中，round函数用于截取数字中小数点的位数,上面的代码中，表示只保留value变量的整数部分。最后使用filter函数对于数据集进行筛选，筛选出那些比较长出现的词汇。
+
+然后开始绘制图形，在绘制图形之前，希望对于图形进行排序，因此对数据的text的根据value 的大小进行排序。然后开始绘制图形。绘制箱线图所使用的的函数是 ```geom_violin()```,其中参数width表示的是图形中小提琴的宽度。size表示的是小提琴图的大小。
+
+从绘制的图形中可以清楚地观察到，'we Believe'这个词语，大家对于其背后可能性的大小的理解是存在很大的差异的。有些人认为当我们说这个词语的时候，我们是认为这件事很有可能发生的，但是有些人则认为这个词语对应的概率并不大。另外，大家理解比较一致的词语是'About Even',大部分人都认为这个词语对应的概率大小约为50%。
+
+相比而言，如果绘制的图形是箱线图，虽然也可以了解到不同词语之间概率波动的范围。但是小提琴图可以更直观的了解到数据的分布情况。
+
+小提琴图是一种强大的数据可视化技术，因为它可以比较不同几个组及其组的分布情况。令人惊讶的是，它比boxplot用得少，即使它在我看来提供了更多的信息。因此，在比较多组数据的时候，小提琴图是一个比较好的选择。
+
+
+当数据量巨大的时候，小提琴特别适应。对于小型数据集，带有抖动的箱线图可能是更好的选择，因为它确实显示了所有信息。
+
+
+小提琴图还存在很多的变异形式，包括： 可以在小提琴中显示一个箱形图，这样的话，则可以从箱线图中观察到数据中的中位数和四分位数。下面的代码中在箱线图中添加了箱线图：
+```{r}
+#  创建一个数据集
+data <- data.frame(
+  name=c( rep("A",500), rep("B",500), rep("B",500), rep("C",20), rep('D', 100)  ),
+  value=c( rnorm(500, 10, 5), rnorm(500, 13, 1), rnorm(500, 18, 1), rnorm(20, 25, 4), rnorm(100, 12, 1) )
+)
+
+# 计算不同分组的样本量
+sample_size = data %>% group_by(name) %>% summarize(num=n())
+
+# 绘制图形
+data %>%
+  left_join(sample_size) %>%
+  mutate(myaxis = paste0(name, "\n", "n=", num)) %>%
+  ggplot( aes(x=myaxis, y=value, fill=name)) +
+    geom_violin(width=1.4) +
+    geom_boxplot(width=0.1,fill = "white", alpha=0.2) +
+    scale_fill_viridis(discrete = TRUE) +
+    theme_ipsum() +
+    theme(
+      legend.position="none",
+      plot.title = element_text(size=11)
+    ) +
+    ggtitle("A Violin wrapping a boxplot") +
+    xlab("")
+```
+
+在小提琴中添加箱线图非常的简单，在绘制好的小提琴图之后调用geom_boxplot函数。在上面的代码中，首先创建了一个数据集，然后分别计算每一个组别样本量，生成了一个新的变量用于记录数据中的分布和样本量，然后开始绘制图形。在绘制好小提琴图之后，继续绘制箱线图，则可以将箱线图添加到小提琴图当中。
+
+如果的变量已分组，可以像制作箱形图一样构建分组小提琴。这是一个示例，绘制出了分组的小提琴图：
+```{r}
+# 从github中获取数据
+data <- read.table("https://raw.githubusercontent.com/holtzy/data_to_viz/master/Example_dataset/10_OneNumSevCatSubgroupsSevObs.csv", header=T, sep=",") %>%
+  mutate(tip = round(tip/total_bill*100, 1))
+  
+#  对数据进行计算，转换，然后绘制图形
+data %>%
+  mutate(day = fct_reorder(day, tip)) %>%
+  mutate(day = factor(day, levels=c("Thur", "Fri", "Sat", "Sun"))) %>%
+  ggplot(aes(fill=sex, y=tip, x=day)) + 
+    geom_violin(position="dodge", alpha=0.5, outlier.colour="transparent") +
+    scale_fill_viridis(discrete=T, name="") +
+    theme_ipsum()  +
+    xlab("") +
+    ylab("Tip (%)") +
+    ylim(0,40)
+```
+
+绘制分组的小提琴图和绘制分组的箱线图非常的相似，在调用绘制小提琴图的函数geom_violin（）的时候，将分组指定为fill参数即可绘制出分组的小提琴图。在上面的代码中，前面的部分依然是对数据的处理，数据的处理是数据探索与可视化过程中必不可少的一个过程。这里将day变量的因子水平进行了重新定义。然后可以开始绘制小提琴图，ylim用于指定y坐标轴的范围，这里设置为0到40 。箱线图是非常好的一种数据可视化手段。接下来会从基础的小提琴图开始绘制。
+
+## 绘制基础的小提琴图
+
+绘制小提琴图的函数是，geom_violin()函数，需要注意的是，默认情况下trim = TRUE。在这种情况下，小提琴的尾部被修剪。如果是FALSE的，尾巴不修剪。下面的代码绘制了基础的小提琴图：
+```{r}
+# 加载包
+library(ggplot2)
+
+# 创建数据集
+data <- data.frame(
+  name=c( rep("A",500), rep("B",500), rep("B",500), rep("C",20), rep('D', 100)  ),
+  value=c( rnorm(500, 10, 5), rnorm(500, 13, 1), rnorm(500, 18, 1), rnorm(20, 25, 4), rnorm(100, 12, 1) )
+)
+
+# 绘制小提琴图
+p <- ggplot(data, aes(x=name, y=value, fill=name)) + # fill=name允许自动为每个组指定一种颜色
+  geom_violin()
+
+ p
+```
+
+上面的代码绘制一幅基础的小提琴图。在绘制小提琴图的时候，Ggplot2期望输入数据采用长格式：每行专用于一个观察。的输入需要2列：X轴的分类变量：需要数据的类型是factor类型。Y轴的数字变量，需要数据的类型是数值型。
+
+
+
+## 绘制水平的小提琴图
+
+在ggplot2中构建小提琴图形使用的是geom_violin()函数 。有时候小提琴图的组别比较多，这个时候，调用coord_flip()允许翻转X和Y轴，从而获得图表的水平版本。此外，注意使用hrbrthemes 包的theme_ipsum函数来改善图形的整体外观。
+```{r}
+# 加载包=
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(forcats)
+library(hrbrthemes)
+library(viridis)
+
+# 从github中获取数据
+data <- read.table("https://raw.githubusercontent.com/zonination/perceptions/master/probly.csv", header=TRUE, sep=",")
+
+# 数据是宽格式的，需要将数据转换成为长格式
+data <- data %>% 
+  gather(key="text", value="value") %>%
+  mutate(text = gsub("\\.", " ",text)) %>%
+  mutate(value = round(as.numeric(value),0)) %>%
+  filter(text %in% c("Almost Certainly","Very Good Chance","We Believe","Likely","About Even", "Little Chance", "Chances Are Slight", "Almost No Chance"))
+
+# 绘制图形
+p <- data %>%
+  mutate(text = fct_reorder(text, value)) %>% # Reorder data
+  ggplot( aes(x=text, y=value, fill=text, color=text)) +
+    geom_violin(width=2.1, size=0.2) +
+    scale_fill_viridis(discrete=TRUE) +
+    scale_color_viridis(discrete=TRUE) +
+    theme_ipsum() +
+    theme(
+      legend.position="none"
+    ) +
+    coord_flip() + # This switch X and Y axis and allows to get the horizontal version
+    xlab("") +
+    ylab("Assigned Probability (%)")
+
+p
+
+```
+
+上面的代码中，对图形的坐标轴进行了转换。绘制箱线图的过程和绘制基础箱线图的过程是一样的使用ggplot函数设置数据和对应的变量映射。然后调用geom_violin函数绘制小提琴图。然后使用scale_fill_viridis函数调整小提琴图填充颜色的配色。使用scale_color_viridis函数用于调整小提琴图线条的配色。使用theme_ipsum函数设置主题。使用theme修改图形的细节，legend.position="none"表示不显示图例。然后使用了corrd_flip函数来翻转X和Y轴。
+
+从绘制好的图形中可以看到，图形的x轴和y轴发生了对调。这样的调整使得在小提琴图组别比较多的时候可以更加美观的展示图形。
+
+## 小提琴中添加箱线图
+
+小提琴图中包含一个箱线图可以很方便地查看数据的分布及其汇总统计数据，了解数据的中位数以及分位数。构建小提琴图依然使用的是geom_violin函数，然后使用geom_boxplot()函数在小提琴图中添加箱线图。需要注意的是，在geom_boxplot()函数中要设置合适的width参数。这个参数用于控制箱线图的宽度，如果希望将箱线图放在小提琴图的内部，则需要将width参数设置小一些。
+
+此外，请注意一个小技巧，允许在X轴上提供每个组的样本大小：myaxis创建一个新的列，这一列记录了不同的组别以及不同组别的样本来那个。然后将其用于X轴。
+```{r}
+# 加载包
+library(ggplot2)
+library(dplyr)
+library(hrbrthemes)
+library(viridis)
+
+#  创建一个数据集
+data <- data.frame(
+  name=c( rep("A",500), rep("B",500), rep("B",500), rep("C",20), rep('D', 100)  ),
+  value=c( rnorm(500, 10, 5), rnorm(500, 13, 1), rnorm(500, 18, 1), rnorm(20, 25, 4), rnorm(100, 12, 1) )
+)
+
+# 计算不同分组的样本量
+sample_size = data %>% group_by(name) %>% summarize(num=n())
+
+# 绘制图形
+data %>%
+  left_join(sample_size) %>%
+  mutate(myaxis = paste0(name, "\n", "n=", num)) %>%
+  ggplot( aes(x=myaxis, y=value, fill=name)) +
+    geom_violin(width=1.4) +
+    geom_boxplot(width=0.1, color="grey", alpha=0.2) +
+    scale_fill_viridis(discrete = TRUE) +
+    theme_ipsum() +
+    theme(
+      legend.position="none",
+      plot.title = element_text(size=11)
+    ) +
+    ggtitle("A Violin wrapping a boxplot") +
+    xlab("")
+```
+首先创建了一个数据集，然后分别计算每一个组别样本量，生成了一个新的变量用于记录数据中的分布和样本量，然后开始绘制图形。在绘制好小提琴图之后，继续绘制箱线图，则可以将箱线图添加到小提琴图当中。需要注意的是在使用geom_boxplot函数的时候，将width参数设置为0.1，这样的话，箱线图的则比较窄，这样的设置是为了将箱线图放在小提琴的内部。
+
+
+# 棒棒糖图（lollipop  plot）
+
+棒棒糖图基本上是一个条形图，其和条形图的含义基本上是一样的，棒棒糖图的线条长度就是条形图的高度。棒棒糖图显示了数字和分类变量之间的关系。下面这个例子这是一个显示2017年前20大出口商出口某种商品数量的例子：
+
+```{r}
+#  加载包
+library(tidyverse)
+library(hrbrthemes)
+library(kableExtra)
+# devtools::install_github("thomasp85/patchwork")
+library(patchwork)
+
+#  从github中获取数据
+data <- read.table("https://raw.githubusercontent.com/holtzy/data_to_viz/master/Example_dataset/7_OneCatOneNum.csv", header=TRUE, sep=",")
+ 
+# 绘制图形
+data %>%
+  filter(!is.na(Value)) %>%
+  arrange(Value) %>%
+  tail(20) %>%
+  mutate(Country=factor(Country, Country)) %>%
+  ggplot(aes(x=Country, y=Value)) +
+    geom_segment( aes(x=Country ,xend=Country, y=0, yend=Value), color="grey") +
+    geom_point(size=3, color="#69b3a2") +
+    coord_flip() +
+    theme_ipsum() +
+    theme(
+      panel.grid.minor.y = element_blank(),
+      panel.grid.major.y = element_blank(),
+      legend.position="none"
+    ) +
+    xlab("") +
+    ylab("")
+
+```
+
+在上面的图形中，绘制出不同地区出售某种商品的数量的棒棒糖图。图中棒棒糖的线条越长，则表示对应的数值越大。在上代码中，首先是使用read.table函数通过数据的链接读取数据。然后使用filter函数筛选出变量Value不为空值的行。然后对于Value变量进行了排序，然后选取了排序后的数据集的最后20条数据。然后使用mutate函数对于Country变量重新设置了因子类型。在对数据处理完成后，可以开始绘制图形。这里绘制棒棒糖图的函数是geom_segment函数。geom_segment函数用于绘制线条，geom_segment函数中```aes(x=Country ,xend=Country, y=0, yend=Value)'''表示的是对每一个组别绘制一个线条，从底部连接到组别中的value值的位置。然后使用了geom_point函数在线条的尾部添加了一个点。到这里，棒棒糖图就会绘制好了，然后使用coord_flip()将x轴和y轴转换过来。
+
+棒棒糖图完全用于与条形图相同的情况。然而，它更具吸引力，也传达了信息。当你有几个相同高度的条形时它特别有用：它避免了凌乱数字和莫尔效应。
+莫尔图案或莫尔条纹是具有透明间隙的不透明刻划图案覆盖在另一个相似图案上时可产生的大规模干涉图案。为了出现莫尔干涉图案，两个图案不能完全相同，而是例如移位，旋转或具有略微不同的间距。下面的例子中同时绘制了直方图和棒棒糖图：
+
+```{r}
+don <- data.frame( # 构造一个数据集
+  group = LETTERS[1:20],
+  val = 20 + rnorm(20)
+)
+# 绘制图形
+p1 <- don %>%
+    arrange(val) %>%
+    mutate(group=factor(group, group)) %>%
+    ggplot( aes(x=group, y=val) ) +
+      geom_bar(stat="identity", fill="#69b3a2") +
+      coord_flip() +
+      theme_ipsum() +
+      theme(
+        panel.grid.minor.y = element_blank(),
+        panel.grid.major.y = element_blank(),
+        legend.position="none"
+      ) +
+      xlab("") +
+      ylab("")
+# 绘制图形
+p2 <- don %>%
+    arrange(val) %>%
+    mutate(group=factor(group, group)) %>%
+    ggplot( aes(x=group, y=val) ) +
+      geom_segment( aes(x=group ,xend=group, y=0, yend=val), color="grey") +
+      geom_point(size=3, color="#69b3a2") +
+      coord_flip() +
+      theme_ipsum() +
+      theme(
+        panel.grid.minor.y = element_blank(),
+        panel.grid.major.y = element_blank(),
+        legend.position="none"
+      ) +
+      xlab("") +
+      ylab("")
+ 
+p1 + p2 # 将两幅图形进行合并
+```
+
+在上面的图形中，同时绘制了直方图和小提琴图。从直方图中可以看到，图形出现了莫尔效应。而右边的图形则更加美观，并且右边的图形能够更加清晰的表达数据中的信息。因此，在绘制多组别的条形图的时候，一个更好的选择是绘制棒棒棒糖图来进行替代。
+
+克利夫兰点图(Cleveland dotplot)是一个棒棒糖图的变体，这个图形允许比较每个组的2个数值变量的值。也可以使用分组或堆栈条形图来可视化这种数据。但是，这种表示不那么混乱，而且更容易阅读。如果每组有2个子组，请使用它。
+
+```{r,warning=FALSE}
+# 创建数据集
+value1 <- abs(rnorm(26))*2
+don <- data.frame(
+  x=LETTERS[1:26], 
+  value1=value1, 
+  value2=value1+1+rnorm(26, sd=1) 
+  ) %>%
+  rowwise() %>%  # 对数据集进行处理
+  mutate( mymean = mean(c(value1,value2) )) %>% 
+  arrange(mymean) %>% 
+  mutate(x=factor(x, x))
+ 
+
+# 进行绘图
+ggplot(don) +
+  geom_segment( aes(x=x, xend=x, y=value1, yend=value2), color="grey") +
+  geom_point( aes(x=x, y=value1), color=rgb(0.2,0.7,0.1,0.8), size=3 ) +
+  geom_point( aes(x=x, y=value2), color=rgb(0.7,0.2,0.1,0.8), size=3 ) +
+  coord_flip()+
+  theme_ipsum() +
+  theme(
+    legend.position = "none",
+    panel.border = element_blank(),
+  ) +
+  xlab("") +
+  ylab("Value of Y")
+
+```
+
+在上面的代码中，首先创建了一份数据集，包括一个离散变量和两个连续变量。在绘图图形的代码中，首先使用geom_segment函数绘制的一条线条，这个线条从value1的值开始，到value2为止。然后，使用了两个geom_point函数来分别绘制两组点，分别绘制在线条的两端。到这里克利夫兰图就已经绘制好了。在后面的代码中进行了一些图形的调节，使用coord_flip函数将图形进行翻转，使用theme_ipsum函数对于图形的主题进行了设置。
+
+绘制克利夫兰图的关键点的是首先绘制线条，线条的两端分别代表数据中两个变量的值。然后在线条的两端添加散点图即可绘制出克里夫兰图。
+
+需要注意的是，克利夫兰图（cleveland dotplot），该术语看起来并没有很好地定义，并且有时也用于点图或经典的棒棒糖图。之前的图表也称为哑铃点图。
+
+如果希望以下方面，哑铃图表是一个很好的工具：1。可视化两个时间点之间的相对位置（如增长和下降）。2.比较两个类别之间的距离。
+
+绘制哑铃图，使用ggalt包有一个专门的函数用于绘制哑铃图，这个函数是geom_dumbbell。
+为了获得哑铃的正确排序，Y变量应该是一个因子，因子变量的水平应该与图中应该出现的顺序相同。
+
+```{r}
+# devtools::install_github("hrbrmstr/ggalt")
+library(ggplot2)
+library(ggalt)
+
+# 从链接中获取数据
+health <- read.csv("https://raw.githubusercontent.com/selva86/datasets/master/health.csv")
+health$Area <- factor(health$Area, levels=as.character(health$Area))  # 对哑铃图的排序进行调整
+
+# health$Area <- factor(health$Area)
+gg <- ggplot(health, aes(x=pct_2013, xend=pct_2014, y=Area, group=Area)) + 
+        geom_dumbbell(color="#a3c4dc", 
+                      size=0.75, 
+                      point.colour.l="#0e668b") +  # 绘图
+        scale_x_continuous(label=scales::percent) +  # 对坐标轴进行设置
+        labs(x=NULL,  # 对标签进行设置
+             y=NULL, 
+             title="Dumbbell Chart", 
+             subtitle="Pct Change: 2013 vs 2014", 
+             caption="Source: https://github.com/hrbrmstr/ggalt") +
+        theme(plot.title = element_text(hjust=0.5, face="bold"), # 对主题进行设置
+              plot.background=element_rect(fill="#f7f7f7"),
+              panel.background=element_rect(fill="#f7f7f7"),
+              panel.grid.minor=element_blank(),
+              panel.grid.major.y=element_blank(),
+              panel.grid.major.x=element_line(),
+              axis.ticks=element_blank(),
+              legend.position="top",
+              panel.border=element_blank())+theme_ipsum()
+plot(gg)
+```
+在上面的代码中，首先通过数据连接读取了数据集，然后设置了离散变量的因子水平。在上面的代码中使用ggplot函数指定了数据的映射，其中```aes(x=pct_2013, xend=pct_2014, y=Area, group=Area)```表示pct_2013和pct_2014分别作为哑铃图的两端，也就是说，哑铃图的线条的两端的值分别对应着两个变量。定义好数据的映射之后，使用geom_dumbbell函数即可绘制出哑铃图。后面的代码都是对于图形的一些调整。
+
+
+## 分组的棒棒糖图
+
+请注意，对于3到7之间的许多子组，这种类型的数据的可视化使用棒棒糖图也可以很好的进行展示：
+```{r}
+#  创建数据集
+value1 <- abs(rnorm(6))*2
+don <- data.frame(
+  x=LETTERS[1:24], 
+  val=c( value1, value1+1+rnorm(6, 14,1) ,value1+1+rnorm(6, sd=1) ,value1+1+rnorm(6, 12, 1) ),
+  grp=rep(c("grp1", "grp2", "grp3", "grp4"), each=6)
+  ) %>%
+  arrange(val) %>%
+  mutate(x=factor(x, x))
+
+
+# 绘图，然后对参数进行调整
+ggplot(don) +
+  geom_segment( aes(x=x, xend=x, y=0, yend=val), color="grey") +
+  geom_point( aes(x=x, y=val, color=grp), size=3 ) +
+  coord_flip()+
+  theme_ipsum() +
+  theme(
+    legend.position = "none",
+    panel.border = element_blank(),
+    panel.spacing = unit(0.1, "lines"),
+    strip.text.x = element_text(size = 8)
+  ) +
+  xlab("") +
+  ylab("Value of Y") +
+  facet_wrap(~grp, ncol=1, scale="free_y")
+```
+
+上面的代码中实现了分组的棒棒糖图，实现的方式非常的简单，只需要在调用geom_point函数的时候将分组变量映射成为color参数即可。
+
+绘制帮帮帮糖图需要注意的几点是：
+
+1. 如果分类变量的级别没有明显的顺序，最好的选择是按照其值排序图形。
+2. 每组有几个值？不要使用棒棒糖。即使有误差棒，它也会隐藏信息，而其他类型的图形如boxplot或小提琴则更为合适。
+ 
+点图非常类似棒棒糖，但没有线条，而是翻转到水平位置。它更强调相对于实际值的排序以及数据之间的距离。
+```{r}
+library(ggplot2)
+library(scales)
+ 
+
+# 使用mpg 数据集进行绘图，然后对数据集进行处理
+cty_mpg <- mpg %>% group_by(manufacturer) %>% summarise(mileage = mean(cty))
+
+colnames(cty_mpg) <- c("make", "mileage")  # 改变列名
+cty_mpg <- cty_mpg %>% arrange(mileage)  # 对数据集进行排序
+cty_mpg$make <- factor(cty_mpg$make, levels = cty_mpg$make)  # 对因子变量进行处理
+head(cty_mpg, 4)
+
+# 绘制图形
+ggplot(cty_mpg, aes(x=make, y=mileage)) + 
+  geom_point(col="red", size=3) +   # 添加数据点
+  geom_segment(aes(x=make, 
+                   xend=make, 
+                   y=0, 
+                   yend=max(mileage)), 
+               linetype="dashed", 
+               size=0.1) +   # 添加虚线
+  labs(title="Dot Plot", 
+       subtitle="Make Vs Avg. Mileage", 
+       caption="source: mpg") +  
+  coord_flip() +theme_classic()
+
+```
+上面的代码中绘制了一幅点图。代码中这里使用的数据集是mpg。代码中，首先对于数据使用group_by进行了分组聚合，计算出manufacturer变量的不同值对应的cty的平均值。然后对于group_by的结果进行了进行重命名，接着使用arrange函数对于数据集进行了排序。最后对于make变量的的因子进行重新设置。
+
+数据处理好之后开始画图，首先使用geom_point函数添加散点图，设定好散点图的颜色和点的大小。然后使用geom_segment函数添加线段，这里添加的线段是虚线，每一组的线段都是从0到mileage的最大值。在这种情况下，数据点并不在线段的末尾，添加虚线的原因也是为了辅助图形的阅读，其实不添加虚线也是可以的。
+
+从绘制出的图形中可以看到，点图和棒棒糖图很类似，只不过点图没有设置线条。点图表达的含义与条形图是一致的，点的高度等同于条形图的高度。都是用于显示数字和分类变量之间的关系。
+
+
+在图形中添加标签能够更加准确的表达数据信息，下面的代码中在点途中添加了标签，用于显示不同分类变量对应的值。
+
+```{r}
+library(ggplot2)
+ 
+data(mtcars)
+mtcars$`car name` <- rownames(mtcars)  # 创建一个新的列，记录数据集的行名
+mtcars$mpg_z <- round((mtcars$mpg - mean(mtcars$mpg))/sd(mtcars$mpg), 2)  # 对mpg变量标准化
+mtcars$mpg_type <- ifelse(mtcars$mpg_z < 0, "below", "above")  # 生成一个新变量
+mtcars <- mtcars %>% arrange(mpg_z)  # 对数据集进行排序
+mtcars$`car name` <- factor(mtcars$`car name`, levels = mtcars$`car name`)  
+
+
+
+#  绘制图形
+ggplot(mtcars, aes(x=`car name`, y=mpg_z, label=mpg_z)) + 
+  geom_point(aes(col=mpg_type), size=6)  + # stat='identity', 
+  scale_color_manual(name="Mileage", 
+                     labels = c("Above Average", "Below Average"), 
+                     values = c("above"="green", "below"="black")) + 
+  geom_text(color="white", size=2) +
+  labs(title="Diverging Dot Plot", 
+       subtitle="Normalized mileage from 'mtcars': Dotplot") + 
+  ylim(-2.5, 2.5) +
+  coord_flip()+theme_bw()
+
+```
+上面的绘图代码分为两个部分，第一部分是数据的处理，第二部分是绘图。这里使用到的数据集是mycars数据集，在上面的代码中，首先对于数据集生成了两个新的变量，用于储存数据集的行名称和mpg变量标准化之后的结果。然后使用ifelse函数进行判断,代码```ifelse(mtcars$mpg_z < 0, "below", "above")```表示对于mtcars的mpg_z变量进行判断是否小于0，如果是则返回below，否则返回above，然后将返回的结果赋值为mpg_type变量。接下来对数据根据mpg_z变量进行了排序，并且对于`car name`变量的因子顺序进行了重新设置。
+
+然后开始绘制，首先使用ggplot函数用于设置数据和定义数据的映射。然后使用geom_point函数添加点。需要注意的是这里没有使用geom_segment函数来添加线段。然后使用scale_color_manual函数对于不同的组别设置了颜色。使用geom_text函数设定了本文的颜色和文本的字体的大小。使用labs函数设置的标题和子标题。使用ylim设置了y轴的范围。使用coord_flip函数翻转了x轴和y轴。使用theme_bw()函数对于图形的主题进行了设置。
+
+
+
+棒棒糖图所传达的信息与条形图和点图相同。只是它看起来更现代。使用使用了geom_point和geom_segment来得到正确的棒棒糖。让我们使用我在前面的点图示例中准备的相同数据来画一个棒棒糖。 
+
+```{r}
+# 加载包
+library(ggplot2)
+
+# 绘制图形
+ggplot(mtcars, aes(x=`car name`, y=mpg_z, label=mpg_z)) + 
+  geom_point(stat='identity', fill="black", size=6)  +
+  geom_segment(aes(y = 0, 
+                   x = `car name`, 
+                   yend = mpg_z, 
+                   xend = `car name`), 
+               color = "black") +
+  geom_text(color="white", size=2) +
+  labs(title="Lollipop Chart", 
+       subtitle="Normalized mileage from 'mtcars': Lollipop") + 
+  ylim(-2.5, 2.5) +
+  coord_flip() + theme_bw()
+```
+上面的代码中所使用的的数据和上一个绘制点图的例子中所使用的的数据是一样的.从图形中可以观察到，线条从0的位置延伸到数据点的位置。上面的代码中，如果将geom_segment函数中的参数'y = 0'，改为'y = min(mpg_z)',则线段的起始位置将从0变成从mpg_z变量的最小值的位置开始。如下面的图形所示：
+```{r}
+# 绘制图形
+ggplot(mtcars, aes(x=`car name`, y=mpg_z, label=mpg_z)) + 
+  geom_point(stat='identity', fill="black", size=6)  +
+  geom_segment(aes(y = max(mpg_z), 
+                   x = `car name`, 
+                   yend = mpg_z, 
+                   xend = `car name`), 
+               color = "black") +
+  geom_text(color="white", size=2) +
+  labs(title="Lollipop Chart", 
+       subtitle="Normalized mileage from 'mtcars': Lollipop") + 
+  ylim(-2.5, 2.5) +
+  coord_flip() + theme_bw()
+```
+
+上面的代码将geom_segment函数中的参数'y = 0'，改为'y = min(mpg_z)',线段的起始位置将从0变成从mpg_z变量的最小值的位置开始。修改y参数可以调整线段的起始点的位置。同理如果将'y = min(mpg_z)'改成'y = max(mpg_z)',则棒棒糖图中的线条将会从右侧开始。
+
+
+坡度图是棒棒糖图的一种变形，坡度图是比较2个时间点之间位置位置的绝佳方法。目前，没有内置功能来构建它。以下代码用于绘制坡度图，其数据表示不同地区的gdp的情况。
+
+```{r}
+# 加载包
+library(ggplot2)
+library(scales)
+ 
+
+# 数据准备
+df <- read.csv("https://raw.githubusercontent.com/selva86/datasets/master/gdppercap.csv")
+colnames(df) <- c("continent", "1952", "1957")
+left_label <- paste(df$continent, round(df$`1952`),sep=", ")
+right_label <- paste(df$continent, round(df$`1957`),sep=", ")
+df$class <- ifelse((df$`1957` - df$`1952`) < 0, "red", "green")
+
+# 绘制图形
+p <- ggplot(df) + geom_segment(aes(x=1, xend=2, y=`1952`, yend=`1957`, col=class), size=.75, show.legend=F) + 
+                  geom_vline(xintercept=1, linetype="dashed", size=.1) + 
+                  geom_vline(xintercept=2, linetype="dashed", size=.1) +
+                  scale_color_manual(labels = c("Up", "Down"), 
+                                     values = c("green"="green", "red"="black")) +  # 设置线条的颜色
+                  labs(x="", y="Mean GdpPerCap") +  # 坐标轴标签
+                  xlim(.5, 2.5) + ylim(0,(1.1*(max(df$`1952`, df$`1957`))))  # 设置坐标轴标签的范围
+
+# 添加文本
+p <- p + geom_text(label=left_label, y=df$`1952`, x=rep(1, NROW(df)), hjust=1.1, size=3.5)
+p <- p + geom_text(label=right_label, y=df$`1957`, x=rep(2, NROW(df)), hjust=-0.1, size=3.5)
+p <- p + geom_text(label="Time 1", x=1, y=1.1*(max(df$`1952`, df$`1957`)), hjust=1.2, size=5)  # 添加标题
+p <- p + geom_text(label="Time 2", x=2, y=1.1*(max(df$`1952`, df$`1957`)), hjust=-0.1, size=5)  # 添加标题
+
+p + theme(panel.background = element_blank(), 
+           panel.grid = element_blank(),
+           axis.ticks = element_blank(),
+           axis.text.x = element_blank(),
+           panel.border = element_blank(),
+           plot.margin = unit(c(1,2,1,2), "cm")) +theme_classic()
+
+```
+
+上面的代码中，首先使用read.csv函数读取链接中的数据。然后进行了基本的处理。然后对于数据集进行了重命名。然后将变量continent和变量1952，变量continent和变量1957.这两组变量通过字符串合并的方式生成两个新的变量，分别为left_label和right_label，这样个变量在后面的代码中会作为图形中的标签。然后再df数据集中生成了一个新的变量，class，这个变量的值通过ifelse函数进行计算，如果(df$`1957` - df$`1952`)大于0，则class对应的值为red，否则为green。数据处理好之后则可以开始绘图。
+绘制图形的关键函数是geom_segment，使用这个函数绘制线条，线条起始点的位置是（1，`1952`）,末尾点的位置是(2,`1957`)。通过这个函数可以绘制好坡度图的线条。然后后使用geom_vline函数添加了两条垂直线，线条的位置分别是x=1和x=2的位置，参数linetype='dashed'表示的是线条的类型为虚线，size参数用于调整线条的粗细。到这里，坡度图就已经绘制好了。后面的代码对图形的展示进行了调整，使用scale_color_manual函数对于图形的颜色进行了调整。使用labs函数对坐标轴名称进行了设置，使用xlim和ylim对坐标轴的范围进行了调整。使用geom_text对于图形进行添加标签。最后使用theme函数对于图形的细节进行了调整。
+
+上文的图形绘制都比较复杂。接下来，开始介绍基础的棒棒糖图的绘制。
+
+
+## 基础棒棒糖图
+
+一个棒棒糖图形是来自散点图和条形图。因此，有两种输入格式可用于构建棒棒糖图：
+
+1. 2个数值，如散点图
+2. 一个数字和一个分类变量，如条形图（barplot）。
+
+在任何情况下，棒棒糖是使用内置geom_point()函数添加点，使用geom_segment()函数添加线条。geom_segment在点(x, y)和(xend, yend)之间绘制一条直线。另外,稍微提一下，使用geom_curve函数可以用于绘制一条曲线。
+
+下面的代码中首先闯将了2个数字变量，然后使用所常见的变量来绘制棒棒糖图。
+
+```{r}
+# 加载包
+library(ggplot2)
+
+# 创建数据集
+data <- data.frame(x=seq(1,30), y=abs(rnorm(30)))
+ 
+# 绘制图形
+ggplot(data, aes(x=x, y=y)) +
+  geom_point() + 
+  geom_segment( aes(x=x, xend=x, y=0, yend=y))
+```
+上面的代码中首先创建了一个数据框，数据框包含两个变量，第一个变量x是使用seq函数创建了一个1到30的向量，第二个变量y是包含30个正态分布的值,abs函数用于对数据取绝对值。
+
+创建好数据之后，开始构建棒棒糖图。在绘制棒棒糖图的时候，这里首先使用geom_point函数创建了散点图。然后使用geom_segment函数添加线段,上面的代码中，线段从(x,0)点开始，到(x,y)结束。这里所绘制的棒棒糖图本质上是将x变量当做分类变量进行了处理。
+
+下面绘制1个数值变量和1个离散变量的棒棒糖图：代码的工作方式几乎相同，但重要的是要注意X轴也可以表示分类变量。在这种情况下，棒棒糖图是一个很好的替代了的条形图。特别是当条形图的组别非常的多的时候，棒棒糖图的含义与条形图是一样的，但是其表现力比条形图要更加的好。
+
+```{r}
+#  加载包
+library(ggplot2)
+
+# 创建数据集
+data <- data.frame(
+  x=LETTERS[1:26], 
+  y=abs(rnorm(26))
+)
+ 
+# 绘制图形
+ggplot(data, aes(x=x, y=y)) +
+  geom_point() + 
+  geom_segment( aes(x=x, xend=x, y=0, yend=y))
+```
+
+上面的代码中同样线创建了一个数据框，数据框的第一个变量x为26个字母，第二个变量y表示的是从正态分布中生成了26个值，并对结果取了绝对值。然后绘图的代码与上文的代码是一样的，只不过数据不一样。通过这样的方式，则绘制出了离散变量和数值变量的棒棒糖图。
+
+
+## 棒棒图参数的调节
+
+
+棒棒糖图形构成的是一个数据点和一条线段。因此，散点图的参数都可以子这里进行调整，这些参数包括：
+
+1. size：大小
+2. color ：颜色
+3. alpha ：透明度
+4. shape ：形状，形状的种类如下图所示：
+![](/Users/milin/写书/shape1.png)
+
+5. fill : 填充颜色
+
+下面的代码使用了与上文一样的数据集，在绘制基础棒棒糖图的基础上对图形中点的参数进行了调整：
+
+```{r}
+# 加载包
+library(tidyverse)
+ 
+#  创建数据集
+data <- data.frame(
+  x=LETTERS[1:26],
+  y=abs(rnorm(26))
+)
+ 
+# 绘制图形
+ggplot(data, aes(x=x, y=y)) +
+  geom_segment( aes(x=x, xend=x, y=0, yend=y)) +
+  geom_point( size=5, color="red", fill='green', alpha=0.7, shape=21, stroke=2)  # 
+```
+
+上面的代码中创建了一个数据集，和上文的一样，数据集中包含两个变量，第一个变量x为26个字母，第二个变量y表示的是从正态分布中生成了26个值，并对结果取了绝对值。然后绘制了棒棒糖图，在绘制图形的过程中，对点的参数进行了调整，首先使用size参数设置了点的大小，使用color和fill函数设置了点的线条颜色和点的内部的填充颜色,alpha用于调整点的透明度，shape参数调整了点的形状，stroke 参数可以再点的外围加上一个圈，stroke参数的值越大，则圈越大。
+
+棒棒糖图中的线条是使用geom_segment()函数构建的，也可以自定义参数：
+1. size， color
+2. linetype ：可以是整数，字等dotted，dashed，dotdash和多种,如下图所示
+
+![](/Users/milin/Documents/linetype.jpg)
+
+下面的代码对于棒棒糖图的线条进行了调整:
+```{r}
+# 加载包
+library(ggplot2)
+
+#  创建数据集
+data <- data.frame(
+  x=LETTERS[1:26],
+  y=abs(rnorm(26))
+)
+
+# 绘制图形
+ggplot(data, aes(x=x, y=y)) +
+  geom_segment( aes(x=x, xend=x, y=0, yend=y) , size=1, color="grey", linetype="dotdash" ) + geom_point()
+```
+
+上面的代码所使用的数据集合和上文的是一样的。代码中，在使用geom_segment函数进行绘图的时候，对于参数进行了设置。使用size设置了线条的大小，color设定了线条的颜色，linetype 设置了线条的种类。
+
+可以使用该theme()功能自定义图表的一般外观。
+注意，还可以使用主题函数，例如hrbrthemes包中的theme_ipsum()。
+
+```{r}
+# 加载包
+library(ggplot2)
+
+# 创建数据集
+data <- data.frame(
+  x=LETTERS[1:26],
+  y=abs(rnorm(26))
+)
+
+# 绘制图形
+ggplot(data, aes(x=x, y=y)) +
+  geom_segment( aes(x=x, xend=x, y=0, yend=y), color="grey") +
+  geom_point( color="orange", size=4) +
+  theme_light() +
+  theme(
+    panel.grid.major.x = element_blank(),
+    panel.border = element_blank(),
+  ) +
+  xlab("") +
+  ylab("Value of Y")
+
+```
+
+
+上面的代码使用theme函数对于图形的外观进行了调整，其中参数panel.grid.major.x用于调整图形中的y轴网格线，这里取消了y轴的网格线。panel.border用于调整图形的边框，在这里取消了图形的边框。可以使用theme函数进行图形调节的参数非常的多，图形的各个方面都可以通过这个参数进行调整， 包括图形的标题，图形的坐标轴，图形的图例等等，详细的参数设置可以查看关于这个参数的参数文档。
+
+如果需要图形的翻转。使用coord_flip()函数可以实现对于图形的翻转。如果图形中存在长标签，则更加合适的方法是将图形翻转起来，这样的话图形将更容易阅读。
+
+```{r}
+# 加载包
+library(ggplot2)
+
+#  创建数据集
+data <- data.frame(
+  x=LETTERS[1:26],
+  y=abs(rnorm(26))
+)
+
+# 绘制图形，然后将图形反转
+ggplot(data, aes(x=x, y=y)) +
+  geom_segment( aes(x=x, xend=x, y=0, yend=y), color="skyblue") +
+  geom_point( color="red", size=4, alpha=0.6) +
+  theme_light() +
+  coord_flip() +
+  theme(
+    panel.grid.major.y = element_blank(),
+    panel.border = element_blank(),
+    axis.ticks.y = element_blank()
+  )
+```
+
+上面的代码中，在绘图的过程中添加了coord_flip()函数。从图形中可观察到，坐标轴x和坐标轴y被转换过来了。
+
+最后，可以轻松更改图表的线条。如果感兴趣的数据中存在特定阈值，则可以更深入地了解该图。只需更改调用中的y参数即可geom_segment()。
+
+```{r}
+# 加载包
+library(ggplot2)
+
+# 创建数据集
+data <- data.frame(
+  x=LETTERS[1:26],
+  y=abs(rnorm(26))
+)
+
+# 改变基线
+ggplot(data, aes(x=x, y=y)) +
+  geom_segment( aes(x=x, xend=x, y=1, yend=y), color="grey") +
+  geom_point( color="red", size=4) +
+  theme_light() +
+  theme(
+    panel.grid.major.x = element_blank(),
+    panel.border = element_blank(),
+    axis.ticks.x = element_blank()
+  ) +
+  xlab("") +
+  ylab("Value of Y")
+```
+
+上面的图形中和上文绘制的图形是一致的，但是这个棒棒糖图中，线条的七点都是从1的位置开始。这是因为，在调用geom_segment函数的时候，y设设置为1，这样的话，最后的图形中，线段的起点则会从1的位置开始。
+
+
+## 添加标注
+
+注释是数据可视化的关键，它允许读者专注于图形想要传达的主要信息。如果一个或几个小组特别感兴趣，那么在图形中突出显示它们是一个好习惯。读者将更快地了解图表背后的故事。
+要做到这一点，可以用一个ifelse语句来更改size，color，alpha或其他任何图形参数。此外，直接在图表上添加文本注释更具洞察力。
+
+```{r}
+# 加载包
+library(ggplot2)
+library(dplyr)
+library(hrbrthemes)
+
+# 创建数据集
+set.seed(1000)
+data <- data.frame(
+  x=LETTERS[1:26], 
+  y=abs(rnorm(26))
+)
+ 
+# 对数据集进行重新排序
+data <- data %>%
+  arrange(y) %>%
+  mutate(x=factor(x,x))
+  
+# 绘制图形
+p <- ggplot(data, aes(x=x, y=y)) +
+  geom_segment( aes(x=x, xend=x, y=0, yend=y ), color=ifelse(data$x %in% c("A","D"), "orange", "grey"), size=ifelse(data$x %in% c("A","D"), 1.3, 0.7) ) +
+  geom_point( color=ifelse(data$x %in% c("A","D"), "orange", "grey"), size=ifelse(data$x %in% c("A","D"), 5, 2) ) +
+  theme_ipsum() +
+  coord_flip() +
+  theme(
+    legend.position="none"
+  ) +
+  xlab("") +
+  ylab("Value of Y") +
+  ggtitle("How did groups A and D perform?")
+
+#  添加注释
+p + annotate("text", x=grep("D", data$x), y=data$y[which(data$x=="D")]*1.2, 
+           label="Group D ", 
+           color="orange", size=4 , angle=0, fontface="bold", hjust=0) + 
+  
+    annotate("text", x = grep("A", data$x), y = data$y[which(data$x=="A")]*1.2, 
+           label = paste("Group A is not too bad\n (val=",data$y[which(data$x=="A")] %>% round(2),")",sep="" ) , 
+           color="orange", size=4 , angle=0, fontface="bold",hjust=0) 
+```
+
+上面的图形中，对某些线条进行了突出显示，并且添加了注释，这样的结果会使得图形变得更加的清晰，更方便读者进行阅读。在上面的代码中，首先创建了一个数据集，数据集包含两个变量，x变量和y变量。其中x变量为离散变量，y为连续变量。然后对数据及根据y的大小进行排序，并对离散变量的因子顺序进行了设定。
+
+需要注意的是，在调用geom_segment函数的时候，代码``` color=ifelse(data$x %in% c("A","D"), "red", "grey"), size=ifelse(data$x %in% c("A","D"), 1.3, 0.7)```,对于图形进行了突出显示，其中,代码```color=ifelse(data$x %in% c("A","D"), "orange", "grey")```表示如果x变量为‘A‘或者是'D',则将颜色设置为’red‘,否则设置为'grey'。代码```size=ifelse(data$x %in% c("A","D"), 1.3, 0.7)```则表示，如果x变量为'A'或者'D',则将线条的size设置为1.3，否则设置为0.7。通过这样的方式使得'A'和'D'这两组图形通过颜色和大小更其他组别区分开来。annotate函数用于添加标签，annotate函数中，第一个参数'text'表示添加到的是文本，x和y这两个参数用于指定标签添加的位置，label参数用于指点条前的文本，color用于指定标签的颜色，size用于指定标签的大小，angle用于指定标签的角度。关于annotate函数的使用方式，在后文会有详细的介绍。
+
+
+
+# 条形图
+
+条形图用于显示数字和分类变量之间的关系。条形图包括堆叠条形图和分组条形图，其中显示了多个级别的分组。条形图是最常见的图形类型之一。它显示了数字和分类变量之间的关系。分类变量的每个实体都表示为一个条形。条形的大小表示其数值。
+
+这是一个显示2017年前20大出口商出口某种商品的数量的条形图例子：
+```{r}
+# 加载包
+library(tidyverse)
+library(hrbrthemes)
+library(kableExtra)
+options(knitr.table.format = "html")
+
+# 从github中获取数据
+data <- read.table("https://raw.githubusercontent.com/holtzy/data_to_viz/master/Example_dataset/7_OneCatOneNum.csv", header=TRUE, sep=",")
+
+# 绘制条形图
+data %>%
+  filter(!is.na(Value)) %>%
+  arrange(Value) %>%
+  tail(20) %>%
+  mutate(Country=factor(Country, Country)) %>%
+  ggplot( aes(x=Country, y=Value) ) +
+    geom_bar(stat="identity", fill="#69b3a2") + # ,
+    coord_flip() +
+    theme_ipsum() +
+    theme(
+      panel.grid.minor.y = element_blank(),
+      panel.grid.major.y = element_blank(),
+      legend.position="none"
+    ) +
+    xlab("") +
+    ylab("")
+```
+
+上面的代码绘制了条形图，绘制条形图所使用的的函数是geom_bar。条形图的绘制方式非常的简单，在使用使用ggplot定义数据映射的时候，x对应的是离散变量，y对应的是连续变量。然后加上'''geom_bar(stat="identity")''',即可绘制出条形图。其他的代码都是对于图形的一些调整。
+
+条形图显示数字和分类变量之间的关系。在上图中，每个国家/地区都是分类变量的级别，销售的商品的数量是数字变量。一个经过排序之后的条形图是一个非常不错的选择，因为它显示地区出口量的排名和他们的具体的值。
+
+条形图也可以显示不同的组别。在下图中，给定婴儿名字的数量由名称（级别1）和每年（级别2）提供。有了这种信息，就有可能建立一个分组的条形图：
+```{r}
+# 加载包
+library(tidyverse)
+library(hrbrthemes)
+library(babynames)
+library(viridis)
+
+#使用babynames 数据集进行绘图，对babynames数据集进行处理
+data <- babynames %>% 
+  filter(name %in% c("Ashley", "Amanda", "Jessica",    "Patricia", "Linda", "Deborah",   "Dorothy", "Betty", "Helen")) %>%
+  filter(sex=='F')
+
+#  绘制分组的条形图
+data  %>% 
+  filter(name %in% c("Ashley", "Patricia", "Betty", "Helen")) %>%
+  filter(year %in% c(1920, 1960, 2000)) %>%
+  mutate(year=as.factor(year)) %>%
+  ggplot( aes(x=year, y=n, fill=name)) +
+    geom_bar(stat="identity", position="dodge") + # 
+    scale_fill_viridis(discrete=TRUE, name="") +
+    theme_ipsum() +
+    ylab("Number of baby")
+```
+
+同样的代理，和绘制分组的箱线图类似，只是将name变量传递给了fill参数，则可以绘制出分组的条形图，不同的name对应着不同的颜色。从图中可以看到，1920年Helen这个名字使用最多，而在1960年Patricia这个名字使用最多，而在2000年Ashley这个名字使用最多。需要注意的是使用geom_bar函数绘制分组条形图的时候，要设置参数 position="dodge"。如果没有设置这个参数，则会绘制堆叠条形图。因此除了绘制分组的条形图，还可以不将条形物彼此相邻放置，而是可以将它们堆叠起来，从而形成堆叠的条形图，下面的代码绘制了堆叠条形图如图所示：
+
+```{r}
+#   绘制分组的条形图
+data  %>% 
+  filter(name %in% c("Ashley", "Patricia", "Betty", "Helen")) %>%
+  filter(year %in% c(1920, 1960, 2000)) %>%
+  mutate(year=as.factor(year)) %>%
+  ggplot( aes(x=year, y=n, fill=name)) +
+    geom_bar(stat="identity", width = 0.5) +
+    scale_fill_viridis(discrete=TRUE, name="") +
+    theme_ipsum() +
+    ylab("Number of baby")
+```
+
+上面的代码绘制了堆叠条形图，创建堆叠条形图的方式和创建分组条形图的方式非常的相似，只不过在调用 geom_bar()的时候没有设置参数，position="dodge"。
+
+
+如果有许多组，也可以考虑圆形条形图。圆形条形图被用来比较非常多组的条形图，下面的代码绘制了一个圆形条形图，如图所示：
+
+```{r}
+# 从github中获取数据集
+data <- read.table("https://raw.githubusercontent.com/holtzy/data_to_viz/master/Example_dataset/7_OneCatOneNum.csv", header=TRUE, sep=",")
+
+# 对数据集进行排序
+tmp <- data %>%
+  filter(!is.na(Value)) %>%
+  arrange(desc(Value)) %>%
+  mutate(Country=factor(Country, Country))
+
+ 
+empty_bar=10
+
+# 添加线段
+to_add = matrix(NA, empty_bar, ncol(tmp))
+colnames(to_add) = colnames(tmp)
+tmp=rbind(tmp, to_add)
+tmp$id=seq(1, nrow(tmp))
+
+# 获取每个标签的名称和y位置
+label_tmp=tmp
+number_of_bar=nrow(label_tmp)
+angle= 90 - 360 * (label_tmp$id-0.5) /number_of_bar     
+label_tmp$hjust<-ifelse( angle < -90, 1, 0)
+label_tmp$angle<-ifelse(angle < -90, angle+180, angle)
+label_tmp$Country <- gsub("United States", "US", label_tmp$Country)
+label_tmp$Country <- paste(label_tmp$Country, " (", label_tmp$Value,")", sep="")
+
+#  绘制图形
+ggplot(tmp, aes(x=as.factor(id), y=Value)) +       #注意，id是一个因子类型。如果x是数值型的，则在第一个栏之间有一些空格
+  geom_bar(stat="identity", fill=alpha("#69b3a2", 0.8)) +
+  ylim(-7000,13000) +
+  theme_minimal() +
+  theme(
+    axis.text = element_blank(),
+    axis.title = element_blank(),
+    panel.grid = element_blank(),
+    plot.margin = unit(rep(-1,4), "cm") 
+  ) +
+  coord_polar(start = 0) + 
+  geom_text(data=label_tmp, aes(x=id, y=Value+200, label=Country ), color="black", fontface="bold",alpha=0.6, size=2.5, angle= label_tmp$angle, hjust=label_tmp$hjust, inherit.aes = FALSE ) +
+  geom_text( aes(x=24, y=8000, label="Who sells more weapons?"), color="black", inherit.aes = FALSE)
+```
+
+绘制圆形条形图的过程比较复杂，虽然使用的函数还是geom_bar函数，上面的代码中绘制分组条形图的关键函数是theme函数和coord_polar。使用theme函数对图形的坐标，标题，图形边界都进行了修改。使用coord_polar函数将推行进行了翻转。
+
+需要注意的是不要将条形图与直方图混淆。直方图只有一个数字变量作为输入并显示其分布。
+
+在绘制条形图的时候。如果分类变量的级别没有明显的顺序，最好按照其值排序条形。
+如果数据中每组有几个值，不要使用条形图。即使有误差棒，它也会隐藏信息，而其他类型的图形如箱线图或小提琴则更为合适。
+
+
+
+## 绘制基础的条形图
+
+绘制条形图的函数是geom_bar()，如果仅提供连续的X变量（并且没有Y变量）时，它会尝试从数据中生成直方图。为了使条形图创建条形而不是直方图，需要做两件事。
+
+设置参数，stat='identity',同时在aes中提供x和y，x是离散变量并且y是连续变量。
+条形图可以从分类列变量或单独的频率表中绘制。通过调整width，可以调整条的宽度。如果只有一个分类变量，相对这个分类变得计数结果绘制直方图，则不需要设置stat='identity'.
+
+步骤：
+1. 总是从调用ggplot()函数开始。
+2. 然后指定data对象。它必须是一个数据框架。它需要一个数字和一个分类变量。
+3. 然后指定数据的映射，为X轴设置分类变量，使用数字作为Y轴
+4. 最后调用geom_bar()。必须设定参数stat="identity"。
+
+```{r}
+# 加载包
+library(ggplot2)
+
+# C 创建数据集
+data <- data.frame(
+  name=c("A","B","C","D","E") ,  
+  value=c(3,12,5,18,45)
+  )
+
+# 绘制条形图
+ggplot(data, aes(x=name, y=value)) + 
+  geom_bar(stat="identity")
+```
+
+下面的代码绘制了一个最简单的条形图，其中x对应的是离散变量，y对应的是连续变量。然后调用geom_bar，并设置stat="identity"，表示不需要对于数据进行计数。则可以绘制出条形图。
+```{r}
+data <- data.frame(name = c(rep("A",3),rep("B",12),rep("C",5),rep("D",18),
+                            rep("E",45))) # 创建数据集
+ 
+ggplot(data, aes(x=name)) +  # 绘制图形
+  geom_bar()
+```
+上图的结果和之前图形的结果是一样的，在上面的代码中，绘制条形图中只设置了一个分类变量作为x，并且在调用geom_bar()函数的时候没有设置任何参数。需要注意的时候，这个时候绘图的数据集和上文的数据集虽然含义是一样的，但是数据的表现形式不一样。上面的代码中，数据集只有一个变量，变量name中A出现了3次，对应上文数据集变量name中的A值对应的value为3。而上文的数据集相当于对此数据集进行了分组聚合，计算出了变量name每个值出现的次数。
+
+在绘制条形图的时候，需要先区分数据的形式，然后再以正确的方法进行绘制图形。
+
+如果需要对于图形的颜色进行调整，以下是一些控制条形颜色的不同方法。请注意，在这种情况下使用图例不是必需的，因为名称已经显示在X轴上。你可以通过代码theme(legend.position="none")进行删除图例。
+```{r}
+# Libraries
+library(ggplot2)
+
+# 绘制图形，并且调整颜色
+ggplot(mtcars, aes(x=as.factor(cyl) )) +
+  geom_bar(color="blue", fill=rgb(0.1,0.4,0.5,0.7) )
+ 
+```
+
+第一种方法是通过图形的color参数和fill参数直接设置图形的颜色。
+```{r}
+# 2:  使用scale_fill_hue函数调整颜色
+ggplot(mtcars, aes(x=as.factor(cyl), fill=as.factor(cyl) )) + 
+  geom_bar( ) +
+  scale_fill_hue(c = 40) +
+  theme(legend.position="none")
+```
+第二种使用过讲一个变量映射给color或者fill参数来设置图形的颜色。并且使用scale_fill_hue函数来调整图形的配色。
+```{r}
+# 3: 使用 RColorBrewer 包调整颜色
+ggplot(mtcars, aes(x=as.factor(cyl), fill=as.factor(cyl) )) + 
+  geom_bar( ) +
+  scale_fill_brewer(palette = "Set1") +
+  theme(legend.position="none")
+
+
+```
+第三种方式使用了scale_fill_brewer函数来调整图形的配色。
+
+```{r}
+ 
+# 4: 使用scale_fill_grey函数调整颜色
+ggplot(mtcars, aes(x=as.factor(cyl), fill=as.factor(cyl) )) + 
+  geom_bar( ) +
+  scale_fill_grey(start = 0.25, end = 0.75) +
+  theme(legend.position="none")
+
+ 
+```
+
+第四种方式使用了scale_fill_grey函数将图形调整为灰色调。
+
+```{r}
+# 5: 使用scale_fill_manual调整颜色
+ggplot(mtcars, aes(x=as.factor(cyl), fill=as.factor(cyl) )) +  
+  geom_bar( ) +
+  scale_fill_manual(values = c("DarkMagenta", "Turquoise", "Yellow") ) +
+  theme(legend.position="none")
+```
+
+第五种方式使用了scale_fill_manual函数将图形分别指定为深洋红色，绿宝石和纯黄。
+
+将条形图水平放置可以很好地展示图形。实际上，它使得图形的组标签更容易阅读。
+幸运的是，该coord_flip()函数可以很容易的将图形进行翻转。
+```{r}
+#  加载ggplot2包
+library(ggplot2)
+
+#  创建数据集
+data <- data.frame(
+  name=c("A","B","C","D","E") ,  
+  value=c(3,12,5,18,45)
+  )
+
+# 绘制条形图
+ggplot(data, aes(x=name, y=value)) + 
+  geom_bar(stat = "identity") +
+  coord_flip()+theme_ipsum()
+```
+
+上面的代码中，使用了geom_bar函数绘制好图形之后，使用coord_flip()函数将图形进行了翻转。
+
+## 改变条形图宽度
+
+geom_bar()函数的width参数允许控制条宽。它的范围在0到1之间。下面的代码调整了条形图的宽度。
+
+```{r}
+#  加载包
+library(ggplot2)
+
+#  创建数据集
+data <- data.frame(
+  name=c("A","B","C","D","E") ,  
+  value=c(3,12,5,18,45)
+  )
+
+# 绘制条形图
+ggplot(data, aes(x=name, y=value)) + 
+  geom_bar(stat = "identity", width=0.2) +theme_ipsum()
+```
+
+上面的代码中，将width参数设置为0.2。从图中可以观察到，条形图的每组的宽度变得非常的窄。
+
+
+
+
+## 添加误差棒
+
+误差棒可以概括地了解数据的精确程度。如果条形图所使用的的数据是聚合的结果（如几个数据点的平均值），则可能需要显示误差线。
+
+要了解如何构建它，首先需要了解如何使用R 构建基本条形图。然后，只需使用geom_errorbar()函数添加一个额外的图层。
+
+geom_errorbar函数在至少需要3个参数：
+
+ymin和ymax：误差棒的底部和顶部的位置
+x：X轴上的位置
+注意：必须在构建图表之前计算误差线的下限和上限，并在输入数据的列中提供。
+
+下面的代码中在条形图中添加了误差棒。
+```{r}
+#  加载包
+library(ggplot2)
+
+#  创建数据集
+data <- data.frame(
+  name=letters[1:5],
+  value=sample(seq(4,15),5),
+  sd=c(1,0.2,3,2,4)
+)
+ 
+#  添加误差棒
+ggplot(data) +
+    geom_bar( aes(x=name, y=value), stat="identity", fill="skyblue", alpha=0.7) +
+    geom_errorbar( aes(x=name, ymin=value-sd, ymax=value+sd), width=0.4, colour="red", alpha=0.9, size=1.3)
+
+```
+上面的代码在条形图中添加了误差棒。首先使用geom_bar函数绘制出了条形图，然后再使用geom_errorbar函数添加误差棒，在参数的设置中，x = name用于指定误差棒在x轴的位置。ymin参数用于指定误差棒的下限，ymax用于指定误差棒的上限。width参数用于指定误差棒的宽度，color用于指定误差棒的颜色,alpha用于指定透明度，而size用于指定误差棒的大小。
+
+另外，可以修改误差棒的类型。使用geom_linerange()函数可以使用线条来表示误差棒，使用geom_pointrange()函数使用点来显示误差棒，使用geom_crossbar函数可以使用方框的形式表示误差。
+ 
+
+```{r}
+#  加载包
+library(ggplot2)
+
+#  创建数据集
+data <- data.frame(
+  name=letters[1:5],
+  value=sample(seq(4,15),5),
+  sd=c(1,0.2,3,2,4)
+)
+
+# 矩形
+ggplot(data) +
+  geom_bar( aes(x=name, y=value), stat="identity", fill="skyblue", alpha=0.5) +
+  geom_crossbar( aes(x=name, y=value, ymin=value-sd, ymax=value+sd), width=0.4, colour="orange", alpha=0.9, size=1.3)
+ 
+
+
+```
+
+上面的代码使用了geom_crossbar函数来绘制误差，从图形中可以观察到，图形中的误差通过箱子来表示。
+```{r}
+#  线条
+ggplot(data) +
+  geom_bar( aes(x=name, y=value), stat="identity", fill="skyblue", alpha=0.5) +
+  geom_linerange( aes(x=name, ymin=value-sd, ymax=value+sd), colour="orange", alpha=0.9, size=1.3)
+
+
+```
+
+上面的代码中使用了geom_linerange函数来绘制误差，从图形中可以观察到，条形图的误差通过线条来进行表示。
+```{r}
+#  线条 + 点
+ggplot(data) +
+  geom_bar( aes(x=name, y=value), stat="identity", fill="skyblue", alpha=0.5) +
+  geom_pointrange( aes(x=name, y=value, ymin=value-sd, ymax=value+sd), colour="orange", alpha=0.9, size=1.3)
+ 
+
+```
+
+上面的代码中使用了geom_pointrange函数绘制无哈，从图形中可以观察到，条形图中误差通过点和线条来进行表示。
+
+标注差，标准误差或置信区间？三种不同类型的值通常用于误差线，有时甚至没有指定使用哪一种。重要的是要了解它们的计算方法，因为它们给出了非常不同的结果，这些差异会极大地影响最后的结论。下面的代码中分别使用标准差，标准误差和执行区间来绘制误差棒：
+
+```{r}
+#  加载包
+library(ggplot2)
+library(dplyr)
+
+#  数据
+data <- iris %>% select(Species, Sepal.Length) 
+ 
+# 计算均值，标准差等等
+my_sum <- data %>%
+  group_by(Species) %>%
+  summarise( 
+    n=n(),
+    mean=mean(Sepal.Length),
+    sd=sd(Sepal.Length)
+  ) %>%
+  mutate( se=sd/sqrt(n))  %>%
+  mutate( ic=se * qt((1-0.05)/2 + .5, n-1))
+ 
+# 标准偏差
+ggplot(my_sum) +
+  geom_bar( aes(x=Species, y=mean), stat="identity", fill="forestgreen", alpha=0.5) +
+  geom_errorbar( aes(x=Species, ymin=mean-sd, ymax=mean+sd), width=0.4, colour="orange", alpha=0.9, size=1.5) +
+  ggtitle("using standard deviation")
+ 
+
+```
+
+上面的代码中，首先对于数据集分别计算了关于数据的标注差，标准误差和置信区间。上面的图形根据标准差的结果绘制误差棒。从数据中可以看到误差棒的范围比较宽。
+```{r}
+# 标准误差
+ggplot(my_sum) +
+  geom_bar( aes(x=Species, y=mean), stat="identity", fill="forestgreen", alpha=0.5) +
+  geom_errorbar( aes(x=Species, ymin=mean-se, ymax=mean+se), width=0.4, colour="orange", alpha=0.9, size=1.5) +
+  ggtitle("using standard error")
+ 
+
+```
+上面的代码中，使用的标准误差的结果来绘制误差棒，从图形的结果中可以看到，误差棒的范围非常的窄。 
+
+```{r}
+# 置信区间
+ggplot(my_sum) +
+  geom_bar( aes(x=Species, y=mean), stat="identity", fill="forestgreen", alpha=0.5) +
+  geom_errorbar( aes(x=Species, ymin=mean-ic, ymax=mean+ic), width=0.4, colour="orange", alpha=0.9, size=1.5) +
+  ggtitle("using confidence interval")
+```
+上面的代码使用了置信区间的结果来表示误差棒，从结果中可以看到，误差棒的结果与上图相比，范围稍微宽了一些。
+
+# 圆形条形图
+
+
+圆形条形图本质上还是条形图是一个条形图，每个条形显示为一个圆而不是一条线。因此，建议在制作圆形图之前充分了解条形图的工作原理。圆形条形图非常“引人注目”，并且比通常的长条形图更好地利用空间。
+
+
+这是一个显示2017年20个出口商出口某商品数量的例子，
+```{r}
+# 加载包
+library(tidyverse)
+library(hrbrthemes)
+library(kableExtra)
+options(knitr.table.format = "html")
+library(viridis)
+
+# 从github中获取数据
+data <- read.table("https://raw.githubusercontent.com/holtzy/data_to_viz/master/Example_dataset/7_OneCatOneNum.csv", header=TRUE, sep=",")
+
+# 对数据进行排序
+tmp <- data %>%
+  filter(!is.na(Value)) %>%
+  arrange(desc(Value)) %>%
+  mutate(Country=factor(Country, Country))
+
+
+empty_bar=10
+
+# 田间线段
+to_add = matrix(NA, empty_bar, ncol(tmp))
+colnames(to_add) = colnames(tmp)
+tmp=rbind(tmp, to_add)
+tmp$id=seq(1, nrow(tmp))
+
+#获取每个标签的名称和y位置
+label_tmp=tmp
+number_of_bar=nrow(label_tmp)
+angle= 90 - 360 * (label_tmp$id-0.5) /number_of_bar    
+label_tmp$hjust<-ifelse( angle < -90, 1, 0)
+label_tmp$angle<-ifelse(angle < -90, angle+180, angle)
+label_tmp$Country <- gsub("United States", "US", label_tmp$Country)
+label_tmp$Country <- paste(label_tmp$Country, " (", label_tmp$Value,")", sep="")
+
+# Make the plot
+ggplot(tmp, aes(x=as.factor(id), y=Value)) +       # 注意，id是一个因子。如果x是数值型的，则在第一个栏之间有一些空格
+  geom_bar(stat="identity", fill=alpha("#69b3a2", 0.8)) +
+  ylim(-7000,13000) +
+  theme_minimal() +
+  theme(
+    axis.text = element_blank(),
+    axis.title = element_blank(),
+    panel.grid = element_blank(),
+    plot.margin = unit(rep(-1,4), "cm") 
+  ) +
+  coord_polar(start = 0) + 
+  geom_text(data=label_tmp, aes(x=id, y=Value+200, label=Country ), color="black", fontface="bold",alpha=0.6, size=2.5, angle= label_tmp$angle, hjust=label_tmp$hjust, inherit.aes = FALSE ) +
+  geom_text( aes(x=24, y=8000, label="Who sells more weapons?"), color="black", inherit.aes = FALSE)
+```
+
+上面的代码绘制了圆形条形图。绘制圆形条形图的关键代码是theme函数的使用，coord_polar函数的使用和ylim函数的时候，前两个函数分别对于图形的坐标系进行条形和将图形转换成为圆的形状。ylim调整了圆形条形图内圈的大小。其他的代码和和绘制条形图并没有差异。上面的图形中不显示Y刻度，因为在每个条上都写有精确值。
+
+圆形条形图真的很引人注目，但却更难以阅读每个条形尺寸之间的差异。因此，圆形条形图只有在显示大量条形图时才有意义。
+
+通常而言，圆形条形图通过分组变量变得更加有具有表现力。在以下使用虚拟数据的示例中，可以轻松地对于不同组别的数据进行比较。
+
+
+
+```{r}
+# 创建数据集
+data=data.frame(
+  individual=paste( "Mister ", seq(1,60), sep=""),
+  group=c( rep('A', 10), rep('B', 30), rep('C', 14), rep('D', 6)) ,
+  value=sample( seq(10,100), 60, replace=T)
+)
+data = data %>% arrange(group, value)
+
+
+empty_bar=3
+to_add = data.frame( matrix(NA, empty_bar*nlevels(data$group), ncol(data)) )
+colnames(to_add) = colnames(data)
+to_add$group=rep(levels(data$group), each=empty_bar)
+data=rbind(data, to_add)
+data=data %>% arrange(group)
+data$id=seq(1, nrow(data))
+ 
+# 获取每个标签的名称和y位置
+label_data=data
+number_of_bar=nrow(label_data)
+angle= 90 - 360 * (label_data$id-0.5) /number_of_bar    
+label_data$hjust<-ifelse( angle < -90, 1, 0)
+label_data$angle<-ifelse(angle < -90, angle+180, angle)
+ 
+#  对数据进行处理
+base_data=data %>% 
+  group_by(group) %>% 
+  summarize(start=min(id), end=max(id) - empty_bar) %>% 
+  rowwise() %>% 
+  mutate(title=mean(c(start, end)))
+ 
+# 对数据进行处理
+grid_data = base_data
+grid_data$end = grid_data$end[ c( nrow(grid_data), 1:nrow(grid_data)-1)] + 1
+grid_data$start = grid_data$start - 1
+grid_data=grid_data[-1,]
+ 
+#  绘制图形
+p = ggplot(data, aes(x=as.factor(id), y=value, fill=group)) +       
+  
+  geom_bar(aes(x=as.factor(id), y=value, fill=group), stat="identity", alpha=0.5) +
+  geom_segment(data=grid_data, aes(x = end, y = 80, xend = start, yend = 80), colour = "grey", alpha=1, size=0.3 , inherit.aes = FALSE ) +
+  geom_segment(data=grid_data, aes(x = end, y = 60, xend = start, yend = 60), colour = "grey", alpha=1, size=0.3 , inherit.aes = FALSE ) +
+  geom_segment(data=grid_data, aes(x = end, y = 40, xend = start, yend = 40), colour = "grey", alpha=1, size=0.3 , inherit.aes = FALSE ) +
+  geom_segment(data=grid_data, aes(x = end, y = 20, xend = start, yend = 20), colour = "grey", alpha=1, size=0.3 , inherit.aes = FALSE ) +
+  
+  # 添加文本
+  annotate("text", x = rep(max(data$id),4), y = c(20, 40, 60, 80), label = c("20", "40", "60", "80") , color="grey", size=3 , angle=0, fontface="bold", hjust=1) +
+  
+  geom_bar(aes(x=as.factor(id), y=value, fill=group), stat="identity", alpha=0.5) +
+  ylim(-100,120) +
+  theme_minimal() +
+  theme(
+    legend.position = "none",
+    axis.text = element_blank(),
+    axis.title = element_blank(),
+    panel.grid = element_blank(),
+    plot.margin = unit(rep(-1,4), "cm") 
+  ) +
+  coord_polar() + 
+  geom_text(data=label_data, aes(x=id, y=value+10, label=individual, hjust=hjust), color="black", fontface="bold",alpha=0.6, size=2.5, angle= label_data$angle, inherit.aes = FALSE ) +
+  
+  # 添加基线信息
+  geom_segment(data=base_data, aes(x = start, y = -5, xend = end, yend = -5), colour = "black", alpha=0.8, size=0.6 , inherit.aes = FALSE )  +
+  geom_text(data=base_data, aes(x = title, y = -18, label=group), hjust=c(1,1,0,0), colour = "black", alpha=0.8, size=4, fontface="bold", inherit.aes = FALSE)
+ 
+p
+```
+
+上面的代码中，绘制了分组的圆形条形图。上面的代码首先创建了数据集，然后对数据集进行了一系列的处理。然后开始绘制圆形条形图，绘制的方式和上文相似，这里将分组变量group映射到fill参数，使用不同的颜色表示不同的分组。这里还是用了geom_segement函数在圆形条形图中添加线段。使用annotate函数对于圆形条形图添加注释。
+
+
+除了可以绘制分组圆形条形图之外，还可以绘制堆叠圆形条形图。
+```{r}
+# 创建数据集
+data=data.frame(
+  individual=paste( "Mister ", seq(1,60), sep=""),
+  group=c( rep('A', 10), rep('B', 30), rep('C', 14), rep('D', 6)) ,
+  value1=sample( seq(10,100), 60, replace=T),
+  value2=sample( seq(10,100), 60, replace=T),
+  value3=sample( seq(10,100), 60, replace=T)
+)
+ 
+# 转换整洁格式的数据(长格式)
+data = data %>% gather(key = "observation", value="value", -c(1,2)) 
+ 
+
+empty_bar=2
+nObsType=nlevels(as.factor(data$observation))
+to_add = data.frame( matrix(NA, empty_bar*nlevels(data$group)*nObsType, ncol(data)) )
+colnames(to_add) = colnames(data)
+to_add$group=rep(levels(data$group), each=empty_bar*nObsType )
+data=rbind(data, to_add)
+data=data %>% arrange(group, individual)
+data$id=rep( seq(1, nrow(data)/nObsType) , each=nObsType)
+ 
+#获取每个标签的名称和y位置
+label_data= data %>% group_by(id, individual) %>% summarize(tot=sum(value))
+number_of_bar=nrow(label_data)
+angle= 90 - 360 * (label_data$id-0.5) /number_of_bar    
+label_data$hjust<-ifelse( angle < -90, 1, 0)
+label_data$angle<-ifelse(angle < -90, angle+180, angle)
+ 
+# 为线段准备一个数据帧
+base_data=data %>% 
+  group_by(group) %>% 
+  summarize(start=min(id), end=max(id) - empty_bar) %>% 
+  rowwise() %>% 
+  mutate(title=mean(c(start, end)))
+ 
+# 为网格线准备一个数据框
+grid_data = base_data
+grid_data$end = grid_data$end[ c( nrow(grid_data), 1:nrow(grid_data)-1)] + 1
+grid_data$start = grid_data$start - 1
+grid_data=grid_data[-1,]
+ 
+# 绘制图形
+p = ggplot(data) +      
+  
+  # 添加叠加条
+  geom_bar(aes(x=as.factor(id), y=value, fill=observation), stat="identity", alpha=0.5) +
+  scale_fill_viridis(discrete=TRUE) +
+  
+  geom_segment(data=grid_data, aes(x = end, y = 0, xend = start, yend = 0), colour = "grey", alpha=1, size=0.3 , inherit.aes = FALSE ) +
+  geom_segment(data=grid_data, aes(x = end, y = 50, xend = start, yend = 50), colour = "grey", alpha=1, size=0.3 , inherit.aes = FALSE ) +
+  geom_segment(data=grid_data, aes(x = end, y = 100, xend = start, yend = 100), colour = "grey", alpha=1, size=0.3 , inherit.aes = FALSE ) +
+  geom_segment(data=grid_data, aes(x = end, y = 150, xend = start, yend = 150), colour = "grey", alpha=1, size=0.3 , inherit.aes = FALSE ) +
+  geom_segment(data=grid_data, aes(x = end, y = 200, xend = start, yend = 200), colour = "grey", alpha=1, size=0.3 , inherit.aes = FALSE ) +
+  
+  # 添加文本信息
+  annotate("text", x = rep(max(data$id),5), y = c(0, 50, 100, 150, 200), label = c("0", "50", "100", "150", "200") , color="grey", size=2 , angle=0, fontface="bold", hjust=1) +
+  
+  ylim(-150,max(label_data$tot, na.rm=T)) +
+  theme_minimal() +
+  theme(
+    legend.position = "none",
+    axis.text = element_blank(),
+    axis.title = element_blank(),
+    panel.grid = element_blank(),
+    plot.margin = unit(rep(-1,4), "cm") 
+  ) +
+  coord_polar() +
+  
+  # 添加标签
+  geom_text(data=label_data, aes(x=id, y=tot+10, label=individual, hjust=hjust), color="black", fontface="bold",alpha=0.6, size=1, angle= label_data$angle, inherit.aes = FALSE ) +
+  
+  # 添加线条的信息
+  geom_segment(data=base_data, aes(x = start, y = -5, xend = end, yend = -5), colour = "black", alpha=0.8, size=0.6 , inherit.aes = FALSE )  +
+  geom_text(data=base_data, aes(x = title, y = -18, label=group), hjust=c(1,1,0,0), colour = "black", alpha=0.8, size=4, fontface="bold", inherit.aes = FALSE)
+p
+```
+
+上面的代码绘制了堆叠的圆形条形图，这个图形在数据中分组比较多的时候比较适合，这样的图形比较的紧凑，能够在图形中表达比较多的信息，并且整个图形能做到非常的美观。在绘制圆形条形图的时候有一些比较常见的错误。常见的错误包括，将圆形条形图的内部的圆圈设置得很小。内圈的比例必须很大（> 1/2）。否则，在下一个例子中，条形图非常倾斜。下面的代码中，绘制的圆形条形图的内圈非常的小：
+```{r}
+ 
+#  创建数据集
+data=data.frame(
+  individual=paste( "Mister ", seq(1,30), sep=""),
+  group=c( rep('A', 10), rep('C', 14), rep('D', 6)) ,
+  value=sample( seq(10,100), 30, replace=T)
+)
+data = data %>% arrange(group, value)
+
+ 
+empty_bar=1
+to_add = data.frame( matrix(NA, empty_bar*nlevels(data$group), ncol(data)) )
+colnames(to_add) = colnames(data)
+to_add$group=rep(levels(data$group), each=empty_bar)
+data=rbind(data, to_add)
+data=data %>% arrange(group)
+data$id=seq(1, nrow(data))
+ 
+# 获取每个标签的名称和y位置
+label_data=data
+number_of_bar=nrow(label_data)
+angle= 90 - 360 * (label_data$id-0.5) /number_of_bar    
+label_data$hjust<-ifelse( angle < -90, 1, 0)
+label_data$angle<-ifelse(angle < -90, angle+180, angle)
+ 
+
+# 绘制图形
+p = ggplot(data, aes(x=as.factor(id), y=value, fill=group)) +        
+  
+  geom_bar(aes(x=as.factor(id), y=value, fill=group), stat="identity", alpha=0.5) +
+  ylim(-10,120) +
+  theme_minimal() +
+  theme(
+    legend.position = "none",
+    axis.text = element_blank(),
+    axis.title = element_blank(),
+    panel.grid = element_blank(),
+    plot.margin = unit(rep(-1,4), "cm") 
+  ) +
+  coord_polar() + 
+  geom_text(data=label_data, aes(x=id, y=value+10, label=individual, hjust=hjust), color="black", fontface="bold",alpha=0.6, size=2.5, angle= label_data$angle, inherit.aes = FALSE ) 
+  
+p
+
+```
+
+上面的代码中绘制一个一个内圈非常小的圆形条形图，从图中可以观察到，图形变得不协调。一个比较好的方式是将内圈设置得比较大。
+
+需要注意的是:
+当条形图有多个组别的时候，圆形条形图才比较合适。另外，如果离散变量的级别没有明显的顺序，最好的方式是线对离散变量更具其值进行排序，然后再绘制图形。
+
+绘制圆形条形图比较复杂，其中涉及到很多数据的转换。其实数据可视化的过程中也包含了大量的数据探索，数据处理的过程。下面的内容会介绍基础的圆形条形图的绘制。
+
+## 基础的圆形条形图
+
+圆形条形图是一个条形图，其中条形图显示为圆形而不是线条。圆形条形图其中杆沿的圆的而不是行显示。绘制图形的输入数据集与条形图相同：每组需要一个数值（一组=一个条））。
+
+基本上，该方法与经典的条形图相同。最后，我们使用coord_polar()函数使图表循环。请注意，ylim()参数非常重要。如果从0开始，条形将从圆心开始。如果您提供负值，则会出现白色圆圈的空间。因此，想要调整内圈的大小，则需要设置好ylim参数。
+
+```{r}
+#  加载包
+library(tidyverse)
+ 
+# 创建数据集
+data <- data.frame(
+  id=seq(1,60),
+  individual=paste( "Mister ", seq(1,60), sep=""),
+  value=sample( seq(10,100), 60, replace=T)
+)
+ 
+# 绘制图形
+p <- ggplot(data, aes(x=as.factor(id), y=value)) +      
+  
+  # 设置颜色为蓝色
+  geom_bar(stat="identity", fill=alpha("blue", 0.3)) + # 这使得坐标变成了极坐标而不是笛卡尔坐标。 
+  coord_polar()+
+  
+  # 负值控制内圆的大小，正值用于在每个条上添加大小
+  ylim(-100,120) +
+  
+  # 自定义主题:没有轴标题和没有笛卡尔坐标网格
+  theme_minimal() +
+  theme(
+    axis.text = element_blank(),
+    axis.title = element_blank(),
+    panel.grid = element_blank(),
+    plot.margin = unit(rep(-2,4), "cm")     # 这删除了不必要的边缘图形
+  ) 
+  
+ 
+p
+```
+
+上面的代码绘制了基础的圆形条形图，一开始的代码都和绘制普通的条形图相似。从代码```ylim(-100,120)``` 开始将图形变成圆形条形图。设置好ylim后，调用coord_polar()即可绘制出圆形条形图。只不过此时的图形还有很多的问题，还需要调整的部分包括坐标轴，图形边框等等。然后使用theme函数对于图形的其他细节做了条形。
+
+到这里，一个基本的圆形条形图就算完成了。然后更进一步，要为圆形条形图加上标签，让图形更加直观。方便读者更加深入的了解图形。
+
+## 添加标签
+
+为每个条形添加标签，以便深入了解图形。在这里，建议的一种方法是，在每个条形图的顶部添加标签，使用与条形图中心部分相同的角度。在下面的代码中，创建了一个具有每个标签特征的数据框，然后我们可以调用它geom_text()。请注意，对于其中一些标签需要180度翻转。
+
+
+```{r}
+# 加载包
+library(tidyverse)
+ 
+# 创建数据集
+data <- data.frame(
+  id=seq(1,60),
+  individual=paste( "Mister ", seq(1,60), sep=""),
+  value=sample( seq(10,100), 60, replace=T)
+)
+ 
+ 
+# 获取每个标签的名称和y位置
+label_data <- data
+ 
+# 计算标签的角度
+number_of_bar <- nrow(label_data)
+angle <-  90 - 360 * (label_data$id-0.5) /number_of_bar     
+ 
+# 计算标签的对齐方式:右对齐或左对齐
+# 如果在左边，我的标签当前的角度< -90
+label_data$hjust<-ifelse( angle < -90, 1, 0)
+ 
+# 通过翻转角度使它们可读
+label_data$angle<-ifelse(angle < -90, angle+180, angle)
+ 
+ 
+ 
+# 绘制图形
+p <- ggplot(data, aes(x=as.factor(id), y=value)) +       
+  
+  # 这将添加带有蓝色的条形图
+  geom_bar(stat="identity", fill=alpha("skyblue", 0.7)) +
+  
+  # 负值控制内圆的大小，正值用于在每个条上添加大小
+  ylim(-100,120) +
+  
+  # 自定义主题:没有轴标题和没有笛卡尔坐标网格
+  theme_minimal() +
+  theme(
+    axis.text = element_blank(),
+    axis.title = element_blank(),
+    panel.grid = element_blank(),
+    plot.margin = unit(rep(-1,4), "cm")      # 调整页边距使排序标签不被截断 
+  ) +
+  
+  # 这使得坐标变成了极坐标而不是笛卡尔坐标。
+  coord_polar(start = 0) +
+  
+  # 使用之前创建的label_data dataframe添加标签
+  geom_text(data=label_data, aes(x=id, y=value+10, label=individual, hjust=hjust), color="black", fontface="bold",alpha=0.6, size=2.5, angle= label_data$angle, inherit.aes = FALSE ) 
+ 
+p
+```
+
+上面的代码为圆形条形图添加了标签，首先需要生成添加标签的位置数据。然后使用geom_text函数为数据集添加上标签。
+
+## 圆形条形图的更多调整
+
+在上文中，以及介绍了关于圆形条形图的基本图形的绘制。下面的代码对于圆形条形图进行了一些调整，下面的代码在圆形条形图的圆圈中添加了间隙。
+```{r}
+# 加载包
+library(tidyverse)
+ 
+# 创建数据集
+data <- data.frame(
+  individual=paste( "Mister ", seq(1,60), sep=""),
+  value=sample( seq(10,100), 60, replace=T)
+)
+ 
+ 
+empty_bar <- 10
+ 
+# 向初始数据集添加行
+to_add <- matrix(NA, empty_bar, ncol(data))
+colnames(to_add) <- colnames(data)
+data <- rbind(data, to_add)
+data$id <- seq(1, nrow(data))
+ 
+# 向初始数据集添加行
+label_data <- data
+number_of_bar <- nrow(label_data)
+angle <- 90 - 360 * (label_data$id-0.5) /number_of_bar     
+label_data$hjust <- ifelse( angle < -90, 1, 0)
+label_data$angle <- ifelse(angle < -90, angle+180, angle)
+ 
+# 绘制图形
+p <- ggplot(data, aes(x=as.factor(id), y=value)) +      
+  geom_bar(stat="identity", fill=alpha("green", 0.3)) +
+  ylim(-100,120) +
+  theme_minimal() +
+  theme(
+    axis.text = element_blank(),
+    axis.title = element_blank(),
+    panel.grid = element_blank(),
+    plot.margin = unit(rep(-1,4), "cm") 
+  ) +
+  coord_polar(start = 0) + 
+  geom_text(data=label_data, aes(x=id, y=value+10, label=individual, hjust=hjust), color="black", fontface="bold",alpha=0.6, size=2.5, angle= label_data$angle, inherit.aes = FALSE ) 
+ 
+p
+
+```
+上面的代码绘制的带有间隙的圆形条形图。从图中可以观察到，图形的圆圈并不是连接起来的，而是存在与一个间隙。绘制的方式是首先初始数据框的末尾添加了几个空行，然后建立一个圆形的条形图，在圆圈中有一个断点。这样的话，就会出现这样断点的效果。
+如果希望绘制堆叠圆形条形图，同样可是实现，下面的代码绘制出来了堆叠条形图：
+```{r}
+# 加载包
+library(tidyverse)
+library(viridis)
+ 
+#  创建数据集
+data <- data.frame(
+  individual=paste( "Mister ", seq(1,60), sep=""),
+  group=c( rep('A', 10), rep('B', 30), rep('C', 14), rep('D', 6)) ,
+  value1=sample( seq(10,100), 60, replace=T),
+  value2=sample( seq(10,100), 60, replace=T),
+  value3=sample( seq(10,100), 60, replace=T)
+)
+ 
+# 转换整洁格式的数据(长格式)
+data <- data %>% gather(key = "observation", value="value", -c(1,2)) 
+ 
+ 
+empty_bar <- 2
+nObsType <- nlevels(as.factor(data$observation))
+to_add <- data.frame( matrix(NA, empty_bar*nlevels(data$group)*nObsType, ncol(data)) )
+colnames(to_add) <- colnames(data)
+to_add$group <- rep(levels(data$group), each=empty_bar*nObsType )
+data <- rbind(data, to_add)
+data <- data %>% arrange(group, individual)
+data$id <- rep( seq(1, nrow(data)/nObsType) , each=nObsType)
+ 
+# 获取每个标签的名称和y位置
+label_data <- data %>% group_by(id, individual) %>% summarize(tot=sum(value))
+number_of_bar <- nrow(label_data)
+angle <- 90 - 360 * (label_data$id-0.5) /number_of_bar     
+label_data$hjust <- ifelse( angle < -90, 1, 0)
+label_data$angle <- ifelse(angle < -90, angle+180, angle)
+ 
+#  数据准备
+base_data <- data %>% 
+  group_by(group) %>% 
+  summarize(start=min(id), end=max(id) - empty_bar) %>% 
+  rowwise() %>% 
+  mutate(title=mean(c(start, end)))
+ 
+# 网格数据准备
+grid_data <- base_data
+grid_data$end <- grid_data$end[ c( nrow(grid_data), 1:nrow(grid_data)-1)] + 1
+grid_data$start <- grid_data$start - 1
+grid_data <- grid_data[-1,]
+ 
+#  绘制图形
+p <- ggplot(data) +      
+  
+  # 添加叠加条
+  geom_bar(aes(x=as.factor(id), y=value, fill=observation), stat="identity", alpha=0.5) +
+  scale_fill_viridis(discrete=TRUE) +
+  
+  geom_segment(data=grid_data, aes(x = end, y = 0, xend = start, yend = 0), colour = "grey", alpha=1, size=0.3 , inherit.aes = FALSE ) +
+  geom_segment(data=grid_data, aes(x = end, y = 50, xend = start, yend = 50), colour = "grey", alpha=1, size=0.3 , inherit.aes = FALSE ) +
+  geom_segment(data=grid_data, aes(x = end, y = 100, xend = start, yend = 100), colour = "grey", alpha=1, size=0.3 , inherit.aes = FALSE ) +
+  geom_segment(data=grid_data, aes(x = end, y = 150, xend = start, yend = 150), colour = "grey", alpha=1, size=0.3 , inherit.aes = FALSE ) +
+  geom_segment(data=grid_data, aes(x = end, y = 200, xend = start, yend = 200), colour = "grey", alpha=1, size=0.3 , inherit.aes = FALSE ) +
+
+  ggplot2::annotate("text", x = rep(max(data$id),5), y = c(0, 50, 100, 150, 200), label = c("0", "50", "100", "150", "200") , color="grey", size=6 , angle=0, fontface="bold", hjust=1) +
+  
+  ylim(-150,max(label_data$tot, na.rm=T)) +
+  theme_minimal() +
+  theme(
+    legend.position = "none",
+    axis.text = element_blank(),
+    axis.title = element_blank(),
+    panel.grid = element_blank(),
+    plot.margin = unit(rep(-1,4), "cm") 
+  ) +
+  coord_polar() +
+  
+  #在每个条的顶部添加标签
+  geom_text(data=label_data, aes(x=id, y=tot+10, label=individual, hjust=hjust), color="black", fontface="bold",alpha=0.6, size=5, angle= label_data$angle, inherit.aes = FALSE ) +
+  
+  #添加基线信息
+  geom_segment(data=base_data, aes(x = start, y = -5, xend = end, yend = -5), colour = "black", alpha=0.8, size=0.6 , inherit.aes = FALSE )  +
+  geom_text(data=base_data, aes(x = title, y = -18, label=group), hjust=c(1,1,0,0), colour = "black", alpha=0.8, size=4, fontface="bold", inherit.aes = FALSE)
+
+
+p
+```
+
+上面的代码创建了堆叠的圆形条形图。想要创建堆叠的圆形条形图。首先需要了解如何使用ggplot2 制作堆积条形图。然后了解如何正确添加标签，计算好角度，必要时翻转它们以及调整它们的位置。比较棘手的部分可能是允许在每个组之间添加空间的部分。因此，一幅完成的图形并不是一次性就能够绘制好的，而是经过不断地进行调整。
+
+
+上面的代码绘制了带有间隙的圆形条形图，其实更加常用的是绘制组别之间带有间隙的圆形条形图。组别带有间隙的圆形条形图更具洞察力，因为它允许人们快速比较不同的组，并比较每个组中的项目值。
+
+```{r}
+# 加载包
+library(tidyverse)
+ 
+#  创建数据集
+data <- data.frame(
+  individual=paste( "Mister ", seq(1,60), sep=""),
+  group=c( rep('A', 10), rep('B', 30), rep('C', 14), rep('D', 6)) ,
+  value=sample( seq(10,100), 60, replace=T)
+)
+ 
+ 
+empty_bar <- 4
+to_add <- data.frame( matrix(NA, empty_bar*nlevels(data$group), ncol(data)) )
+colnames(to_add) <- colnames(data)
+to_add$group <- rep(levels(data$group), each=empty_bar)
+data <- rbind(data, to_add)
+data <- data %>% arrange(group)
+data$id <- seq(1, nrow(data))
+ 
+# 获取每个标签的名称和y位置
+label_data <- data
+number_of_bar <- nrow(label_data)
+angle <- 90 - 360 * (label_data$id-0.5) /number_of_bar     
+label_data$hjust <- ifelse( angle < -90, 1, 0)
+label_data$angle <- ifelse(angle < -90, angle+180, angle)
+ 
+# 绘制图形
+p <- ggplot(data, aes(x=as.factor(id), y=value, fill=group)) +    
+  geom_bar(stat="identity", alpha=0.5) +
+  ylim(-100,120) +
+  theme_minimal() +
+  theme(
+    legend.position = "none",
+    axis.text = element_blank(),
+    axis.title = element_blank(),
+    panel.grid = element_blank(),
+    plot.margin = unit(rep(-1,4), "cm") 
+  ) +
+  coord_polar() + 
+  geom_text(data=label_data, aes(x=id, y=value+10, label=individual, hjust=hjust), color="black", fontface="bold",alpha=0.6, size=2.5, angle= label_data$angle, inherit.aes = FALSE ) 
+ 
+p
+```
+
+上面的代码绘制了带有组别间隙的圆形条形图。其实现的方式是在不同组别的数据下面添加空值，然后再绘制圆形条形图。
+
+当然，对于圆形条形图还可以添加更多的设定，这些设定可以让图形更加的美观，更加具有表现力。
+
+
+```{r}
+#  加载包
+library(tidyverse)
+ 
+#  创建数据集
+data <- data.frame(
+  individual=paste( "Mister ", seq(1,60), sep=""),
+  group=c( rep('A', 10), rep('B', 30), rep('C', 14), rep('D', 6)) ,
+  value=sample( seq(10,100), 60, replace=T)
+)
+ 
+ 
+empty_bar <- 3
+to_add <- data.frame( matrix(NA, empty_bar*nlevels(data$group), ncol(data)) )
+colnames(to_add) <- colnames(data)
+to_add$group <- rep(levels(data$group), each=empty_bar)
+data <- rbind(data, to_add)
+data <- data %>% arrange(group)
+data$id <- seq(1, nrow(data))
+ 
+# 获取每个标签的名称和y位置
+label_data <- data
+number_of_bar <- nrow(label_data)
+angle <- 90 - 360 * (label_data$id-0.5) /number_of_bar     
+label_data$hjust <- ifelse( angle < -90, 1, 0)
+label_data$angle <- ifelse(angle < -90, angle+180, angle)
+ 
+#  线段数据准备
+base_data <- data %>% 
+  group_by(group) %>% 
+  summarize(start=min(id), end=max(id) - empty_bar) %>% 
+  rowwise() %>% 
+  mutate(title=mean(c(start, end)))
+ 
+# 网格数据准备
+grid_data <- base_data
+grid_data$end <- grid_data$end[ c( nrow(grid_data), 1:nrow(grid_data)-1)] + 1
+grid_data$start <- grid_data$start - 1
+grid_data <- grid_data[-1,]
+ 
+# 绘制图形
+p <- ggplot(data, aes(x=as.factor(id), y=value, fill=group)) +       
+  
+  geom_bar(aes(x=as.factor(id), y=value, fill=group), stat="identity", alpha=0.5) +
+  geom_segment(data=grid_data, aes(x = end, y = 80, xend = start, yend = 80), colour = "grey", alpha=1, size=0.3 , inherit.aes = FALSE ) +
+  geom_segment(data=grid_data, aes(x = end, y = 60, xend = start, yend = 60), colour = "grey", alpha=1, size=0.3 , inherit.aes = FALSE ) +
+  geom_segment(data=grid_data, aes(x = end, y = 40, xend = start, yend = 40), colour = "grey", alpha=1, size=0.3 , inherit.aes = FALSE ) +
+  geom_segment(data=grid_data, aes(x = end, y = 20, xend = start, yend = 20), colour = "grey", alpha=1, size=0.3 , inherit.aes = FALSE ) +
+  
+   
+  annotate("text", x = rep(max(data$id),4), y = c(20, 40, 60, 80), label = c("20", "40", "60", "80") , color="grey", size=3 , angle=0, fontface="bold", hjust=1) +
+  
+  geom_bar(aes(x=as.factor(id), y=value, fill=group), stat="identity", alpha=0.5) +
+  ylim(-100,120) +
+  theme_minimal() +
+  theme(
+    legend.position = "none",
+    axis.text = element_blank(),
+    axis.title = element_blank(),
+    panel.grid = element_blank(),
+    plot.margin = unit(rep(-1,4), "cm") 
+  ) +
+  coord_polar() + 
+  geom_text(data=label_data, aes(x=id, y=value+10, label=individual, hjust=hjust), color="black", fontface="bold",alpha=0.6, size=2.5, angle= label_data$angle, inherit.aes = FALSE ) +
+  
+  # 添加线段的信息
+  geom_segment(data=base_data, aes(x = start, y = -5, xend = end, yend = -5), colour = "black", alpha=0.8, size=0.6 , inherit.aes = FALSE )  +
+  geom_text(data=base_data, aes(x = title, y = -18, label=group), hjust=c(1,1,0,0), colour = "black", alpha=0.8, size=4, fontface="bold", inherit.aes = FALSE)
+ 
+p
+```
+
+上面的代码绘制了更多带有自定义设置的圆形条形图，在这个图中，添加组名（A，B，C和D），还添加一个比例来帮助比较条的大小。代码有点长，但是整个图形的效果还是非常的令人印象深刻。
+
+ 
+# 饼图
+
+饼图是分成每一个代表整个的比例扇区的圆。饼图的表现效果并不好，其有很多的缺点，需要小心使用它，尽可能的使用替代品来替代饼图，例如使用条形图，棒棒糖图等等。饼图是一个分为扇区的圆圈，每个扇区代表整体的一部分。它通常用于显示百分比，其中扇区的总和等于100％。问题是人类在阅读角度方面非常糟糕。在相邻的饼图中，尝试确定哪个组是最大的组并尝试按值排序这可能很困难的，因此，这就是必须避免使用饼图的原因。
+
+
+下面的代码绘制了一个饼图，如图所示：
+```{r}
+#  加载包
+library(tidyverse)
+library(hrbrthemes)
+library(viridis)
+library(patchwork)
+
+# 创建三个数据框
+data1 <- data.frame( name=letters[1:5], value=c(17,18,20,22,24) )
+data2 <- data.frame( name=letters[1:5], value=c(20,18,21,20,20) )
+data3 <- data.frame( name=letters[1:5], value=c(24,23,21,19,18) )
+
+#  绘制图形
+plot_pie <- function(data, vec){
+
+ggplot(data, aes(x="name", y=value, fill=name)) +
+  geom_bar(width = 1, stat = "identity") +
+  coord_polar("y", start=0, direction = -1) +
+  scale_fill_viridis(discrete = TRUE,  direction=-1) + 
+  geom_text(aes(y = vec, label = rev(name), size=4, color=c( "white", rep("black", 4)))) +
+  scale_color_manual(values=c("black", "white")) +
+  theme_ipsum() +
+  theme(
+    legend.position="none",
+    plot.title = element_text(size=14),
+    panel.grid = element_blank(),
+    axis.text = element_blank(),
+    legend.margin=unit(0, "null")
+  ) +
+  xlab("") +
+  ylab("")
+  
+}
+
+plot_pie(data1, c(10,35,55,75,93))
+```
+
+从图可以观察到，想要比较饼图中不同扇形区域的大小是一件比较困难的事情。然后再次绘制多个饼图，再一次，尝试了解这3个图形中哪个组具有最大的值。
+```{r}
+a <- plot_pie(data1, c(10,35,55,75,93))
+b <- plot_pie(data2, c(10,35,53,75,93))
+c <- plot_pie(data3, c(10,29,50,75,93))
+a + b + c
+```
+
+
+上面的代码绘制了三幅饼图，但是这三幅饼图所呈现出来的效果是非常的让人困惑的。这三幅图形似乎是一样的，图形之间很难进行比较。因为人在阅读角度方面非常糟糕，，在相差并不是非常大的时候，有时很难区分那个扇形面积是比较大的。这也是非常不建议使用饼图的圆形。现在，让我们使用条形图表示完全相同的数据：
+```{r}
+# 创建一个绘制条形图的函数
+plot_bar <- function(data){
+  ggplot(data, aes(x=name, y=value, fill=name)) +
+    geom_bar( stat = "identity") +
+    scale_fill_viridis(discrete = TRUE, direction=-1) + 
+    scale_color_manual(values=c("black", "white")) +
+    theme_ipsum() +
+    theme(
+      legend.position="none",
+      plot.title = element_text(size=14),
+      panel.grid = element_blank(),
+    ) +
+    ylim(0,25) +
+    xlab("") +
+    ylab("")
+}
+
+# 绘制三幅条形图
+a <- plot_bar(data1)
+b <- plot_bar(data2)
+c <- plot_bar(data3)
+
+# 将图形合并到一起
+a + b + c
+```
+
+上面的代码使用饼图的数据绘制了三幅条形图。正如你在这个条形图上看到的那样，三个带有隐藏图案的饼图之间存在着巨大的差异，然而这些信息从饼图中却没有办法被观察到。条形图是饼图的最佳替代品。如果要显示许多值，还可以考虑更优雅的棒棒糖图。
+
+```{r}
+ggplot(data1, aes(x=name, y=value)) +
+  geom_point() + 
+  geom_segment( aes(x=name, xend=name, y=0, yend=value))
+```
+
+上面的代码创建了棒棒糖图，对于这类数据，棒棒糖图同样是一个展示同类型数据的非常好的统计图形。另一种可能性是，如果目的是描述整体构成的内容，则可以创建树形图。
+```{r}
+ 
+#  加载包
+library(treemap)
+ 
+# 创建数据集
+group <- c(rep("group-1",4),rep("group-2",2),rep("group-3",3))
+subgroup <- paste("subgroup" , c(1,2,3,4,1,2,1,2,3), sep="-")
+value <- c(13,5,22,12,11,7,3,1,23)
+data <- data.frame(group,subgroup,value)
+ 
+#  自定义标签
+treemap(data, index=c("group","subgroup"),     vSize="value", type="index",
+ 
+    fontsize.labels=c(15,12),                #标签的大小
+    fontcolor.labels=c("white","orange"),    # 标签的颜色
+    fontface.labels=c(2,1),                  # 标签的字体: 1,2,3,4 for normal, bold, italic, bold-italic...
+    bg.labels=c("transparent"),              # 标签的背景颜色
+    align.labels=list(
+        c("center", "center"), 
+        c("right", "bottom")
+        ),                                   # 在矩形中何处放置标签?
+    overlap.labels=0.5,                      # 介于0和1之间的数字，它决定了标签之间重叠的容忍度。0表示较低级别的标签不打印，如果较高级别的标签重叠，1表示始终打印。中间值，例如默认值。5，表示如果其他标签的重叠面积不超过其面积的。5倍，则打印较低级别的标签。
+    inflate.labels=F,                        # 如果是，当矩形变大时，标签变大。
+ 
+)
+
+```
+
+上面的代码创建了树形图，树形图描述了整体与部分的关系。从图中可以观察到，三个大组group-1,group-2,group-3中，group-1所占的比例最大。然后再group-1组中，有四个子组，包括subgroup-1,subgroup-2,subgroup-3,subgroup-4,其中subgroup-3这一个子组所占比例最大。使用树形图可以非常好的描绘出整体与部分之间的关系。
+
+
+## 绘制基础的饼图
+
+ggplot函数并没有直接绘制饼图的函数。创建饼图的诀窍是是建立一个条形图并用coord_polar函数来将条形图变成饼图。其实，如果使用R的基础函数pie函数来绘制饼图会更加的额方便。
+
+
+ggplot2没有提供任何特定的函数来构建饼图。创建饼图的诀窍如下：
+
+1.输入数据框有2列：组名（group此处）及其值（value此处）
+2. 使用该geom_bar()函数构造一个堆叠条形图。
+3. 使用coord_polar()函数将条形图转变成为饼图。
+
+```{r}
+#  加载包
+library(ggplot2)
+
+# 创建数据集
+data <- data.frame(
+  group=LETTERS[1:5],
+  value=c(13,7,9,21,2)
+)
+
+#  绘制饼图
+ggplot(data, aes(x="", y=value, fill=group)) +
+  geom_bar(stat="identity", width=1) +
+  coord_polar("y", start=0)
+
+```
+
+上面的代码绘制了一个简单的饼图。这个时候饼图还保留了坐标轴，坐标轴其实对于饼图没有任何的意义的。因此还需要进行一些细节的调整。
+
+
+## 调整细节
+
+最简单的条形图看起来似乎比较糟糕。因此我们还需要：
+
+1. 删除无用的数字标签
+2. 删除网格和灰色背景
+
+下面的代码对于图形进行了调整，使得图形更加的美观：
+```{r}
+#  加载包
+library(ggplot2)
+
+#  创建数据集
+data <- data.frame(
+  group=LETTERS[1:5],
+  value=c(13,7,9,21,2)
+)
+
+# 绘制饼图
+ggplot(data, aes(x="", y=value, fill=group)) +
+  geom_bar(stat="identity", width=1, color="white") +
+  coord_polar("y", start=0) +
+  
+  theme_void() # 删除背景、网格、数字标签
+
+```
+
+从图中可以看到，图形中没有了无用的数字标签，也删除了删除网格和灰色背景。这样的图形变得更加的简洁美观。实现的方式是使用了theme_void()函数，这个函数可以删除背景、网格和数字标签。接下来还可以为饼图添加标签。
+
+## 添加标签
+
+比较棘手的部分是使用这种奇怪的coord_polar变换来计算标签的y位置。因此，首先要计算出用于添加标签的合适的位置：
+
+```{r}
+#  加载包
+library(ggplot2)
+library(dplyr)
+
+#  创建数据集
+data <- data.frame(
+  group=LETTERS[1:5],
+  value=c(13,7,9,21,2)
+)
+
+# 计算标签的位置
+data <- data %>% 
+  arrange(desc(group)) %>%
+  mutate(prop = value / sum(data$value) *100) %>%
+  mutate(ypos = cumsum(prop)- 0.5*prop )
+
+#绘制图形
+ggplot(data, aes(x="", y=prop, fill=group)) +
+  geom_bar(stat="identity", width=1, color="white") +
+  coord_polar("y", start=0) +
+  theme_void() + 
+  theme(legend.position="none") +
+  
+  geom_text(aes(y = ypos, label = group), color = "white", size=6) +
+  scale_fill_brewer(palette="Set1")
+
+```
+
+上面的代码中对于饼图添加的标签，用于显示不同组别的名称。
+
+## 甜甜圈图
+
+甜甜圈或圆环图是一个分为扇区的环，每个扇区代表整体的一部分。它与饼图非常接近，因此也遇到了同样的问题，同样并不是很推荐绘制甜甜圈图来对数据进行可视化。
+
+ggplot2包中并没有绘制甜甜圈图的函数。但是，还是有其他的方法来进行绘制，绘制的过程如下：
+ 
+ 1. 输入数据为一组实体提供数字变量，必须将绝对数值转换为比例 
+ 2. 使用geom_rect绘制堆叠的条形图
+ 3. coord_polar()用于从堆叠的矩形切换到一个环 
+ 4 xlim()允许从饼切换到甜甜圈：它在中间添加空圆。
+
+```{r}
+#  加载包
+library(ggplot2)
+ 
+# 创建数据集
+data <- data.frame(
+  category=c("A", "B", "C"),
+  count=c(10, 60, 30)
+)
+ 
+# 计算百分比
+data$fraction = data$count / sum(data$count)
+
+# 计算累计百分比(每个矩形的顶部)
+data$ymax = cumsum(data$fraction)
+
+# 计算每个矩形的底部
+data$ymin = c(0, head(data$ymax, n=-1))
+ 
+# 绘制图形
+ggplot(data, aes(ymax=ymax, ymin=ymin, xmax=4, xmin=3, fill=category)) +
+     geom_rect() +
+     coord_polar(theta="y") + # 可以试着去掉这些，以理解图表最初是如何构建的
+     xlim(c(2, 4)) 
+```
+
+上面的代码则绘制出了甜甜圈图，从图中可以观察到，图形依然保留了坐标轴，网格线等等。可以进行调整更多的细节，以下是一些可以改善甜甜圈图表样式的方法：
+
+1. 使用theme_void()摆脱不必要的背景，轴，标签等。
+2. 使用更好的调色板
+3. 不要使用图例，直接向组添加标签
+
+下面的代码对于甜甜圈图进行了调整：
+```{r}
+# 加载包
+library(ggplot2)
+
+# 创建数据
+data <- data.frame(
+  category=c("A", "B", "C"),
+  count=c(10, 60, 30)
+)
+ 
+# 计算百分比
+data$fraction <- data$count / sum(data$count)
+
+# 计算累计百分比(每个矩形的顶部)
+data$ymax <- cumsum(data$fraction)
+
+# 计算每个矩形的底部
+data$ymin <- c(0, head(data$ymax, n=-1))
+
+# 计算标签位置
+data$labelPosition <- (data$ymax + data$ymin) / 2
+
+# 计算一个好的标签
+data$label <- paste0(data$category, "\n value: ", data$count)
+
+# 绘制图形
+ggplot(data, aes(ymax=ymax, ymin=ymin, xmax=4, xmin=3, fill=category)) +
+  geom_rect() +
+  geom_label( x=3.5, aes(y=labelPosition, label=label), size=6) +
+  scale_fill_brewer(palette=4) +
+  coord_polar(theta="y") +
+  xlim(c(2, 4)) +
+  theme_void() +
+  theme(legend.position = "none")
+```
+
+上面的代码去除了图形中的坐标轴，去除了网格线，并且在图形中添加了标签，使得读者能够更好的获取图形中的信息。从图中也可以观察到，相比于上面的图形，经过调整后的图形有更好的表现效果。
+
+另外，还可以调整甜甜圈图的厚度。重要的是要了解圆环图只是堆叠的矩形。因此，使其成为圆环图的空圆就是初始Y轴和矩形左边部分之间的空间。
+
+1. 如果xlim左边界很大，没有空圆圈。你得到一个饼图
+2. 如果xlim小，则环变薄。
+
+
+```{r}
+# 加载包
+library(ggplot2)
+
+#  创建数据集
+data <- data.frame(
+  category=c("A", "B", "C"),
+  count=c(10, 60, 30)
+)
+ 
+# 计算百分比
+data$fraction <- data$count / sum(data$count)
+
+# 计算累计百分比(每个矩形的顶部)
+data$ymax <- cumsum(data$fraction)
+
+# 计算每个矩形的底部
+data$ymin <- c(0, head(data$ymax, n=-1))
+
+# 计算标签位置
+data$labelPosition <- (data$ymax + data$ymin) / 2
+
+# 计算一个好的标签
+data$label <- paste0(data$category, "\n value: ", data$count)
+
+# 绘制图形
+ggplot(data, aes(ymax=ymax, ymin=ymin, xmax=4, xmin=3, fill=category)) +
+  geom_rect() +
+  geom_text( x=2, aes(y=labelPosition, label=label, color=category), size=6) + #这里控制x标签位置(内/外)
+  scale_fill_brewer(palette=18) +
+  scale_color_brewer(palette=18) +
+  coord_polar(theta="y") +
+  xlim(c(0, 4)) +
+  theme_void() +
+  theme(legend.position = "none")
+
+```
+
+上面的代码调整了甜甜圈图的厚度，从图中可以观察到，甜甜圈的厚度变小了。调整的是通过修改xlim的参数来实现。如果xlim左边界很大，没有空圆圈，绘制出一个饼图，如果比较小，则绘制出一个比较薄的甜甜圈图。

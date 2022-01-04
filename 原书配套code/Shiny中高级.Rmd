@@ -1,0 +1,738 @@
+---
+title: "shiny 中高级课程"
+author: "Liam"
+date: "2019/2/6"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# 1.Shiny 中高级课程
+
+在Shiny的初级课程中，我们了解到了Shiny的程序的构成，分为Ui和Server两个部分。在Ui中，定义了页面是如何布局的，定义了有哪些部件，定义了有什么输出；在Server中，定义了网页背后是如何计算的。我们还了解到Ui和Server是如何建立联系的。最后，我们建立了一个自己的Shiny程序，使用的是默认布局，并最终部署到了服务器上面。
+
+通过Shiny初级课程的学习，我们能够开发一个Shiny程序，并且部署到网络上面。
+
+本课程是Shiny的中高级课程，通过本课程的学习，同学们可以构建一个更加复杂的，更多功能的Shiny程序。
+
+<br>
+
+本课程所包含的内容有
+ 
+1. Shiny页面布局
+2. Shiny主题设置
+3. Shiny 交互
+4. Shinydashboard
+5. 动态Ui
+
+<br>
+
+# 2.Shiny 页面布局
+
+
+<br>
+ 
+Shiny中有很多的页面布局方式，默认的布局方式是边栏布局，指的是页面分为左侧的去和中间的区域，左边一般设置输入，中间一般设置为输出。还有更多的页面布局方式：
+
+<br>
+ 
+1. 网格布局
+2. Tabsets
+3. Navlist
+4. 导航页面
+5. 流体网格布局
+
+<br>
+ 
+#### 2.1 网格布局
+
+<br>
+ 
+网格布局通过fluidRow函数进行创建，列通过colnum进行定义，colnum的第一个参数是其宽度，也可以是偏移的位置，通过offset进行设定。
+
+
+<!-- ![](/Users/milin/网格布局.png) -->
+ 
+<br>
+
+实现这个页面布局的方式是：
+
+<br>
+ 
+ 
+```
+library(shiny)
+library(ggplot2)
+
+dataset <- diamonds
+
+ui <- fluidPage(
+
+  title = "Diamonds Explorer",
+  
+  plotOutput('plot'),
+  
+  hr(),
+
+  fluidRow(
+    column(3,
+      h4("Diamonds Explorer"),
+      sliderInput('sampleSize', 'Sample Size', 
+                  min=1, max=nrow(dataset), value=min(1000, nrow(dataset)), 
+                  step=500, round=0),
+      br(),
+      checkboxInput('jitter', 'Jitter'),
+      checkboxInput('smooth', 'Smooth')
+    ),
+    column(4, offset = 1,
+      selectInput('x', 'X', names(dataset)),
+      selectInput('y', 'Y', names(dataset), names(dataset)[[2]]),
+      selectInput('color', 'Color', c('None', names(dataset)))
+    ),
+    column(4,
+      selectInput('facet_row', 'Facet Row', c(None='.', names(dataset))),
+      selectInput('facet_col', 'Facet Column', c(None='.', names(dataset)))
+    )
+  )
+)
+```
+
+<br>
+ 
+需要注意的是，网格布局和边栏布局可以相互嵌套
+
+<br>
+ 
+<br>
+
+#### 2.2 Tabsets 
+
+<br>
+ 
+如果我们需要将页面分为不连续的几个部分，在Shiny中可以使用tabsetsPanel来完成，比如：
+
+
+<!-- ![](/Users/milin/tabset.png) -->
+ 
+ 
+ 
+这一部分的代码是如下：
+
+<br>
+  
+```
+ ui <- fluidPage(
+
+  titlePanel("Tabsets"),
+
+  sidebarLayout(
+    
+    sidebarPanel(
+      # Inputs excluded for brevity
+    ),
+  
+    mainPanel(
+      tabsetPanel(
+        tabPanel("Plot", plotOutput("plot")), 
+        tabPanel("Summary", verbatimTextOutput("summary")), 
+        tabPanel("Table", tableOutput("table"))
+      )
+    )
+  )
+)
+```
+ 
+ <br>
+ 
+ 选项卡可以位于其他位置，比如上方（默认），下方，左侧和右侧。比如，要将选项卡放到内容的下方，可以使用下面这个代码：
+ 
+ <br>
+  
+```
+ tabsetPanel(position = "below",
+  tabPanel("Plot", plotOutput("plot")), 
+  tabPanel("Summary", verbatimTextOutput("summary")), 
+  tabPanel("Table", tableOutput("table"))
+)
+```
+ 
+ 
+ <br>
+  
+ #### 2.3 Navlists
+ 
+ <br>
+  
+ 当我们有了多个tabPanel的时候，这个时候我们就需要Navlists，这是导航列表，导航列表将各个组件显示成为侧边栏的列表，而不是使用选项卡。
+ 
+<br>
+ 
+ 下面是一个例子：
+ 
+ <!-- ![](/Users/milin/navilist.png) -->
+ 
+ 
+<br>
+ 
+ 实现这个例子的代码如下（tabPanel为空是为了保持整洁，通常包含其他的UI部件）
+ 
+```
+ ui <- fluidPage(
+  
+  titlePanel("Application Title"),
+  
+  navlistPanel(
+    "Header A",
+    tabPanel("Component 1"),
+    tabPanel("Component 2"),
+    "Header B",
+    tabPanel("Component 3"),
+    tabPanel("Component 4"),
+    "-----",
+    tabPanel("Component 5")
+  )
+)
+```
+ 
+ 
+<br>
+ 
+#### 2.3 页面导航
+ 
+<br>
+ 
+有的时候我们可能想要创建一个由多个不同子组件组成的Shiny应用程序（每个子组件都有自己的侧边栏，tabset或其他布局结构）。通过navbarPage()函数创建一个页面导航，来囊括多个shiny程序
+
+
+<br>
+
+<!-- ![](/Users/milin/页面导航.png) -->
+ 
+
+<br>
+
+代码如下:
+
+<br>
+
+```
+ui <- navbarPage("My Application",
+  tabPanel("Component 1"),
+  tabPanel("Component 2"),
+  tabPanel("Component 3")
+)
+```
+
+
+<br>
+
+添加二级页面
+
+
+<br>
+
+您可以使用该navbarMenu()功能向页面添加第二级导航。这会向顶级导航栏添加一个菜单，该菜单又可以引用其他tabPanel。
+
+
+<!-- ![](/Users/milin/二级页面.png) -->
+
+
+```
+ui <- navbarPage("My Application",
+  tabPanel("Component 1"),
+  tabPanel("Component 2"),
+  navbarMenu("More",
+    tabPanel("Sub-Component A"),
+    tabPanel("Sub-Component B"))
+)
+```
+
+<br>
+
+
+
+# 3. Shiny 主题
+
+<br>
+
+Shiny 中除了默认的主题之外，还可以定义更过的主题,比如:
+
+
+<!-- ![](/Users/milin/食物酒美景/cyborg.png) -->
+
+
+<!-- ![](/Users/milin/食物酒美景/united.png) -->
+
+
+<br>
+
+#### 3.1 如何使用
+
+<br>
+
+1. 安装
+
+```
+install.packages("shinythemes")
+```
+
+2. 在UI中进行添加
+
+```
+## ui.R ##
+library(shinythemes)
+
+fluidPage(theme = shinytheme("cerulean"),
+  ...
+)
+```
+
+3. 常见的主题
+
+- Details
+
+- cerulean
+
+- cosmo
+
+- cyborg
+
+- darkly
+
+- flatly
+
+- journal
+
+- lumen
+
+- paper
+
+- readable
+
+- sandstone
+
+- simplex
+
+- slate
+
+- spacelab
+
+- superhero
+
+- united
+
+- yeti
+
+
+<br>
+
+# 4. Shiny 交互
+
+<br>
+
+#### 4.1 Shiny获取鼠标位置
+
+<br>
+
+如果要单击图画获取鼠标的位置。
+
+```
+plotOutput("plot1", click = "plot_click")
+```
+
+<br>
+
+在plotOutput中添加一个参数，来获取图片鼠标点的位置。这样定义一个新的输入```input$plot_click```,这就包含了上一次鼠标单击的位置
+
+
+<br>
+
+案例
+
+单击图片，获取x，y的坐标
+ 
+ 
+```
+ library(shiny)
+
+ui <- basicPage(
+  plotOutput("plot1", click = "plot_click"),
+  verbatimTextOutput("info")
+)
+
+server <- function(input, output) {
+  output$plot1 <- renderPlot({
+    plot(mtcars$wt, mtcars$mpg)
+  })
+
+  output$info <- renderText({
+    paste0("x=", input$plot_click$x, "\ny=", input$plot_click$y)
+  })
+}
+
+shinyApp(ui, server)
+```
+ 
+ 
+<br>
+
+需要注意的是，x和y坐标是缩放的数据的，而不是简单的图片的像素点。
+ 
+还有其他的交互方式：双击，悬停和框选
+
+可以通过启用：dblclick，hover和brush选项
+
+
+<br>
+
+案例
+
+```
+ui <- basicPage(
+  plotOutput("plot1",
+    click = "plot_click",
+    dblclick = "plot_dblclick",
+    hover = "plot_hover",
+    brush = "plot_brush"
+  ),
+  verbatimTextOutput("info")
+)
+
+server <- function(input, output) {
+  output$plot1 <- renderPlot({
+    plot(mtcars$wt, mtcars$mpg)
+  })
+
+  output$info <- renderText({
+    xy_str <- function(e) {
+      if(is.null(e)) return("NULL\n")
+      paste0("x=", round(e$x, 1), " y=", round(e$y, 1), "\n")
+    }
+    xy_range_str <- function(e) {
+      if(is.null(e)) return("NULL\n")
+      paste0("xmin=", round(e$xmin, 1), " xmax=", round(e$xmax, 1), 
+             " ymin=", round(e$ymin, 1), " ymax=", round(e$ymax, 1))
+    }
+
+    paste0(
+      "click: ", xy_str(input$plot_click),
+      "dblclick: ", xy_str(input$plot_dblclick),
+      "hover: ", xy_str(input$plot_hover),
+      "brush: ", xy_range_str(input$plot_brush)
+    )
+  })
+}
+
+shinyApp(ui, server)
+```
+
+<br>
+
+#### 4.2 选择数据行
+
+<br>
+
+
+Shiny提供两种便捷功能来选择数据行：
+* nearPoints()：使用交互数据中的x和y值; 与其一起使用click，dblclick和hover。
+* brushedPoints()：使用xmin，xmax，ymin，和ymax从所述交互数据值; 
+
+
+<br>
+
+需要注意的是，只有当数据框中存在x，y变量以及没有任何变换的时候才可以使用。
+
+<br>
+
+
+首先是对于nearPoints的讲解，通过这个函数可以返回包含选定行的数据框。
+
+
+<br>
+
+```
+ui <- basicPage(
+  plotOutput("plot1", click = "plot_click"),
+  verbatimTextOutput("info")
+)
+
+server <- function(input, output) {
+  output$plot1 <- renderPlot({
+    plot(mtcars$wt, mtcars$mpg)
+  })
+
+  output$info <- renderPrint({
+    # With base graphics, need to tell it what the x and y variables are.
+    nearPoints(mtcars, input$plot_click, xvar = "wt", yvar = "mpg")
+    # nearPoints() also works with hover and dblclick events
+  })
+}
+
+shinyApp(ui, server)
+```
+
+
+
+默认情况下，nearPoints将返回鼠标事件的5个像素内的所有数据行，并且它们将按距离排序，最近的第一行。半径可以自定义threshold，返回的行数可以自定义maxpoints。
+
+如果是使用的是GGPLOT2创建地块，这是没有必要指定xvar和yvar，因为它们可以自动检测。注意不要使用数据的变换，例如aes(x = wt/2)将不起作用
+
+
+
+<br>
+
+
+
+然后是对于brushedPoints()，它的基本用法类似于nearPoints()类似：
+
+
+```
+ui <- basicPage(
+  plotOutput("plot1", brush = "plot_brush"),
+  verbatimTextOutput("info")
+)
+
+server <- function(input, output) {
+  output$plot1 <- renderPlot({
+    plot(mtcars$wt, mtcars$mpg)
+  })
+
+  output$info <- renderPrint({
+    # With base graphics, need to tell it what the x and y variables are.
+    brushedPoints(mtcars, input$plot_brush, xvar = "wt", yvar = "mpg")
+  })
+}
+
+shinyApp(ui, server)
+
+```
+
+<br>
+
+# 5 shinydashboard
+
+<br>
+
+shinydashboard是一种特殊的Shiny页面布局，其详细的内容可以另外开一门课程，本课程讲解shinydashboard 基本用法
+
+<br>
+
+安装
+
+<br>
+
+```
+install.packages("shinydashboard")
+```
+
+
+##### 5.1 基本结构
+
+shinydashboard包含：标题，侧边栏和正文。这是仪表板页面的最小可能UI。
+
+<br>
+
+```
+ 
+## app.R ##
+library(shiny)
+library(shinydashboard)
+
+ui <- dashboardPage(
+  dashboardHeader(),
+  dashboardSidebar(),
+  dashboardBody()
+)
+
+server <- function(input, output) { }
+
+shinyApp(ui, server)
+```
+
+<br>
+
+shinydashboard 通常都会包含dashboardHeader，dashboardSidebar，dashboardBody，上面的只是基本的结构，我们还需要添加一些东西进去
+
+<br>
+
+#### 5.2 dashboardBody
+
+<br>
+
+dashboardBody 中所放的内容和一般的shiny程序一样：
+
+```
+library(shiny)
+library(shinydashboard)
+
+ui <- dashboardPage(
+  dashboardHeader(),
+  dashboardSidebar(),
+  dashboardBody(
+    sidebarLayout(
+      
+      # Sidebar panel  
+      sidebarPanel(
+        
+        # 这里是定义一个slider 作为输入
+        sliderInput(inputId = "bins",
+                    label = "Number of bins:",
+                    min = 1,
+                    max = 50,
+                    value = 30)
+        
+      ),
+      
+      # 主页面，这里主页面是一个绘图
+      mainPanel(
+        
+        # Output: Histogram ----
+        sliderInput(inputId = "bins",
+                    label = "Number of bins:",
+                    min = 1,
+                    max = 50,
+                    value = 30)
+        
+      )
+    )
+  )
+)
+
+server <- function(input, output) { }
+
+shinyApp(ui, server)
+
+```
+
+<br>
+
+#### 5.3 dashboardSidebar
+
+<br>
+
+侧边栏的作用类似与菜单选择项目，与shiny 的tabPanel类似，当我们单击一个菜单选项的时候，可以显示不同的内容
+
+
+<br>
+
+设置dashboardSidebar，有两个部分需要完成，首先是要将定义menuItem:
+
+```
+## Sidebar content
+  dashboardSidebar(
+    sidebarMenu(
+      menuItem("Dashboard", tabName = "dashboard", icon = icon("dashboard")),
+      menuItem("Widgets", tabName = "widgets", icon = icon("th"))
+    )
+  )
+```
+
+
+<br>
+
+其次，在dashboardBody中添加tabItem，对应与menuItem的名字：
+
+```
+## Body content
+  dashboardBody(
+    tabItems(
+      # First tab content
+      tabItem(tabName = "dashboard",
+        fluidRow(
+          box(plotOutput("plot1", height = 250)),
+
+          box(
+            title = "Controls",
+            sliderInput("slider", "Number of observations:", 1, 100, 50)
+          )
+        )
+      ),
+
+      # Second tab content
+      tabItem(tabName = "widgets",
+        h2("Widgets tab content")
+      )
+    )
+  )
+```
+
+
+总结而言，需要定义menuItem然后在tabItem同进行相应的设置
+
+
+<br>
+
+# 6. 动态UI
+
+<br>
+
+如果我们向通过输入来控制UI的输出，同样也是可以做到的。Shiny中一共有四种方式来构建对应的UI：
+
+ * conditionalPanel函数，用于ui.R并包装需要动态显示/隐藏的一组UI元素。
+* renderUI功能，其用于在server.R结合uiOutput于功能ui.R，可以生成到UI功能调用和使结果显示在UI的预定位置。
+* insertUI 和removeUI功能，这是在使用server.R，并允许您添加和删除的UI代码（所有相互独立）的任意块，因为只要你想多少次，只要你想，只要你想要的。
+* 使用JavaScript直接修改网页
+
+
+本课程介绍的是renUI,下面通过一个例子来介绍：
+
+```
+ui <- fluidPage( 
+  
+  # App title ----
+  titlePanel("Hello Shiny!"),
+  
+  # 这里指定的是什么布局方式
+  sidebarLayout(
+    
+    # Sidebar panel  
+    sidebarPanel(
+      
+      # 这里是定义一个slider 作为输入
+      numericInput(inputId = "num",label = "数字输入",value = 1),
+      uiOutput(outputId = 'slider')
+
+      
+    ),
+    
+    # 主页面，这里主页面是一个绘图
+    mainPanel(
+      
+      # Output: Histogram ----
+      plotOutput(outputId = "distPlot")
+      
+    )
+  )
+)
+
+server <- function(input, output) {
+  
+  output$slider <- renderUI({
+    sliderInput(inputId = "bins",
+                label = "Number of bins:",
+                min = input$num,
+                max = input$num+50,
+                value = 30)
+  })
+  
+  
+  output$distPlot <- renderPlot({
+    
+    x    <- faithful$waiting
+    bins <- seq(min(x), max(x), length.out = input$bins + 1)
+    
+    hist(x, breaks = bins, col = "#75AADB", border = "white",
+         xlab = "Waiting time to next eruption (in mins)",
+         main = "Histogram of waiting times")
+    
+  })
+  
+}
+
+
+shinyApp(ui, server)
+
+```
+3

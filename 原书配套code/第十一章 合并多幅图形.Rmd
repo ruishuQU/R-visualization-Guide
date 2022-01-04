@@ -1,0 +1,369 @@
+---
+title: "高级应用"
+output:
+  html_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# 合并多幅图形到一张图中
+
+
+如果使用的是R的基础绘图形同，则可以使用par和layout函数来将多幅图形放到一张图中。但是，如果是使用ggplot绘图系统，则要使用其他的方法来合并图形。包括：
+
+1. gridExtra包中的grid.arrange()函数
+2. cowplot包中的plot_grid()
+
+cowplot包是由Claus O.Wilke开发的，他是ggplot2的一个扩展包，可以将多副图形合并到同一张图形当中。cowplot包中有几个函数可以用来合并图形：
+
+1. plot_grid():可以轻松地组合多个绘图
+2. ggdraw() + draw_plot() + draw_plot_label():将图形放置在具有特定大小的局部位置。
+
+下面的代码首先绘制几幅图形，然后将图形合并到同一张图形之中。
+ 
+```{r}
+require(ggplot2)
+# install.packages("gridExtra") 
+# install.packages("cowplot")
+library("gridExtra") 
+library("cowplot")
+
+# 使用的数据集是ToothGrowth 
+ToothGrowth$dose <- as.factor(ToothGrowth$dose)
+data("economics") #加载数据集
+
+# 设置颜色
+my3cols <- c("red", "black", "yellow")
+
+require(cowplot)
+p <- ggplot(ToothGrowth, aes(x = dose, y = len))
+# 绘制图形
+bxp <- p + geom_boxplot(aes(color = dose)) + scale_color_manual(values = my3cols)
+ 
+# 绘制点图
+dp <- p + geom_dotplot(aes(color = dose, fill = dose), binaxis='y',stackdir='center') +
+scale_color_manual(values = my3cols) +
+scale_fill_manual(values = my3cols) 
+ 
+
+lp <- ggplot(economics, aes(x = date, y = psavert)) + geom_line(color = "#E46726")
+ 
+
+plot_grid(bxp, dp, lp, labels = c("A", "B", "C"), ncol = 2, nrow = 2)
+
+```
+上面的代码中，首先绘制了三幅图形，箱线图，点图和时间序列图。然后使用cowplot包中的plot_grid函数将三幅图形合并到一幅图当中。代码'plot_grid(bxp, dp, lp, labels = c("Box plot", "Jitter plot", "time series"), ncol = 2, nrow = 2)'表示的是将box,dp,lp这三幅图形合并，labels参数用于指定标签名称，这里设置为
+Box plot, "itter plot和time series。nrow用于设定图形中子图的行数，ncol用于设置图中子图的列数。从图中可以看到，三幅图形被放到了同一幅图形中，图形包含两行两列，第四幅图性是空白的。
+
+ 
+使用ggdraw()函数、draw_plot()函数和draw_plot_label()函数的组合可用于将图形和标签放置在具有特定大小的特定位置。
+
+ggdraw():初始化一个空的绘图画布
+draw_plot():在绘图画布上的某个位置放置一个绘图。
+draw_plot_label():在图的左上角添加一个plot标签。
+
+
+- draw_plot()函数的格式如下:
+
+``` 
+draw_plot(plot, x = 0, y = 0, width = 1, height = 1)
+```
+参数含义如下：
+
+1. plot:要放置的plot (ggplot2图形或gtable图形)
+2. x, y: 用于指定图形的位置。
+3. width，height：图形的宽度和高度
+
+
+- draw_plot_label()函数的格式如下：
+``` 
+draw_plot_label(label, x = 0, y = 1, size = 16, ...)
+```
+函数的参数含义是：
+1. plot:要放置的plot (ggplot2图形或gtable图形)
+2. x, y: 用于指定标签的位置。
+3. size ：要绘制的标签的字体大小
+
+需要注意的是，默认情况下，x,y位置的表示是 从0到1，点(0,0)位于画布的左下角。下面的代码使用这种方式将上文的图形合并成为同一幅图形。
+
+
+```{r}
+ggdraw() +
+draw_plot(bxp, x = 0, y = .5, width = .5, height = .5) + 
+  draw_plot(dp, x = .5, y = .5, width = .5, height = .5) + 
+  draw_plot(lp, x = 0, y = 0, width = 1, height = 0.5) + 
+  draw_plot_label(label = c("Box plot", "Jitter plot", "Time series"),
+x = c(0.1, 0.5, 0), y = c(1, 1, 0.5), size = 15)
+```
+
+代码中，首先使用了ggdraw()函数添加了一张空白的画布。然后使用draw_plot函数添加了第一幅图形bxp，位置在(0，0.5)，宽度为0.5，高度为0.5.然后使用draw_plot函数添加了第二幅图形dp，位置在（0.5，0.5）宽度为0.5，高度为0.5。然后使用draw_plot函数绘制了第三幅图形，lp，位置是（0，0），宽度为1，长度高度为0.5.最后使用draw_plot_label函数为图形添加标签label参数用于指定标签的名称。代码'x = c(0.1, 0.5, 0), y = c(1, 1, 0.5)',指定了三个标签的位置。例如第一个标签的位置是(0,1)。size参数调整的标签的大小。
+
+另外，如果需要保存图形的话，可以使用ggsave()函数或者save_plot() 函数。ggsave函数是ggplot2自带的函数。如果合并了图形，则最好使用save_plot() 函数。下面的代码可以储存合并之后的图形。
+```
+p <- ggdraw() +
+draw_plot(bxp, x = 0, y = .5, width = .5, height = .5) + 
+  draw_plot(dp, x = .5, y = .5, width = .5, height = .5) + 
+  draw_plot(lp, x = 0, y = 0, width = 1, height = 0.5) + 
+  draw_plot_label(label = c("Box plot", "Jitter plot", "Time series"),
+x = c(0.1, 0.5, 0), y = c(1, 1, 0.5), size = 15)
+save_plot("plot2by2.pdf", plot2by2,
+ncol = 2, # we're saving a grid plot of 2 columns
+nrow = 2, # and 2 rows
+# each individual subplot should have an aspect ratio of 1.3 base_aspect_ratio = 1.3
+)
+```
+
+
+
+## gridExtra 包
+
+
+使用gridExtra包同样可以将多副图形合并起来。关键函数则是：grid.arrange()。下面的代码使用了grid.arrange函数来合并上文的三幅函数加上下面的代码新绘制的一副直方图。如图所示
+
+
+```{r}
+# 定义一组5种颜色
+my5cols <- c("#6D9EC1", "#646567", "#A29B32", "#E46726", "#F3BF94")
+# 绘制图形
+data("diamonds")
+brp <- ggplot(diamonds, aes(x = x)) +
+geom_bar(aes(fill = cut)) + scale_fill_manual(values = my5cols)
+require(gridExtra)
+grid.arrange(bxp, dp, lp ,brp, ncol = 2, nrow =2)
+```
+
+gridExtra包中有一个函数很好用，arangeGrop()函数。可以在图形中将图形分块。例如，如果希望首先将图形分成两块，在左边放一副子图。然后在右边分两块，绘制两幅子图。则可以使用arangeGrop()函数。下面的代码在图形的左侧放置了一副点图，在右侧放置了两幅图形，箱线图的直方图。如图所示
+
+```{r}
+
+grid.arrange(dp, arrangeGrob(bxp, brp), ncol = 2)
+```
+上面的代码在使用grid.arrange函数合并图形的时候，使用arrangeGrob函数首先将dp和brp这两幅图合并在一起，然后再和bxp图形合并在一起。从图中可以看到，左边只有一幅图形，而右边有两幅图形。
+另外你，使用grid.arrange函数的layout_matrix参数同样可以进行这样的设置。如下图：
+```{r}
+grid.arrange(brp, bxp, dp,lp, ncol = 2, nrow = 2, layout_matrix = rbind(c(1,1), c(2,3,4)))
+```
+
+上面的代码将使用了grid.arrange函数合并私服图形。参数ncol=2和nrow =2 表示将整个图形分成四个部分。代码'layout_matrix = rbind(c(1,1,1), c(2,3,4)'设置了这四个部分是如何显示图形的.这里表示将第一幅图设置为第一行，将第2，3，4幅图显示在第四行。如图所示，整个图形的上方显示了直方图，下方显示了三幅图形。需要注意的layout_matrix本质上是要传入一个矩阵，用于描述每一行或者每一列绘制什么图形。
+```{r}
+rbind(c(1,1,1), c(2,3,4))
+```
+rbind函数本质上是创建了一个二行三列的矩阵矩阵，如果希望图形划分成为一个三行的图形。首先创建一个三行的矩阵。
+```{r}
+cbind(c(1,1,1), c(2,3,4))
+```
+上面的代码创建了一个三行的矩阵，矩阵的第一列都是1.然后传入layout_matrix参数。如图所示：
+```{r}
+grid.arrange(brp, bxp, dp,lp, ncol = 2, nrow = 2, layout_matrix = cbind(c(1,1,1), c(2,3,4)))
+```
+从图中可以看到，图形的左方变成了直方图，这是因为矩阵的第一列都是1。右边由于三幅图形构成。
+
+<!-- 40.4.3 Use common legend for multiple graphs -->
+<!-- This can be done in four simple steps : -->
+<!-- 1. Create the plots : p1, p2, .... -->
+<!-- 2. Save the legend of the plot p1 as an external graphical element (called a “grob” -->
+<!-- in Grid terminology) -->
+<!-- 3. Remove the legends from all plots -->
+<!-- 4. Draw all the plots with only one legend in the right panel -->
+<!-- To save the legend of a ggplot, the helper function below can be used : -->
+
+<!-- ```{r} -->
+<!-- # Get plot legend -->
+<!-- get_legend <- function(myggplot){ -->
+<!-- require(gridExtra) -->
+<!-- tmp <- ggplot_gtable(ggplot_build(myggplot)) -->
+<!-- leg <- which(sapply(tmp$grobs, function(x) x$name) == "guide-box") -->
+<!-- legend <- tmp$grobs[[leg]] -->
+<!-- return(legend) -->
+<!-- } -->
+<!-- ``` -->
+
+<!-- We’ll arrange the box plot (bxp) and the dot plot (dp) created in the previous sections. -->
+<!-- ```{r} -->
+<!-- # 2. Save the legend from the dot plot -->
+<!-- legend <- get_legend(dp) -->
+<!-- # 3. Remove the legend from the box plot and the dot plot -->
+<!-- bxp2 <- bxp + theme(legend.position="none")  -->
+<!-- dp2 <- dp + theme(legend.position="none") -->
+<!-- # 4. Arrange bxp2, dp and the legend with a specific width -->
+<!-- grid.arrange(bxp2, dp2, legend, ncol = 3, widths = c(2.3, 2.3, 0.8)) -->
+<!-- ``` -->
+
+<!-- In the R code above, the argument widths is a vector containing 3 values specifying the width of the box plot (bxp2), the dot plot (dp2) and the legend, respectively. -->
+<!-- It’s also possible to use the argument layout_matrix to customize legend position. We start by creating a dot plot with a top legend position. Next, we save the legend and remove it from the dot plot: -->
+
+
+<!-- ```{r} -->
+<!-- # 1. Dot plot with legend at the top -->
+<!-- dp2 <- dp + theme(legend.position = "top") # 2. Save the legend -->
+<!-- legend <- get_legend(dp2) -->
+<!-- # 3. Remove the legend from the dot plot -->
+<!-- dp2 <- dp2 + theme(legend.position = "none") -->
+<!-- dp2 -->
+<!-- ``` -->
+
+<!-- In the R code below, layout_matrix is a 2X2 matrix: -->
+<!-- • The first row (height = 2.5) is where the first plot (bxp2) and the second plot (dp) live -->
+<!-- • The second row (height = 0.2) is where the legend lives spanning 2 columns Bottom-center legend: -->
+<!-- ```{r} -->
+<!-- grid.arrange(bxp2, dp2, legend, ncol=2, nrow = 2, layout_matrix = rbind(c(1,2), c(3,3)), -->
+<!-- widths = c(2.7, 2.7), heights = c(2.5, 0.2)) -->
+<!-- ``` -->
+<!-- Top-center legend: -->
+<!-- • The legend (plot 1) lives in the first row (height = 0.2) spanning two columns • bxp2 (plot 2) and dp2 (plot 3) live in the second row (height = 2.5) -->
+<!-- ```{r} -->
+<!-- grid.arrange(legend, bxp2, dp2, ncol=2, nrow = 2, layout_matrix = rbind(c(1,1), c(2,3)), -->
+<!-- widths = c(2.7, 2.7), heights = c(0.2, 2.5)) -->
+<!-- ``` -->
+
+<!-- 40.4.4 Scatter plot with marginal density plots -->
+<!-- • Define a custom set of 3 colors: -->
+<!-- ```{r} -->
+<!-- # Another set of 3 colors -->
+<!-- my3cols <- c("#6D9EC1", "#646567", "#A29B32") -->
+<!-- ``` -->
+
+
+<!-- Step 1/3. Create some data : -->
+<!-- # ```{r} -->
+<!-- # set.seed(1234) -->
+<!-- # x <- c(rnorm(350, mean = -1), rnorm(350, mean = 1.5), -->
+<!-- # rnorm(350, mean = 4)) -->
+<!-- # y <- c(rnorm(350, mean = -0.5), rnorm(350, mean = 1.7), rnorm(350, mean = 2.5)) -->
+<!-- #  -->
+<!-- # group <- as.factor(rep(c(1, 2, 3), each = 350)) -->
+<!-- # df2 <- data.frame(x, y, group) -->
+<!-- # head(df2) -->
+<!-- # ``` -->
+
+
+<!-- Step 2/3. Create the plots: -->
+
+<!-- ```{r} -->
+<!-- # Scatter plot of x and y variables and color by groups -->
+<!-- scatterPlot <- ggplot(df2, aes(x, y)) + -->
+<!-- geom_point(aes(color = group)) + scale_color_manual(values = my3cols) + theme(legend.position=c(0,1), legend.justification=c(0,1)) -->
+<!-- # Marginal density plot of x (top panel) -->
+<!-- xdensity <- ggplot(df2, aes(x)) + geom_density(aes(fill = group), alpha=.8) + scale_fill_manual(values = my3cols) + theme(legend.position = "none") -->
+<!-- # Marginal density plot of y (right panel) -->
+<!-- ydensity <- ggplot(df2, aes(y)) + geom_density(aes(fill=group), alpha=.8) + scale_fill_manual(values = my3cols) + theme(legend.position = "none") + coord_flip() -->
+<!-- ``` -->
+
+<!-- Create a blank placeholder plot : -->
+<!-- ```{r} -->
+<!-- blankPlot <- ggplot()+geom_blank(aes(1,1))+ theme_void() -->
+
+<!-- ``` -->
+
+<!-- Step 3/3. Put the plots together: -->
+<!-- Arrange ggplot2 with adapted height and width for each row and column : -->
+<!-- ```{r} -->
+<!-- require("gridExtra") -->
+<!-- grid.arrange(xdensity, blankPlot, scatterPlot, ydensity, -->
+<!-- ncol=2, nrow=2, widths=c(4, 1.4), heights=c(1.4, 4)) -->
+<!-- ``` -->
+
+
+<!-- 40.4.5 构建复杂布局 -->
+
+
+<!-- 上文的图形布局都比较的简单，如果使用viewport()函数函数创建更加复杂布局。构建复杂的布局分为几步： -->
+
+<!-- 1.首先创建各种图形：p1,p2,p3等等 -->
+<!-- 2. 使用grid.newpage()函数擦行间一个新页面 -->
+<!-- 3. 创建一个布局2X2 -列数= 2;行数= 2  -->
+<!-- 4. 定义网格视图端口:图形设备5上的矩形区域，打印图形 -->
+
+
+
+
+
+<!-- ```{r} -->
+<!-- require(grid) -->
+<!-- # Move to a new page grid.newpage() -->
+<!-- # Create layout : nrow = 2, ncol = 2 -->
+<!-- pushViewport(viewport(layout = grid.layout(2, 2))) -->
+<!-- # A helper function to define a region on the layout -->
+<!-- define_region <- function(row, col){ viewport(layout.pos.row = row, layout.pos.col = col) -->
+<!-- } -->
+<!-- # Arrange the plots -->
+<!-- print(scatterPlot, vp=define_region(1, 1:2))  -->
+<!-- print(xdensity, vp = define_region(2, 1))  -->
+<!-- print(ydensity, vp = define_region(2, 2)) -->
+<!-- ``` -->
+
+## 添加边缘分布图
+
+在绘制散点图的时候，如果希望进一步了解单个变量的分布，可以在散点图中添加编辑分布图。使用ggExtra包可以非常轻松的在图形中添加边缘分布图，可以添加的图形包括直方图，箱线图和密度图。
+
+下面的代码首先绘制了一副散点图，然后添加了边际图形。如图所示
+```{r}
+library("ggExtra") # 加载包
+# 创建数据集
+set.seed(1234)
+x <- c(rnorm(350, mean = -1), rnorm(350, mean = 1.5),
+rnorm(350, mean = 4))
+y <- c(rnorm(350, mean = -0.5), rnorm(350, mean = 1.7), rnorm(350, mean = 2.5))
+
+group <- as.factor(rep(c(1, 2, 3), each = 350))
+df2 <- data.frame(x, y, group)
+scatterPlot <- ggplot(df2, aes(x, y)) +geom_point(aes(color = group)) + scale_color_manual(values = my3cols) +theme(legend.position=c(0,1), legend.justification=c(0,1))
+# 添加边际分布图
+ggMarginal(scatterPlot)
+
+# 添加边际分布
+ggMarginal(scatterPlot, type = "histogram", fill = "#6D9EC1", color = "#BFD5E3")
+
+```
+
+上面的代码中使用了ggMarginal函数为散点图添加编辑图形。默认添加的是密度曲线。
+代码'ggMarginal(scatterPlot)'表示为图形添加密度曲线。代码'ggMarginal(scatterPlot, type = "histogram", fill = "#6D9EC1", color = "#BFD5E3")'表示为图形添加边际分布，分别调用多个ggMarginal函数的时候，图形是会叠加的。从图中可以看到，散点图同时添加了密度曲线和直方图。
+
+## 在ggplot中插入一个外部图形元素
+
+
+使用annotation_custom()函数，可以在图中添加表，图和其他的元素。函数的格式如下:
+
+```
+annotation_custom(grob, xmin, xmax, ymin, ymax)
+```
+1. grob:要显示的外部图形元素
+2. xmin, xmax:数据坐标中的x位置(水平位置)
+3. ymin, ymax:数据坐标中的y位置(垂直位置)
+
+通过下面的步骤可以在一副散点图中添加图形元素：
+
+1. 首先创建一副散点图
+2. 在散点图中添加一个关于x轴的箱线图
+
+使用annotation_custom()函数函数添加图形元素，由于添加一个箱线图会与原来的图形有一些点重叠，因此可以调整图形的透明度。如下图所示
+```{r}
+require(hrbrthemes)
+p1 <- scatterPlot # 散点图
+# 绘制箱线图
+p2 <- ggplot(df2, aes(factor(1), x))+ geom_boxplot(width=0.3,color = 'black')+coord_flip()+ theme_ipsum()
+# 箱线图
+p3 <- ggplot(df2, aes(factor(1), y))+ geom_boxplot(width=0.3,color = 'red')+ theme_ipsum()
+# 创建图形元素
+p2_grob = ggplotGrob(p2)
+p3_grob = ggplotGrob(p3)
+
+ # 合并图形
+p1 + annotation_custom(grob = p2_grob, xmin = 0, xmax =7,ymin = -4, ymax = 0)
+
+                       
+```
+上面的代码首先使用散点图中x轴对应的数据创建了一副箱线图，然后使用y轴对应的变量绘制了一副箱线图。然后将图形使用ggplotGrob函数转换成为一个图形元素（grob对象）。最后使用annotation_custom函数添加创建好的图形元素。代码'p1 + annotation_custom(grob = p2_grob, xmin = 0, xmax = 5,ymin = -2, ymax = 0)'表示将p2_grob这个图形元素添加到p1中。通过xmin，xmax，ymin和ymax这几个参数调整了图形元素的位置。从图中可以看到，添加的箱线图被放在图形的右下方。
+
+
+```{r}
+# 在散点图中插入p3_grob
+p1 + annotation_custom(grob = p3_grob,
+xmin = -6, xmax = -2,ymin = -3, ymax =2)
+   
+```
+从图可以看到，箱线图被添加到了图形的左下角的位置。
+

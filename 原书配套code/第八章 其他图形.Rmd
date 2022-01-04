@@ -1,0 +1,3267 @@
+---
+title: "其他图形"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+在之前的章节中，介绍了大部分非常常用的统计图形，包括直方图，面积图，散点图，二维密度图，条形图，箱线图，小提琴图等等。通常而言，数据分析过程中，上述的图形能够解决发部分的数据可视化的任务。
+但是还有很多图形没有介绍到，这些图形在某些特殊的应用场景非常的有用，例如词云可以很好的对文本数据进行可视化展示。桑基图在对流量的数据进行可视化展示的时候是非常有用的。还有交互式图形，动画，图这两种图形能够极大的增加图形的表达力。在本章节中，会对更多的图形进行介绍。
+
+
+ 
+# 和弦图(Chord diagram)
+
+和弦图用于研究一组实体之间流动。实体(节点)显示在圆周围并与弧(链接)连接。在 R中,circlize包是构建和弦图的最佳选择。和弦图表示多个实体(称为nodes)之间的流或连接。每个实体都由外部一个片段的圆形表示。然后,在每个实体之间绘制弧。弧的大小与流的重要性成比例。
+
+下面的呢代码绘制出了从一个国家/地区迁移到另一个国家/地区的人数的示例的和弦图。
+```{r,message=FALSE}
+# 加载包
+library(tidyverse)
+library(viridis)
+library(patchwork)
+library(hrbrthemes)
+library(circlize)
+library(chorddiag)  #devtools::install_github("mattflor/chorddiag")
+
+# 从github中获取数据集
+data <- read.table("https://raw.githubusercontent.com/holtzy/data_to_viz/master/Example_dataset/13_AdjacencyDirectedWeighted.csv", header=TRUE)
+
+#  对数据集进行重命名
+colnames(data) <- c("Africa", "East Asia", "Europe", "Latin Ame.",   "North Ame.",   "Oceania", "South Asia", "South East Asia", "Soviet Union", "West.Asia")
+rownames(data) <- colnames(data)
+
+# 将数据转换成为长格式
+data_long <- data %>%
+  rownames_to_column %>%
+  gather(key = 'key', value = 'value', -rowname)
+
+# 调整参数
+circos.clear()
+circos.par(start.degree = 90, gap.degree = 4, track.margin = c(-0.1, 0.1), points.overflow.warning = FALSE)
+par(mar = rep(0, 4))
+
+# 颜色配色
+mycolor <- viridis(10, alpha = 1, begin = 0, end = 1, option = "D")
+mycolor <- mycolor[sample(1:10)]
+
+# 绘制图形
+chordDiagram(
+  x = data_long, 
+  grid.col = mycolor,
+  transparency = 0.25,
+  directional = 1,
+  direction.type = c("arrows", "diffHeight"), 
+  diffHeight  = -0.04,
+  annotationTrack = "grid", 
+  annotationTrackHeight = c(0.05, 0.1),
+  link.arr.type = "big.arrow", 
+  link.sort = TRUE, 
+  link.largest.ontop = TRUE)
+
+# 添加文本和坐标轴
+circos.trackPlotRegion(
+  track.index = 1, 
+  bg.border = NA, 
+  panel.fun = function(x, y) {
+    
+    xlim = get.cell.meta.data("xlim")
+    sector.index = get.cell.meta.data("sector.index")
+    
+    # 向扇形区域添加名称
+    circos.text(
+      x = mean(xlim), 
+      y = 3.2, 
+      labels = sector.index, 
+      facing = "bending", 
+      cex = 0.8
+      )
+
+    # 在轴上添加刻度
+    circos.axis(
+      h = "top", 
+      major.at = seq(from = 0, to = xlim[2], by = ifelse(test = xlim[2]>10, yes = 2, no = 1)), 
+      minor.ticks = 1, 
+      major.tick.percentage = 0.5,
+      labels.niceFacing = FALSE)
+  }
+)
+```
+
+上面的代码中，绘制出了不同地区人口流动的和弦图，图形是通过circlize包中的chordDiagram函数进行绘制的。从图中可以看到，圆圈外面的圆形片段表示不同的地区，圆形内部的弧线表示人口流动的多少，弧线越粗表示数量越大。
+
+和弦图在数据可视化中非常难的引人注目并且非常的受欢迎。它们允许可视化权重几个实体之间的关系。在下面的介绍和弦图的基本绘制方法。
+
+
+## 绘制圆形图标
+
+在R中,使用circlize包来绘制和弦图，绘制和弦图需要先绘制圆形图。圆形图由几个区域组成,每个区域代表一个因子的水平。建立圆形图需要三个步骤：
+
+- 第1步：使用circos.initialize()函数初始化图表。提供因子向量和用于X轴的数值。圆圈将分成与因子中存在的级别数一样多的区域。每个区域将与相应的x轴一样长。
+
+- 第2步：使用circos.trackPlotRegion()函数构建区域。此时必须再次指定因子,并在需要时告诉Y轴使用什么。
+
+- 第3步：在每个地区添加图表。这里使用circos.trackPoints()函数用于构建散点图。
+
+下面的代码中绘制了基础的圆形图：
+```{r}
+# 加载包
+library(circlize)
+ 
+# 创建数据集
+data = data.frame(
+    factor = sample(letters[1:8], 1000, replace = TRUE),
+    x = rnorm(1000), 
+    y = runif(1000)
+    )
+ 
+#  初始化图表，给出因子和x轴。
+circos.initialize( factors=data$factor, x=data$x )
+ 
+# 构建区域 
+circos.trackPlotRegion(factors = data$factor, y = data$y, panel.fun = function(x, y) {
+    circos.axis()
+    })
+ 
+# 添加点
+circos.trackPoints(data$factor, data$x, data$y, col = "red", pch = 16, cex = 0.5) 
+```
+
+上面的代码中，首先创建了一个数据集，数据集包含三个变量，分别为factor，x，y,其中，factor是分类变量，x和y是连续变量。 第1步是使用circos.initialize()函数初始化图表，提供因子向量和用于X轴的数值，上面的代码中将circos.initialize函数的factors参数设置为data$factor，x参数设置为data$x。
+上面的代码中将
+第2步是使用circos.trackPlotRegion()函数构建区域，此时必须再次指定因子,并在需要时告诉Y轴使用什么变量。上面的代码中，将circos.trackPlotRegion函数的参数设置factors设置为data$factor，参数y设置为data$y，其中panel.fun用以指定了图形的坐标轴。
+第三步为每一个区域添加散点图，使用circos.trackPoints函数。将数据集中的三个变量分别作为参数传递到circos.trackPoints函数。其中col设置了图形的颜色，pch设定了数据点的形状，cex设置了数据点的大小。
+
+在绘制好基础的图形之后，可以更进一步的自定义圆形图表：例如修改图形的宽度,修改背景颜色,调整起始的角度等。
+
+
+
+```{r}
+# 加载包
+library(circlize)
+
+# 创建数据集
+data = data.frame(
+    factor = sample(letters[1:8], 1000, replace = TRUE),
+    x = rnorm(1000),
+    y = runif(1000)
+    )
+
+# 图形定制
+par(
+  mar = c(1, 1, 1, 1),          
+  bg = rgb(0.4,0.1,0.7,0.05)     # 背景颜色
+) 
+circos.par("track.height" = 0.6) #  高度，0.6 =总高度的60%
+
+# 初始化图表，给出因子和x轴。
+circos.initialize( factors=data$factor, x=data$x )
+
+# 构建区域。
+circos.trackPlotRegion(factors = data$factor, y = data$y, panel.fun = function(x, y) {
+    circos.axis(
+        h="top",                   # x轴的内侧还是外侧
+        labels=TRUE,               # 是否显示标签
+        major.tick=TRUE,           # 是否显示 ticks?
+        labels.cex=0.5,            # 标签的大小
+        labels.font=1,             # 标签的字体
+        direction="outside",       # ticks 在内部还是外部
+        minor.ticks=4,             
+        major.tick.percentage=0.1, # 刻度的大小，百分比表示
+        lwd=2                      
+        )
+    })
+
+# 添加点
+circos.trackPoints(data$factor, data$x, data$y, col = "red", pch = 16, cex = 0.5)
+
+```
+
+上面的代码对于图形进行了更多而的自定义调整。从图中可以看到，图形中圆环边框了，并且线条的被调整得更加的细，数据点的颜色设置为红色。接下来开始介绍和弦图的绘制。
+
+
+## 绘制基础的和弦图
+
+使用circlize包可以非常简单的绘制出和弦图，和弦图在节点之间添加弧以显示数据的流向。下面的代码绘制了一副基础的和弦图，如图所示：
+
+```{r}
+# 加载包
+library(circlize)
+ 
+# 创建数据集
+set.seed(123)
+data = data.frame(
+    factor = sample(letters[1:8], 1000, replace = TRUE),
+    x = rnorm(1000), 
+    y = runif(1000)
+    )
+ 
+# 初始化图形
+par(mar = c(1, 1, 1, 1) ) 
+circos.initialize(factors = data$factor, x = data$x )
+ 
+# 构建区域
+circos.trackPlotRegion(factors = data$factor, y=data$y , bg.col = rgb(0.1,0.1,seq(0,1,0.1),0.4) , bg.border = NA)
+ 
+# 在一个点和另一个点之间添加链接
+circos.link("a", 0, "b", 0, h = 0.4)
+ 
+# 在点和区域之间添加链接
+circos.link("e", 0, "g", c(-1,1), col = "green", lwd = 2, lty = 2, border="black" )
+ 
+# 在一个区域和另一个区域之间添加链接
+circos.link("c", c(-0.5, 0.5), "d", c(-0.5,0.5), col = "red", border = "blue", h = 0.2)
+
+```
+上面的中绘制了基础的和弦图，代码中创建了一个数据集，和上文一样，数据集包含三个变量factory，x，y。其中factory是离散变量，x和y是离散变量。第一步还是使用circos.initialize函数初始化图形。然后使用circos.trackPlotRegion（）函数构建区域。这两步都与上文的圆形图的构建方式是一样的。然后是添加链接，使用的函数是circos.link。从图中可以观察到，和弦图中一共添加了三条连接线。
+
+事实上，使用circos.link函数一条一条的添加链接是一件非常繁琐的时候。circlize包中的chordDiagram()函数可以将邻接矩阵轻松的转变成为和弦图。
+
+邻接矩阵中所有的行表示连接中的起点,列表示连接中的终点。每个单元格都表示某一一个指定流动强度的数值。
+
+ 下面的代码使用chordDiagram()函数绘制了一幅和弦图，如图所示：
+```{r}
+# 创建邻接矩阵:
+ 
+numbers <- sample(c(1:1000), 100, replace = T)
+data <- matrix( numbers, ncol=5)
+rownames(data) <- paste0("orig-", seq(1,20))
+colnames(data) <- paste0("dest-", seq(1,5))
+
+data %>% head()
+
+# 加载包
+library(circlize)
+ 
+# 绘制图形
+chordDiagram(data)
+```
+
+上面的代码中，首先创建了一个连接矩阵数据集，对于矩阵的行和列都重新命名。上面的代码输出了矩阵的数据集前几行。
+然后使用chordDiagram（）函数绘制和弦图
+
+当所使用的的数据集不是连接矩阵，而是其他的数据集。存储流信息的另一种常见格式是边缘列表，边缘列表数据集中，所有连接都是逐个存储在2列文件中,列出每个连接的起点和终点。
+由于chordDiagram()函数需要将邻接矩阵作为输入,因此需要使用table()函数将数据转变成为连接矩阵的格式,如下所述：
+
+```{r}
+# 创建边缘列表
+origin <- paste0("orig ", sample(c(1:10), 20, replace = T))
+destination <- paste0("dest ", sample(c(1:10), 20, replace = T))
+data <- data.frame(origin, destination)
+
+# 转换邻接矩阵中的输入数据
+adjacencyData <- with(data, table(origin, destination))
+ 
+# 加载包
+library(circlize)
+ 
+# 绘制图形
+chordDiagram(adjacencyData, transparency = 0.5)
+```
+上面的代码首先对数据及进行了处理，将边缘列表的数据格式转变成为连接矩阵的方式。一般情况下，原始的数据集不会直接给出连接矩阵，因此，在绘图之前需要首先要对数据集进行必要的处理。
+
+## 细节调整
+
+在绘制好和弦图之后可以进行以对图形细节进行调整，下面的例子中介绍了如何构建高度自定义的和弦图,使用circos.link()函数,来手动添加链接。
+
+```{r,warning=FALSE,message=FALSE}
+# 加载包
+library(circlize)
+library(migest)
+library(dplyr)
+ 
+# 创建数据集
+m <- data.frame(order = 1:6,
+            country = c("Ausralia", "India", "China", "Japan", "Thailand", "Malaysia"),
+            V3 = c(1, 150000, 90000, 180000, 15000, 10000),
+            V4 = c(35000, 1, 10000, 12000, 25000, 8000),
+            V5 = c(10000, 7000, 1, 40000, 5000, 4000),
+            V6 = c(7000, 8000, 175000, 1, 11000, 18000),
+            V7 = c(70000, 30000, 22000, 120000, 1, 40000),
+            V8 = c(60000, 90000, 110000, 14000, 30000, 1),
+            r = c(255,255,255,153,51,51),
+            g = c(51, 153, 255, 255, 255, 255),
+            b = c(51, 51, 51, 51, 51, 153),
+            stringsAsFactors = FALSE)
+df1 <- m[, c(1,2, 9:11)]
+m <- m[,-(1:2)]/1e04
+m <- as.matrix(m[,c(1:6)])
+dimnames(m) <- list(orig = df1$country, dest = df1$country)
+# 排序数据集
+df1 <- arrange(df1, order)
+df1$country <- factor(df1$country, levels = df1$country)
+m <- m[levels(df1$country),levels(df1$country)]
+ 
+ 
+# 定义扇形范围及其颜色 
+df1$xmin <- 0
+df1$xmax <- rowSums(m) + colSums(m)
+n <- nrow(df1)
+df1$rcol<-rgb(df1$r, df1$g, df1$b, max = 255)
+df1$lcol<-rgb(df1$r, df1$g, df1$b, alpha=200, max = 255)
+ 
+# 图形参数设置
+par(mar=rep(0,4))
+circos.clear()
+ 
+# 基本的图形参数
+circos.par(cell.padding=c(0,0,0,0), track.margin=c(0,0.15), start.degree = 90, gap.degree =4)
+
+circos.initialize(factors = df1$country, xlim = cbind(df1$xmin, df1$xmax))
+ 
+# 绘制图形
+circos.trackPlotRegion(ylim = c(0, 1), factors = df1$country, track.height=0.1,
+                      panel.fun = function(x, y) {
+                      #详细信息
+                      name = get.cell.meta.data("sector.index")
+                      i = get.cell.meta.data("sector.numeric.index")
+                      xlim = get.cell.meta.data("xlim")
+                      ylim = get.cell.meta.data("ylim")
+ 
+                      #文本
+                      theta = circlize(mean(xlim), 1.3)[1, 1] %% 360
+                      dd <- ifelse(theta < 90 || theta > 270, "clockwise", "reverse.clockwise")
+                      aa = c(1, 0.5)
+                      if(theta < 90 || theta > 270)  aa = c(0, 0.5)
+ 
+                      #添加标签
+                      circos.text(x=mean(xlim), y=1.7, labels=name, facing = dd, cex=0.6,  adj = aa)
+ 
+                      #绘制主区域
+                      circos.rect(xleft=xlim[1], ybottom=ylim[1], xright=xlim[2], ytop=ylim[2], 
+                                  col = df1$rcol[i], border=df1$rcol[i])
+ 
+                      # 调整空白部分
+                      circos.rect(xleft=xlim[1], ybottom=ylim[1], xright=xlim[2]-rowSums(m)[i], ytop=ylim[1]+0.3, 
+                                  col = "white", border = "white")
+ 
+                      #添加白色的线
+                      circos.rect(xleft=xlim[1], ybottom=0.3, xright=xlim[2], ytop=0.32, col = "white", border = "white")
+ 
+                      #绘制轴
+                      circos.axis(labels.cex=0.6, direction = "outside", major.at=seq(from=0,to=floor(df1$xmax)[i],by=5), 
+                                  minor.ticks=1, labels.away.percentage = 0.15)
+                    })
+ 
+# 在内部添加链接
+#向df1添加值，标记第一个链接的x位置
+
+df1$sum1 <- colSums(m)
+df1$sum2 <- numeric(n)
+ 
+#  创建一个数据框
+df2 <- cbind(as.data.frame(m),orig=rownames(m),  stringsAsFactors=FALSE)
+df2 <- reshape(df2, idvar="orig", varying=list(1:n), direction="long",
+           timevar="dest", time=rownames(m),  v.names = "m")
+df2 <- arrange(df2,desc(m))
+ 
+# 只保留最大的部分以避免混乱
+df2 <- subset(df2, m > quantile(m,0.6))
+ 
+###绘制图形
+for(k in 1:nrow(df2)){
+    
+    i<-match(df2$orig[k],df1$country)
+    j<-match(df2$dest[k],df1$country)
+ 
+# 绘制图形
+circos.link(sector.index1=df1$country[i], point1=c(df1$sum1[i], df1$sum1[i] + abs(m[i, j])),
+            sector.index2=df1$country[j], point2=c(df1$sum2[j], df1$sum2[j] + abs(m[i, j])),
+            col = df1$lcol[i])
+ 
+#更新sum1和sum2，以便在绘制下一个链接时使用
+df1$sum1[i] = df1$sum1[i] + abs(m[i, j])
+df1$sum2[j] = df1$sum2[j] + abs(m[i, j])
+}
+```
+
+上面的代码对图形进行了更多地修改。从图形中可以看到，图形的颜色被调整为鲜艳的颜色色调，并且在圆环和连线之间添加了一个白色的圆环。
+
+# 桑基图 Sankey Diagram
+
+
+桑基图（Sankey Diagram）同样是一种允许显示流量的可视化技术。几个实体(nodes)由矩形或文本表示。它们的链接用箭头或弧线表示,其宽度与流动的重要性或者某种数值成比例。
+
+下面的代码绘制了一副桑基图，显示出一个国家(左)迁移到另一个国家(右)的人数,如图所示：
+
+```{r}
+# 加载包
+library(tidyverse)
+library(viridis)
+library(patchwork)
+library(hrbrthemes)
+library(circlize)
+
+# 获取数据集
+data <- read.table("https://raw.githubusercontent.com/holtzy/data_to_viz/master/Example_dataset/13_AdjacencyDirectedWeighted.csv", header=TRUE)
+# 加载包
+library(networkD3)
+
+# 将数据转变成为长数据
+data_long <- data %>%
+  rownames_to_column %>%
+  gather(key = 'key', value = 'value', -rowname) %>%
+  filter(value > 0)
+colnames(data_long) <- c("source", "target", "value")
+data_long$target <- paste(data_long$target, " ", sep="")
+
+# 创建一个关于节点的数据框
+nodes <- data.frame(name=c(as.character(data_long$source), as.character(data_long$target)) %>% unique())
+ 
+# 对于networkD3，必须使用id提供连接，而不是像在links dataframe中那样使用实名。所以我们需要重新格式化它。
+data_long$IDsource=match(data_long$source, nodes$name)-1 
+data_long$IDtarget=match(data_long$target, nodes$name)-1
+
+# 设置颜色
+ColourScal ='d3.scaleOrdinal() .range(["#FDE725FF","#B4DE2CFF","#6DCD59FF","#35B779FF","#1F9E89FF","#26828EFF","#31688EFF","#3E4A89FF","#482878FF","#440154FF"])'
+
+# 绘制图形
+sankeyNetwork(Links = data_long, Nodes = nodes,
+                     Source = "IDsource", Target = "IDtarget",
+                     Value = "value", NodeID = "name", 
+                     sinksRight=FALSE, colourScale=ColourScal, nodeWidth=40, fontSize=13, nodePadding=20)
+```
+上面的代码绘制出了不同地区的人口流动。从图中可以看到，图中不同的矩阵表示不同的地区，矩阵与矩阵之间的连接表示人口流动的多少，连线越粗，表示流动人口越多。这样的图形能够非常清晰的观察人口的流动。流量相关的数据都可以使用桑基图进行绘制，例如网络浏览相关的数据，使用桑基图可以来分析网页中页面跳转的情况，可以很清楚的显示出网络流量在不同页面的变化。
+
+
+<!-- ```{r} -->
+<!-- # Load package -->
+<!-- library(networkD3) -->
+
+<!-- # Load energy projection data -->
+<!-- URL <- "https://cdn.rawgit.com/christophergandrud/networkD3/master/JSONdata/energy.json" -->
+<!-- Energy <- jsonlite::fromJSON(URL) -->
+
+<!-- # Now we have 2 data frames: a 'links' data frame with 3 columns (from, to, value), and a 'nodes' data frame that gives the name of each node. -->
+
+<!-- # Thus we can plot it -->
+<!-- sankeyNetwork(Links = Energy$links, Nodes = Energy$nodes, Source = "source", -->
+<!--               Target = "target", Value = "value", NodeID = "name", -->
+<!--               units = "TWh", fontSize = 12, nodeWidth = 30) -->
+<!-- ``` -->
+
+在绘制桑基图的时候，有一些注意事项，首先，桑基图节点的位置非常的重要，另外，桑基图的节点不能过多，太多的节点会使得图形过于混乱，难以理解，因此建议删除掉大多数的不重要的弱连接。
+
+## 绘制基础的桑基图
+
+桑基图描述了数据之间的流动，绘制桑基图的时候，输入的数据可以有两种不同的数据格式，分别为连接数据框和关联矩阵，连接数据框包含三列，分别表示的连接的起点和终点以及连接的权重。关联矩阵的行和列分别表示连接，矩阵中的值表示权重，关联矩阵是一个方阵。
+
+连接数据框在数据中逐个列出所有连接。通常数据中有一个source和一个target列。可以添加第三列,为每个连接提供更多信息,例如流的值。
+
+下面的代码构建一个连接数据框并将其表示为Sankey图，图形如图所示：
+```{r}
+# 加载包
+library(networkD3)
+library(dplyr)
+ 
+# 创建数据框
+links <- data.frame(
+  source=c("group_A","group_A", "group_B", "group_C", "group_C", "group_E"), 
+  target=c("group_C","group_D", "group_E", "group_F", "group_G", "group_H"), 
+  value=c(2,3, 2, 3, 1, 3)
+  )
+ 
+# 创建一个关于节点的数据框
+nodes <- data.frame(
+  name=c(as.character(links$source), 
+  as.character(links$target)) %>% unique()
+)
+ nodes %>% head(3)
+ 
+# 对于networkD3，必须使用id提供连接，而不是像在links dataframe中那样使用实名。所以我们需要重新格式化它。
+links$IDsource <- match(links$source, nodes$name)-1 
+links$IDtarget <- match(links$target, nodes$name)-1
+
+links %>% head(3)
+ 
+# 绘制图形
+p <- sankeyNetwork(Links = links, Nodes = nodes,
+              Source = "IDsource", Target = "IDtarget",
+              Value = "value", NodeID = "name")
+p
+
+
+```
+
+上面的代码中，首先创建了一个数据集links，这个数据集包含三个变量，分别为source，target和value。source表示连接的起点，target表示连接中的终点。然后创建了一个nodes数据集，这个数据集记录了所有的连接节点的名称。然后在数据集links中生成了两个新的变量IDsource，和IDtarget，这两个变量分别表示了对应的source变量和target变量的值在nodes变量中的位置。
+
+举一个例子，在links数据集的输出结果中可以看到，第一行中source变量对应的值为group_A,IDsource的值为0。从nodes的输出结果中可以看到，group_A排在第一个。因此IDsource的则就等于1 - 1 =0。第一行target变量的值为group_C，在nodes中的位置为第三个，因此IDtarget为3-1 =2。
+
+然后使用sankeyNetwork函数绘制桑基图，图形中设置参数links = links，Nodes = nodes，这是两个基本参数。然后Souce参数表示数据中的起点，指定参数为IDsource变量，同理，参数Target设定为IDtarget变量。Value表示连接的值，设置为vvalue变量。NodeID参数用于表示所有节点的名称，设置为变量。然后即可绘制出桑基图。如果数据集是关联矩阵，则需要首先转换数据集,然后重新使用上面的代码。
+
+
+<!-- ## 颜色调整 -->
+
+<!-- 在绘制完成基本的桑基图之后，可以对于图形的颜色进行调整。控制节点和连接的颜色稍微有一点复杂,因为必须调用Javascript，创建一个颜色链接Javascript对象，然后在colourScale参数中调用此对,下面的代码对于桑基图的颜色进行了调整，如图所示： -->
+<!-- ```{r} -->
+<!-- # Library -->
+<!-- library(networkD3) -->
+<!-- library(dplyr) -->
+
+<!-- # Make a connection data frame -->
+<!-- links <- data.frame( -->
+<!--   source=c("group_A","group_A", "group_B", "group_C", "group_C", "group_E"),  -->
+<!--   target=c("group_C","group_D", "group_E", "group_F", "group_G", "group_H"),  -->
+<!--   value=c(2,3, 2, 3, 1, 3) -->
+<!-- ) -->
+
+<!-- # From these flows we need to create a node data frame: it lists every entities involved in the flow -->
+<!-- nodes <- data.frame( -->
+<!--   name=c(as.character(links$source), as.character(links$target)) %>%  -->
+<!--     unique() -->
+<!-- ) -->
+
+<!-- # With networkD3, connection must be provided using id, not using real name like in the links dataframe.. So we need to reformat it. -->
+<!-- links$IDsource <- match(links$source, nodes$name)-1  -->
+<!-- links$IDtarget <- match(links$target, nodes$name)-1 -->
+
+<!-- # prepare color scale: I give one specific color for each node. -->
+<!-- my_color <- 'd3.scaleOrdinal() .domain(["group_A", "group_B","group_C", "group_D", "group_E", "group_F", "group_G", "group_H"]) .range(["blue", "blue" , "blue", "red", "red", "yellow", "purple", "purple"])' -->
+
+<!-- # Make the Network. I call my colour scale with the colourScale argument -->
+<!-- p <- sankeyNetwork(Links = links, Nodes = nodes, Source = "IDsource", Target = "IDtarget",  -->
+<!--               Value = "value", NodeID = "name", colourScale=my_color) -->
+<!-- p -->
+
+<!-- # save the widget -->
+<!-- # library(htmlwidgets) -->
+<!-- # saveWidget(p, file=paste0( getwd(), "/HtmlWidget/sankeyColor1.html")) -->
+<!-- ``` -->
+<!-- 上面的代码中，```my_color <- 'd3.scaleOrdinal() .domain(["group_A", "group_B","group_C", "group_D", "group_E", "group_F", "group_G", "group_H"]) .range(["blue", "blue" , "blue", "red", "red", "yellow", "purple", "purple"])'```这一部分创建了一个Javascript对象，用于对不同的节点设置颜色，设置为group_A,group_B,group_C被设置为蓝色，group_D,group_E被设置为红色，group_F被设置为黄色，group_G和group_H被设置为紫色。 -->
+
+<!-- 然后在绘图的时候，将colourScale参数设定为所创建的Javascript对象：my_color。从图形中可以看到，不同的节点都被设置为了对于的颜色。 -->
+
+
+<!-- 设置节点组的颜色 -->
+<!-- 您可以在将节点归属到组后对其进行着色。 -->
+
+<!-- 通常,此信息存储在node数据框的列中。您可以使用此信息创建JavaScript颜色归属对象,并使用Nodegroup参数调用它。 -->
+
+
+<!-- ```{r} -->
+<!-- # Add a 'group' column to the nodes data frame: -->
+<!-- nodes$group <- as.factor(c("a","a","a","a","a","b","b","b")) -->
+
+<!-- # Give a color for each group: -->
+<!-- my_color <- 'd3.scaleOrdinal() .domain(["a", "b"]) .range(["#69b3a2", "steelblue"])' -->
+
+<!-- # Make the Network -->
+<!-- p <- sankeyNetwork(Links = links, Nodes = nodes, Source = "IDsource", Target = "IDtarget",  -->
+<!--               Value = "value", NodeID = "name",  -->
+<!--               colourScale=my_color, NodeGroup="group") -->
+<!-- p -->
+
+<!-- # save the widget -->
+<!-- # library(htmlwidgets) -->
+<!-- # saveWidget(p, file=paste0( getwd(), "/HtmlWidget/sankeyColor2.html")) -->
+<!-- ``` -->
+
+<!-- 设置连接的颜色 -->
+<!-- 遵循相同的原则,您可以控制图表每个流程的颜色： -->
+
+<!-- ```{r} -->
+<!-- # Add a 'group' column to each connection: -->
+<!-- links$group <- as.factor(c("type_a","type_a","type_a","type_b","type_b","type_b")) -->
+
+<!-- # Add a 'group' column to each node. Here I decide to put all of them in the same group to make them grey -->
+<!-- nodes$group <- as.factor(c("my_unique_group")) -->
+
+<!-- # Give a color for each group: -->
+<!-- my_color <- 'd3.scaleOrdinal() .domain(["type_a", "type_b", "my_unique_group"]) .range(["#69b3a2", "steelblue", "grey"])' -->
+
+<!-- # Make the Network -->
+<!-- p <- sankeyNetwork(Links = links, Nodes = nodes, Source = "IDsource", Target = "IDtarget",  -->
+<!--                    Value = "value", NodeID = "name",  -->
+<!--                    colourScale=my_color, LinkGroup="group", NodeGroup="group") -->
+
+<!-- p -->
+
+<!-- # save the widget -->
+<!-- # library(htmlwidgets) -->
+<!-- # saveWidget(p, file=paste0( getwd(), "/HtmlWidget/sankeyColor3.html"))  -->
+<!-- ``` -->
+
+
+
+<!-- # 弧形链接图（arc diagram） -->
+
+<!-- 弧形链接图是一种特殊的网络图。这种图形与和弦图，桑基图非常类似。由nodes代表实体和links实体之间的关系构成。下面的代码绘制了一个简单的例子。使用2d网络图(左)和弧形链接图(右)表示6个节点之间的五个链路，如图所示 -->
+
+<!-- ```{r} -->
+<!-- # Libraries -->
+<!-- library(tidyverse) -->
+<!-- library(viridis) -->
+<!-- library(patchwork) -->
+<!-- library(hrbrthemes) -->
+<!-- library(igraph) -->
+<!-- library(ggraph) -->
+<!-- library(colormap) -->
+
+<!-- # A really simple edge list -->
+<!-- links=data.frame( -->
+<!--     source=c("A", "A", "A", "A", "B"), -->
+<!--     target=c("B", "C", "D", "F","E") -->
+<!--     ) -->
+
+<!-- # Transform to a igraph object -->
+<!-- mygraph <- graph_from_data_frame(links) -->
+
+<!-- # Make the usual network diagram -->
+<!-- p1 <-  ggraph(mygraph) +  -->
+<!--   geom_edge_link(edge_colour="black", edge_alpha=0.3, edge_width=0.2) + -->
+<!--   geom_node_point( color="#69b3a2", size=5) + -->
+<!--   geom_node_text( aes(label=name), repel = TRUE, size=8, color="#69b3a2") + -->
+<!--   theme_void() + -->
+<!--   theme( -->
+<!--     legend.position="none", -->
+<!--     plot.margin=unit(rep(2,4), "cm") -->
+<!--   )  -->
+
+<!-- # Make a cord diagram -->
+<!-- p2 <-  ggraph(mygraph, layout="linear") +  -->
+<!--   geom_edge_arc(edge_colour="black", edge_alpha=0.3, edge_width=0.2) + -->
+<!--   geom_node_point( color="#69b3a2", size=5) + -->
+<!--   geom_node_text( aes(label=name), repel = FALSE, size=8, color="#69b3a2", nudge_y=-0.1) + -->
+<!--   theme_void() + -->
+<!--   theme( -->
+<!--     legend.position="none", -->
+<!--     plot.margin=unit(rep(2,4), "cm") -->
+<!--   )  -->
+
+<!-- p1 + p2 -->
+<!-- ``` -->
+
+<!-- 如图所示，这两幅图形分别是2D网络图和弧形链接图，这两幅图的含义都是一样的，表述了不同节点的之间的连接。弧形链接图不如2d网络图能够更好地传达整体节点结构。但是弧形链接图有两个主要优点：如果节点顺序得到优化,它可以很好地突出聚类,并且，它允许显示每个节点的标签,这在2d结构中通常是不可能的。 -->
+
+
+<!-- 下面这是一个显示研究人员的共同作者网络的例子。Vincent Ranwez是多本科学出版物的作者,共有100多位合着者,均由下图中的节点代表。如果两个人是某文章的共同坐着,那么它们就会被一个圆弧连接起来，下面的代码使用弧形链接图来体现了坐着的相互关系： -->
+<!-- ```{r} -->
+<!-- # Load data -->
+<!-- dataUU <- read.table("https://raw.githubusercontent.com/holtzy/data_to_viz/master/Example_dataset/13_AdjacencyUndirectedUnweighted.csv", header=TRUE) -->
+
+<!-- # Transform the adjacency matrix in a long format -->
+<!-- connect <- dataUU %>%  -->
+<!--   gather(key="to", value="value", -1) %>% -->
+<!--   mutate(to = gsub("\\.", " ",to)) %>% -->
+<!--   na.omit()  -->
+
+<!-- # Number of connection per person -->
+<!-- c( as.character(connect$from), as.character(connect$to)) %>% -->
+<!--   as.tibble() %>% -->
+<!--   group_by(value) %>% -->
+<!--   summarize(n=n()) -> coauth -->
+<!-- colnames(coauth) <- c("name", "n") -->
+<!-- #dim(coauth) -->
+
+<!-- # Create a graph object with igraph -->
+<!-- mygraph <- graph_from_data_frame( connect, vertices = coauth, directed = FALSE ) -->
+
+<!-- # Find community -->
+<!-- com <- walktrap.community(mygraph) -->
+<!-- #max(com$membership) -->
+
+<!-- #Reorder dataset and make the graph -->
+<!-- coauth <- coauth %>%  -->
+<!--   mutate( grp = com$membership) %>% -->
+<!--   arrange(grp) %>% -->
+<!--   mutate(name=factor(name, name)) -->
+
+<!-- # keep only 10 first communities -->
+<!-- coauth <- coauth %>%  -->
+<!--   filter(grp<16) -->
+
+<!-- # keep only this people in edges -->
+<!-- connect <- connect %>% -->
+<!--   filter(from %in% coauth$name) %>% -->
+<!--   filter(to %in% coauth$name) -->
+
+<!-- # Create a graph object with igraph -->
+<!-- mygraph <- graph_from_data_frame( connect, vertices = coauth, directed = FALSE ) -->
+
+<!-- # prepare a vector of n color in the viridis scale -->
+<!-- mycolor <- colormap(colormap=colormaps$viridis, nshades=max(coauth$grp)) -->
+<!-- mycolor <- sample(mycolor, length(mycolor)) -->
+
+<!-- # Make the graph -->
+<!-- ggraph(mygraph, layout="linear") +  -->
+<!--   geom_edge_arc(edge_colour="black", edge_alpha=0.2, edge_width=0.3, fold=TRUE) + -->
+<!--   geom_node_point(aes(size=n, color=as.factor(grp), fill=grp), alpha=0.5) + -->
+<!--   scale_size_continuous(range=c(0.5,8)) + -->
+<!--   scale_color_manual(values=mycolor) + -->
+<!--   geom_node_text(aes(label=name), angle=65, hjust=1, nudge_y = -1.1, size=2.3) + -->
+<!--   theme_void() + -->
+<!--   theme( -->
+<!--     legend.position="none", -->
+<!--     plot.margin=unit(c(0,0,0.4,0), "null"), -->
+<!--     panel.spacing=unit(c(0,0,3.4,0), "null") -->
+<!--   ) + -->
+<!--   expand_limits(x = c(-1.2, 1.2), y = c(-5.6, 1.2))  -->
+<!-- ``` -->
+
+<!-- 从图中可以观察到，不同的节点似乎有聚类的倾向，也就是说，在某一个群体里面的坐着会有较多的合作。但有的时候这种图也会出现误导的情况，因为节点的顺序是弧形链接图的关键。例如图。。,显示与上面相同的弧形图,但节点以随机顺序显示。从图。。中，非常的难以获取有效信息。 -->
+<!-- ```{r} -->
+<!-- #Reorder dataset randomly -->
+<!-- coauth <- coauth %>%  -->
+<!--   slice( sample(c(1:nrow(coauth)), nrow(coauth))) -->
+
+<!-- # Create a graph object with igraph -->
+<!-- mygraph <- graph_from_data_frame( connect, vertices = coauth, directed = FALSE ) -->
+
+<!-- # prepare a vector of n color in the viridis scale -->
+<!-- mycolor <- colormap(colormap=colormaps$viridis, nshades=max(coauth$grp)) -->
+<!-- mycolor <- sample(mycolor, length(mycolor)) -->
+
+<!-- # Make the graph -->
+<!-- ggraph(mygraph, layout="linear") +  -->
+<!--   geom_edge_arc(edge_colour="black", edge_alpha=0.2, edge_width=0.3, fold=TRUE) + -->
+<!--   geom_node_point(aes(size=n, color=as.factor(grp), fill=grp), alpha=0.5) + -->
+<!--   scale_size_continuous(range=c(0.5,8)) + -->
+<!--   scale_color_manual(values=mycolor) + -->
+<!--   geom_node_text(aes(label=name), angle=65, hjust=1, nudge_y = -1.1, size=2.3) + -->
+<!--   theme_void() + -->
+<!--   theme( -->
+<!--     legend.position="none", -->
+<!--     plot.margin=unit(c(0,0,0.4,0), "null"), -->
+<!--     panel.spacing=unit(c(0,0,3.4,0), "null") -->
+<!--   ) + -->
+<!--   expand_limits(x = c(-1.2, 1.2), y = c(-5.6, 1.2))  -->
+<!-- ``` -->
+
+<!-- 从图中可以看到，图形不同节点之间的连接似乎显得混乱不堪，因此，在绘制图形的时候应该注意避免这种情况。 -->
+
+<!-- <!-- # 边缘捆绑图（Hierarchical Edge Bundling）  --> -->
+
+<!-- <!-- 分层边缘捆绑允许可视化层次结构中实体之间的邻接关系。将邻接的边捆绑在一起,以减少在复杂网络中出现的混乱。使用ggraph包可以比较方便的绘制边缘捆绑图。 --> -->
+
+<!-- <!-- 下面的代码使用了ggraph包中的flare数据集，这个数据集是一个列表，列表中有三个对象，分别为edges，vertices和imports --> -->
+<!-- <!-- ```{r} --> -->
+<!-- <!-- # Libraries --> -->
+<!-- <!-- library(tidyverse) --> -->
+<!-- <!-- library(viridis) --> -->
+<!-- <!-- library(patchwork) --> -->
+<!-- <!-- library(hrbrthemes) --> -->
+<!-- <!-- library(ggraph) --> -->
+<!-- <!-- library(igraph) --> -->
+
+<!-- <!-- # The flare dataset is provided in ggraph --> -->
+<!-- <!-- edges <- flare$edges --> -->
+<!-- <!-- vertices <- flare$vertices %>% arrange(name) %>% mutate(name=factor(name, name)) --> -->
+<!-- <!-- connections <- flare$imports --> -->
+
+<!-- <!-- # Preparation to draw labels properly: --> -->
+<!-- <!-- vertices$id=NA --> -->
+<!-- <!-- myleaves=which(is.na( match(vertices$name, edges$from) )) --> -->
+<!-- <!-- nleaves=length(myleaves) --> -->
+<!-- <!-- vertices$id[ myleaves ] = seq(1:nleaves) --> -->
+<!-- <!-- vertices$angle= 90 - 360 * vertices$id / nleaves --> -->
+<!-- <!-- vertices$hjust<-ifelse( vertices$angle <-90, 1, 0) --> -->
+<!-- <!-- vertices$angle<-ifelse(vertices$angle <-90, vertices$angle+180, vertices$angle) --> -->
+
+<!-- <!-- # Build a network object from this dataset: --> -->
+<!-- <!-- mygraph <- graph_from_data_frame(edges, vertices = vertices) --> -->
+
+<!-- <!-- # The connection object must refer to the ids of the leaves: --> -->
+<!-- <!-- from = match( connections$from, vertices$name) --> -->
+<!-- <!-- to = match( connections$to, vertices$name) --> -->
+
+<!-- <!-- # Basic dendrogram --> -->
+<!-- <!-- ggraph(mygraph, layout = 'dendrogram', circular = TRUE) +  --> -->
+<!-- <!--     geom_edge_link(size=0.4, alpha=0.1) + --> -->
+<!-- <!--     geom_node_text(aes(x = x*1.01, y=y*1.01, filter = leaf, label=shortName, angle = angle, hjust=hjust), size=1.5, alpha=1) + --> -->
+<!-- <!--     coord_fixed() + --> -->
+<!-- <!--     theme_void() + --> -->
+<!-- <!--     theme( --> -->
+<!-- <!--       legend.position="none", --> -->
+<!-- <!--       plot.margin=unit(c(0,0,0,0),"cm"), --> -->
+<!-- <!--     ) + --> -->
+<!-- <!--     expand_limits(x = c(-1.2, 1.2), y = c(-1.2, 1.2)) --> -->
+<!-- <!-- ``` --> -->
+
+
+<!-- <!-- 第2步：现在考虑另一层次的信息。库中的某些元素具有依赖性：基本上它们在使用时会调用其他元素。表示这种联系的天真方法是绘制一条直线(左)。相反,分层边缘捆绑使用遵循2个元素之间的层次结构链接的曲线(右)。 --> -->
+
+<!-- <!-- ```{r} --> -->
+<!-- <!-- # Just one connection: --> -->
+<!-- <!-- from_head = match( connections$from, vertices$name) %>% head(1) --> -->
+<!-- <!-- to_head = match( connections$to, vertices$name) %>% head(1) --> -->
+
+<!-- <!-- # Basic dendrogram --> -->
+<!-- <!-- p1 <- ggraph(mygraph, layout = 'dendrogram', circular = TRUE) +  --> -->
+<!-- <!--     geom_edge_link(size=0.4, alpha=0.1) + --> -->
+<!-- <!--     geom_conn_bundle(data = get_con(from = from_head, to = to_head), alpha = 1, colour="#69b3a2", width=2, tension=0) +  --> -->
+<!-- <!--     geom_node_text(aes(x = x*1.01, y=y*1.01, filter = leaf, label=shortName, angle = angle, hjust=hjust), size=1.5, alpha=1) + --> -->
+<!-- <!--     coord_fixed() + --> -->
+<!-- <!--     theme_void() + --> -->
+<!-- <!--     theme( --> -->
+<!-- <!--       legend.position="none", --> -->
+<!-- <!--       plot.margin=unit(c(0,0,0,0),"cm"), --> -->
+<!-- <!--     ) + --> -->
+<!-- <!--     expand_limits(x = c(-1.2, 1.2), y = c(-1.2, 1.2)) --> -->
+
+<!-- <!-- p2 <- ggraph(mygraph, layout = 'dendrogram', circular = TRUE) +  --> -->
+<!-- <!--     geom_edge_link(size=0.4, alpha=0.1) + --> -->
+<!-- <!--     geom_conn_bundle(data = get_con(from = from_head, to = to_head), alpha = 1, colour="#69b3a2", width=2, tension=0.9) +  --> -->
+<!-- <!--     geom_node_text(aes(x = x*1.01, y=y*1.01, filter = leaf, label=shortName, angle = angle, hjust=hjust), size=1.5, alpha=1) + --> -->
+<!-- <!--     coord_fixed() + --> -->
+<!-- <!--     theme_void() + --> -->
+<!-- <!--     theme( --> -->
+<!-- <!--       legend.position="none", --> -->
+<!-- <!--       plot.margin=unit(c(0,0,0,0),"cm"), --> -->
+<!-- <!--     ) + --> -->
+<!-- <!--     expand_limits(x = c(-1.2, 1.2), y = c(-1.2, 1.2)) --> -->
+
+<!-- <!-- p1 + p2 --> -->
+<!-- <!-- ``` --> -->
+
+<!-- <!-- 步骤3：分层边缘捆绑将此技术应用于数据集的每个邻接连接。此外,它不会显示数据集的层次结构,以尽可能减少混乱。它可以获得平滑的眼睛捕捉图形,其中连接变得明显并且杂乱最小。以下是该技术的发明者提出的类比： --> -->
+
+<!-- <!-- ...将电线捆绑在一起以减少杂乱,同时在它们的末端扇出它们以便加入它们。 --> -->
+<!-- <!-- ```{r} --> -->
+<!-- <!-- # Make the plot --> -->
+<!-- <!-- ggraph(mygraph, layout = 'dendrogram', circular = TRUE) +  --> -->
+<!-- <!--     geom_conn_bundle(data = get_con(from = from, to = to), alpha = 0.1, colour="#69b3a2") +  --> -->
+<!-- <!--     geom_node_text(aes(x = x*1.01, y=y*1.01, filter = leaf, label=shortName, angle = angle, hjust=hjust), size=1.5, alpha=1) + --> -->
+<!-- <!--     coord_fixed() + --> -->
+<!-- <!--     theme_void() + --> -->
+<!-- <!--     theme( --> -->
+<!-- <!--       legend.position="none", --> -->
+<!-- <!--       plot.margin=unit(c(0,0,0,0),"cm"), --> -->
+<!-- <!--     ) + --> -->
+<!-- <!--     expand_limits(x = c(-1.2, 1.2), y = c(-1.2, 1.2)) --> -->
+
+<!-- <!-- ``` --> -->
+
+<!-- <!-- 做什么的 --> -->
+<!-- <!-- 分层边缘捆绑减少了视觉混乱,并且还可视化父节点之间的隐式邻接边缘,这是由于它们各自的子节点之间的显式邻接边缘的结果。此外,分层边缘捆绑是一种通用方法,可以与现有的树可视化技术结合使用。 --> -->
+
+<!-- <!-- 下面是一个示例,显示使用和不使用捆绑的相同数据集。左侧使用直线会导致图形混乱,无法读取连接。在右边使用捆绑产生了一个整洁的数字： --> -->
+
+<!-- <!-- 该本征因素项目的科学期刊之间的研究引用模式。Moritz Stefaner使用这种数据使用分层边缘捆绑技术构建漂亮的视觉效果： --> -->
+
+<!-- <!-- ## 分层边缘捆绑简介(绘制基础的图) --> -->
+
+<!-- <!-- 分层边缘捆绑是一种数据可视化方法,允许检查分层网络的叶子之间的连接。它需要两个输入： --> -->
+
+<!-- <!-- 分层网络结构,也称为树 --> -->
+<!-- <!-- 一个邻接矩阵,描述树的某些节点之间的连接 --> -->
+
+
+<!-- <!-- 分层网络数据框： --> -->
+<!-- <!-- ![](/Users/milin/Documents/分层网络数据框.jpg) --> -->
+
+<!-- <!-- 连接数据框： --> -->
+
+<!-- <!-- ![](/Users/milin/Documents/连接数据框.jpg) --> -->
+<!-- <!-- 可视化层次结构 --> -->
+<!-- <!-- 让我们从创建层次结构开始R。分层结构基本上是一组节点,边缘链接节点。我们经常为它配备第二个数据帧,为第一个数据帧的每个节点提供功能。 --> -->
+
+<!-- <!-- 让我们构建这两个表： --> -->
+
+<!-- <!-- ```{r} --> -->
+<!-- <!-- # Libraries --> -->
+<!-- <!-- library(ggraph) --> -->
+<!-- <!-- library(igraph) --> -->
+
+<!-- <!-- # create a data frame giving the hierarchical structure of your individuals.  --> -->
+<!-- <!-- # Origin on top, then groups, then subgroups --> -->
+<!-- <!-- d1 <- data.frame(from="origin", to=paste("group", seq(1,10), sep="")) --> -->
+<!-- <!-- d2 <- data.frame(from=rep(d1$to, each=10), to=paste("subgroup", seq(1,100), sep="_")) --> -->
+<!-- <!-- hierarchy <- rbind(d1, d2) --> -->
+
+<!-- <!-- # create a vertices data.frame. One line per object of our hierarchy, giving features of nodes. --> -->
+<!-- <!-- vertices <- data.frame(name = unique(c(as.character(hierarchy$from), as.character(hierarchy$to))) )  --> -->
+
+<!-- <!-- ``` --> -->
+
+<!-- <!-- 分层结构是网络结构。因此,我们可以非常容易地使用igraph或ggraph库来可视化它,如图库的网络部分所述。 --> -->
+
+<!-- <!-- ```{r} --> -->
+<!-- <!-- # Create a graph object with the igraph library --> -->
+<!-- <!-- mygraph <- graph_from_data_frame( hierarchy, vertices=vertices ) --> -->
+<!-- <!-- # This is a network object, you visualize it as a network like shown in the network section! --> -->
+
+<!-- <!-- # With igraph:  --> -->
+<!-- <!-- plot(mygraph, vertex.label="", edge.arrow.size=0, vertex.size=2) --> -->
+
+<!-- <!-- # With ggraph: --> -->
+<!-- <!-- ggraph(mygraph, layout = 'dendrogram', circular = FALSE) +  --> -->
+<!-- <!--   geom_edge_link() + --> -->
+<!-- <!--   theme_void() --> -->
+
+<!-- <!-- ggraph(mygraph, layout = 'dendrogram', circular = TRUE) +  --> -->
+<!-- <!--   geom_edge_diagonal() + --> -->
+<!-- <!--   theme_void() --> -->
+
+<!-- <!-- ``` --> -->
+
+
+<!-- <!-- 添加几个连接 --> -->
+<!-- <!-- 现在,让我们为我们的数据添加第二个输入：连接。假设节点18,20和30分别连接到节点19,50和70。 --> -->
+
+<!-- <!-- 表示此链接的一个明显的解决方案可能是添加一条直线(左)。分层边缘捆绑方法几乎就是这样。但它会使线条曲线化以使其跟随我们结构的边缘(右)。 --> -->
+
+<!-- <!-- 此方法提供了一个tension参数,用于控制我们想要对线条进行曲线的程度。 --> -->
+
+<!-- <!-- ```{r} --> -->
+<!-- <!-- # left: What happens if connections are represented with straight lines --> -->
+<!-- <!-- ggraph(mygraph, layout = 'dendrogram', circular = TRUE) +  --> -->
+<!-- <!--   geom_edge_diagonal(alpha=0.1) + --> -->
+<!-- <!--   geom_conn_bundle(data = get_con(from = c(18,20,30), to = c(19, 50, 70)), alpha=1, width=1, colour="skyblue", tension = 0) + --> -->
+<!-- <!--   theme_void() --> -->
+
+<!-- <!-- # right: using the bundle method (tension = 1) --> -->
+<!-- <!-- ggraph(mygraph, layout = 'dendrogram', circular = TRUE) +  --> -->
+<!-- <!--   geom_edge_diagonal(alpha=0.1) + --> -->
+<!-- <!--   geom_conn_bundle(data = get_con(from = c(18,20,30), to = c(19, 50, 70)), alpha=1, width=1, colour="skyblue", tension = 1) + --> -->
+<!-- <!--   theme_void() --> -->
+<!-- <!-- ``` --> -->
+
+<!-- <!-- 分层边缘捆绑 --> -->
+<!-- <!-- 通常连接存储在另一个数据框中,这里称为connect。我们必须将其传递ggraph给自动绘制所有连接。您将获得分层边缘捆绑图表。 --> -->
+
+<!-- <!-- 注意：ggraph期望在其id之后调用节点。因此,有必要使用该match()功能。 --> -->
+
+<!-- <!-- ```{r} --> -->
+<!-- <!-- # create a dataframe with connection between leaves (individuals) --> -->
+<!-- <!-- all_leaves <- paste("subgroup", seq(1,100), sep="_") --> -->
+<!-- <!-- connect <- rbind(  --> -->
+<!-- <!--   data.frame( from=sample(all_leaves, 100, replace=T) , to=sample(all_leaves, 100, replace=T)),  --> -->
+<!-- <!--   data.frame( from=sample(head(all_leaves), 30, replace=T) , to=sample( tail(all_leaves), 30, replace=T)),  --> -->
+<!-- <!--   data.frame( from=sample(all_leaves[25:30], 30, replace=T) , to=sample( all_leaves[55:60], 30, replace=T)),  --> -->
+<!-- <!--   data.frame( from=sample(all_leaves[75:80], 30, replace=T) , to=sample( all_leaves[55:60], 30, replace=T))  --> -->
+<!-- <!--   ) --> -->
+
+<!-- <!-- # The connection object must refer to the ids of the leaves: --> -->
+<!-- <!-- from <- match( connect$from, vertices$name) --> -->
+<!-- <!-- to <- match( connect$to, vertices$name) --> -->
+
+<!-- <!-- # plot --> -->
+<!-- <!-- ggraph(mygraph, layout = 'dendrogram', circular = TRUE) +  --> -->
+<!-- <!--   geom_conn_bundle(data = get_con(from = from, to = to), alpha=0.2, colour="skyblue", tension = 0) +  --> -->
+<!-- <!--   geom_node_point(aes(filter = leaf, x = x*1.05, y=y*1.05)) + --> -->
+<!-- <!--   theme_void() --> -->
+
+<!-- <!-- # plot --> -->
+<!-- <!-- ggraph(mygraph, layout = 'dendrogram', circular = TRUE) +  --> -->
+<!-- <!--   geom_conn_bundle(data = get_con(from = from, to = to), alpha=0.2, colour="skyblue", tension = 0.9) +  --> -->
+<!-- <!--   geom_node_point(aes(filter = leaf, x = x*1.05, y=y*1.05)) + --> -->
+<!-- <!--   theme_void() --> -->
+<!-- <!-- ``` --> -->
+
+
+<!-- <!-- ## 节点和连接颜色 --> -->
+
+<!-- <!-- 基本的分层边缘捆绑 --> -->
+<!-- <!-- 此页面遵循先前对分层边缘捆绑的介绍。 --> -->
+
+<!-- <!-- 它认为您了解您需要什么输入以及如何构建基本版本。它旨在描述我们如何改进它,定制张力,连接和节点功能。 --> -->
+
+<!-- <!-- 首先,让我们记住R代码允许获得这个非常基本的分层边缘捆绑： --> -->
+
+<!-- <!-- ```{r} --> -->
+<!-- <!-- # Libraries --> -->
+<!-- <!-- library(ggraph) --> -->
+<!-- <!-- library(igraph) --> -->
+<!-- <!-- library(tidyverse) --> -->
+
+<!-- <!-- # create a data frame giving the hierarchical structure of your individuals --> -->
+<!-- <!-- set.seed(1234) --> -->
+<!-- <!-- d1 <- data.frame(from="origin", to=paste("group", seq(1,10), sep="")) --> -->
+<!-- <!-- d2 <- data.frame(from=rep(d1$to, each=10), to=paste("subgroup", seq(1,100), sep="_")) --> -->
+<!-- <!-- hierarchy <- rbind(d1, d2) --> -->
+
+<!-- <!-- # create a dataframe with connection between leaves (individuals) --> -->
+<!-- <!-- all_leaves <- paste("subgroup", seq(1,100), sep="_") --> -->
+<!-- <!-- connect <- rbind(  --> -->
+<!-- <!--   data.frame( from=sample(all_leaves, 100, replace=T) , to=sample(all_leaves, 100, replace=T)),  --> -->
+<!-- <!--   data.frame( from=sample(head(all_leaves), 30, replace=T) , to=sample( tail(all_leaves), 30, replace=T)),  --> -->
+<!-- <!--   data.frame( from=sample(all_leaves[25:30], 30, replace=T) , to=sample( all_leaves[55:60], 30, replace=T)),  --> -->
+<!-- <!--   data.frame( from=sample(all_leaves[75:80], 30, replace=T) , to=sample( all_leaves[55:60], 30, replace=T)) ) --> -->
+<!-- <!-- connect$value <- runif(nrow(connect)) --> -->
+
+<!-- <!-- # create a vertices data.frame. One line per object of our hierarchy --> -->
+<!-- <!-- vertices  <-  data.frame( --> -->
+<!-- <!--   name = unique(c(as.character(hierarchy$from), as.character(hierarchy$to))) ,  --> -->
+<!-- <!--   value = runif(111) --> -->
+<!-- <!-- )  --> -->
+<!-- <!-- # Let's add a column with the group of each name. It will be useful later to color points --> -->
+<!-- <!-- vertices$group  <-  hierarchy$from[ match( vertices$name, hierarchy$to ) ] --> -->
+
+
+<!-- <!-- # Create a graph object --> -->
+<!-- <!-- mygraph <- graph_from_data_frame( hierarchy, vertices=vertices ) --> -->
+
+<!-- <!-- # The connection object must refer to the ids of the leaves: --> -->
+<!-- <!-- from  <-  match( connect$from, vertices$name) --> -->
+<!-- <!-- to  <-  match( connect$to, vertices$name) --> -->
+
+<!-- <!-- # Basic graph --> -->
+<!-- <!-- ggraph(mygraph, layout = 'dendrogram', circular = TRUE) +  --> -->
+<!-- <!--   geom_conn_bundle(data = get_con(from = from, to = to), alpha=0.2, colour="skyblue", tension = .5) +  --> -->
+<!-- <!--   geom_node_point(aes(filter = leaf, x = x*1.05, y=y*1.05)) + --> -->
+<!-- <!--   theme_void() --> -->
+<!-- <!-- ``` --> -->
+
+<!-- <!-- 和谁玩 tension --> -->
+<!-- <!-- 我们可以玩的第一件事就是tension连接。张力为0意味着直线。1的连接意味着最大曲率：连接遵循网络的层次结构尽可能多。 --> -->
+
+<!-- <!-- 让我们来看看不同值的影响。 --> -->
+
+<!-- <!-- ```{r} --> -->
+<!-- <!-- p <- ggraph(mygraph, layout = 'dendrogram', circular = TRUE) +  --> -->
+<!-- <!--   geom_node_point(aes(filter = leaf, x = x*1.05, y=y*1.05)) + --> -->
+<!-- <!--   theme_void() --> -->
+
+<!-- <!-- # 0.1 --> -->
+<!-- <!-- p +  geom_conn_bundle(data = get_con(from = from, to = to), alpha=0.2, colour="skyblue", width=0.9,  --> -->
+<!-- <!--                       tension=0.1)  --> -->
+<!-- <!-- # 0.7 --> -->
+<!-- <!-- p +  geom_conn_bundle(data = get_con(from = from, to = to), alpha=0.2, colour="skyblue", width=0.9,  --> -->
+<!-- <!--                       tension=0.7)  --> -->
+<!-- <!-- #1 --> -->
+<!-- <!-- p +  geom_conn_bundle(data = get_con(from = from, to = to), alpha=0.2, colour="skyblue", width=0.9,  --> -->
+<!-- <!--                       tension=1)  --> -->
+
+<!-- <!-- ``` --> -->
+
+<!-- <!-- 连接功能 --> -->
+<!-- <!-- 然后我们可以玩连接的颜色和透明度。我们已经看到了如何在上面的例子中选择一种独特的颜色。我们也可以将特定变量映射到它,就像我们习惯使用ggplot2一样(下面的图1和图2)！另一种可能性是使颜色沿着轨迹发展：“从”和“到”具有不同的颜色。如果您的连接是定向的,这很有用,并且给出了良好的效果图4。 --> -->
+<!-- <!-- ```{r} --> -->
+<!-- <!-- # Use the 'value' column of the connection data frame for the color: --> -->
+<!-- <!-- p +  geom_conn_bundle(data = get_con(from = from, to = to), aes(colour=value, alpha=value))  --> -->
+
+<!-- <!-- # In this case you can change the color palette --> -->
+<!-- <!-- p +   --> -->
+<!-- <!--   geom_conn_bundle(data = get_con(from = from, to = to), aes(colour=value)) + --> -->
+<!-- <!--   scale_edge_color_continuous(low="white", high="red") --> -->
+<!-- <!-- p +   --> -->
+<!-- <!--   geom_conn_bundle(data = get_con(from = from, to = to), aes(colour=value)) + --> -->
+<!-- <!--   scale_edge_colour_distiller(palette = "BuPu") --> -->
+
+<!-- <!-- # Color depends of the index: the from and the to are different --> -->
+<!-- <!-- p +   --> -->
+<!-- <!--   geom_conn_bundle(data = get_con(from = from, to = to), width=1, alpha=0.2, aes(colour=..index..)) + --> -->
+<!-- <!--   scale_edge_colour_distiller(palette = "RdPu") + --> -->
+<!-- <!--   theme(legend.position = "none") --> -->
+<!-- <!-- ``` --> -->
+
+
+<!-- <!-- 节点功能 --> -->
+<!-- <!-- 最后,我们也可以自定义点,就像经典的ggplot2图形一样。使颜色取决于点的分类是一种很好的做法,它可以使层次结构更加明显。在最后一个示例中,我将列映射到点的大小！ --> -->
+
+<!-- <!-- ```{r} --> -->
+<!-- <!-- # Basic usual argument --> -->
+<!-- <!-- p=ggraph(mygraph, layout = 'dendrogram', circular = TRUE) +  --> -->
+<!-- <!--   geom_conn_bundle(data = get_con(from = from, to = to), width=1, alpha=0.2, aes(colour=..index..)) + --> -->
+<!-- <!--   scale_edge_colour_distiller(palette = "RdPu") + --> -->
+<!-- <!--   theme_void() + --> -->
+<!-- <!--   theme(legend.position = "none") --> -->
+
+<!-- <!-- # just a blue uniform color. Note that the x*1.05 allows to make a space between the points and the connection ends --> -->
+<!-- <!-- p + geom_node_point(aes(filter = leaf, x = x*1.05, y=y*1.05), colour="skyblue", alpha=0.3, size=3) --> -->
+
+<!-- <!-- # It is good to color the points following their group appartenance --> -->
+<!-- <!-- library(RColorBrewer) --> -->
+<!-- <!-- p + geom_node_point(aes(filter = leaf, x = x*1.05, y=y*1.05, colour=group),   size=3) + --> -->
+<!-- <!--   scale_colour_manual(values= rep( brewer.pal(9,"Paired") , 30)) --> -->
+
+<!-- <!-- # And you can adjust the size to whatever variable quite easily! --> -->
+<!-- <!-- p +  --> -->
+<!-- <!--   geom_node_point(aes(filter = leaf, x = x*1.05, y=y*1.05, colour=group, size=value, alpha=0.2)) + --> -->
+<!-- <!--   scale_colour_manual(values= rep( brewer.pal(9,"Paired") , 30)) + --> -->
+<!-- <!--   scale_size_continuous( range = c(0.1,10) )  --> -->
+
+<!-- <!-- ``` --> -->
+
+<!-- <!-- ## 添加节点标签 --> -->
+
+<!-- <!-- 添加节点标签 --> -->
+<!-- <!-- 最后但同样重要的是,向图表节点添加标签至关重要。这有点棘手,因为必须手动计算标签对齐和方向。最后一个示例将教您如何继续,结果如下图所示。 --> -->
+
+<!-- <!-- 没有标签 --> -->
+<!-- <!-- 在以前的岗位层次边缘捆绑部分解释： --> -->
+
+<!-- <!-- 如何构建一个非常基本的版本。 --> -->
+<!-- <!-- 如何自定义连接和节点功能 --> -->
+<!-- <!-- 让我们提醒如何为ggraph库准备数据。 --> -->
+<!-- <!-- ```{r} --> -->
+<!-- <!-- # Libraries --> -->
+<!-- <!-- library(ggraph) --> -->
+<!-- <!-- library(igraph) --> -->
+<!-- <!-- library(tidyverse) --> -->
+<!-- <!-- library(RColorBrewer) --> -->
+
+<!-- <!-- # create a data frame giving the hierarchical structure of your individuals --> -->
+<!-- <!-- set.seed(1234) --> -->
+<!-- <!-- d1 <- data.frame(from="origin", to=paste("group", seq(1,10), sep="")) --> -->
+<!-- <!-- d2 <- data.frame(from=rep(d1$to, each=10), to=paste("subgroup", seq(1,100), sep="_")) --> -->
+<!-- <!-- edges <- rbind(d1, d2) --> -->
+
+<!-- <!-- # create a dataframe with connection between leaves (individuals) --> -->
+<!-- <!-- all_leaves <- paste("subgroup", seq(1,100), sep="_") --> -->
+<!-- <!-- connect <- rbind(  --> -->
+<!-- <!--   data.frame( from=sample(all_leaves, 100, replace=T) , to=sample(all_leaves, 100, replace=T)),  --> -->
+<!-- <!--   data.frame( from=sample(head(all_leaves), 30, replace=T) , to=sample( tail(all_leaves), 30, replace=T)),  --> -->
+<!-- <!--   data.frame( from=sample(all_leaves[25:30], 30, replace=T) , to=sample( all_leaves[55:60], 30, replace=T)),  --> -->
+<!-- <!--   data.frame( from=sample(all_leaves[75:80], 30, replace=T) , to=sample( all_leaves[55:60], 30, replace=T)) ) --> -->
+<!-- <!-- connect$value <- runif(nrow(connect)) --> -->
+
+<!-- <!-- # create a vertices data.frame. One line per object of our hierarchy --> -->
+<!-- <!-- vertices  <-  data.frame( --> -->
+<!-- <!--   name = unique(c(as.character(edges$from), as.character(edges$to))) ,  --> -->
+<!-- <!--   value = runif(111) --> -->
+<!-- <!-- )  --> -->
+<!-- <!-- # Let's add a column with the group of each name. It will be useful later to color po --> -->
+<!-- <!-- ``` --> -->
+
+<!-- <!-- 创建标签 --> -->
+<!-- <!-- 下一步：计算将在圆圈周围,节点旁边显示的标签功能： --> -->
+
+<!-- <!-- 角度→顶部和底部垂直,侧面水平,等等。 --> -->
+<!-- <!-- 翻转它→左侧的标签必须翻转180°才能读取 --> -->
+<!-- <!-- alignment→如果标签被翻转,它们必须是右对齐的 --> -->
+<!-- <!-- 计算这些信息并将其添加到vertices数据框中。 --> -->
+
+<!-- <!-- ```{r} --> -->
+<!-- <!-- #Let's add information concerning the label we are going to add: angle, horizontal adjustement and potential flip --> -->
+<!-- <!-- #calculate the ANGLE of the labels --> -->
+<!-- <!-- vertices$id <- NA --> -->
+<!-- <!-- myleaves <- which(is.na( match(vertices$name, edges$from) )) --> -->
+<!-- <!-- nleaves <- length(myleaves) --> -->
+<!-- <!-- vertices$id[ myleaves ] <- seq(1:nleaves) --> -->
+<!-- <!-- vertices$angle <- 90 - 360 * vertices$id / nleaves --> -->
+
+<!-- <!-- # calculate the alignment of labels: right or left --> -->
+<!-- <!-- # If I am on the left part of the plot, my labels have currently an angle <-90 --> -->
+<!-- <!-- vertices$hjust <- ifelse( vertices$angle <-90, 1, 0) --> -->
+
+<!-- <!-- # flip angle BY to make them readable --> -->
+<!-- <!-- vertices$angle <- ifelse(vertices$angle <-90, vertices$angle+180, vertices$angle) --> -->
+
+<!-- <!-- ``` --> -->
+
+<!-- <!-- 绘制标签 --> -->
+<!-- <!-- 现在已经计算了标签特征,我们只需要使用该geom_node_text()函数在图表上显示它。 --> -->
+<!-- <!-- ```{r} --> -->
+<!-- <!-- # Create a graph object --> -->
+<!-- <!-- mygraph <- igraph::graph_from_data_frame( edges, vertices=vertices ) --> -->
+
+<!-- <!-- # The connection object must refer to the ids of the leaves: --> -->
+<!-- <!-- from  <-  match( connect$from, vertices$name) --> -->
+<!-- <!-- to  <-  match( connect$to, vertices$name) --> -->
+
+<!-- <!-- # Basic usual argument --> -->
+<!-- <!-- ggraph(mygraph, layout = 'dendrogram', circular = TRUE) +  --> -->
+<!-- <!--   geom_node_point(aes(filter = leaf, x = x*1.05, y=y*1.05)) + --> -->
+<!-- <!--   geom_conn_bundle(data = get_con(from = from, to = to), alpha=0.2, colour="skyblue", width=0.9) + --> -->
+<!-- <!--   geom_node_text(aes(x = x*1.1, y=y*1.1, filter = leaf, label=name, angle = angle, hjust=hjust), size=1.5, alpha=1) + --> -->
+<!-- <!--   theme_void() + --> -->
+<!-- <!--   theme( --> -->
+<!-- <!--     legend.position="none", --> -->
+<!-- <!--     plot.margin=unit(c(0,0,0,0),"cm"), --> -->
+<!-- <!--   ) + --> -->
+<!-- <!--   expand_limits(x = c(-1.2, 1.2), y = c(-1.2, 1.2)) --> -->
+<!-- <!-- ``` --> -->
+
+<!-- <!-- 随着定制 --> -->
+<!-- <!-- 要获得最终数字,有必要添加图表＃310中描述的自定义： --> -->
+
+<!-- <!-- 控制节点大小,颜色和透明度。 --> -->
+<!-- <!-- 控制连接颜色, colour=group --> -->
+<!-- <!-- ```{r} --> -->
+<!-- <!-- ggraph(mygraph, layout = 'dendrogram', circular = TRUE) +  --> -->
+<!-- <!--   geom_conn_bundle(data = get_con(from = from, to = to), alpha=0.2, width=0.9, aes(colour=..index..)) + --> -->
+<!-- <!--   scale_edge_colour_distiller(palette = "RdPu") + --> -->
+
+<!-- <!--   geom_node_text(aes(x = x*1.15, y=y*1.15, filter = leaf, label=name, angle = angle, hjust=hjust), size=2, alpha=1) + --> -->
+
+<!-- <!--   geom_node_point(aes(filter = leaf, x = x*1.07, y=y*1.07, size=value, alpha=0.2)) + --> -->
+<!-- <!--   scale_colour_manual(values= rep( brewer.pal(9,"Paired") , 30)) + --> -->
+<!-- <!--   scale_size_continuous( range = c(0.1,10) ) + --> -->
+
+<!-- <!--   theme_void() + --> -->
+<!-- <!--   theme( --> -->
+<!-- <!--     legend.position="none", --> -->
+<!-- <!--     plot.margin=unit(c(0,0,0,0),"cm"), --> -->
+<!-- <!--   ) + --> -->
+<!-- <!--   expand_limits(x = c(-1.3, 1.3), y = c(-1.3, 1.3)) --> -->
+
+
+<!-- <!-- ``` --> -->
+
+
+
+
+# 网络图
+
+网络图显示一组实体之间的互连。每个实体由节点(Node)表示。节点之间的连接由边表示。R中有三个包来处理网络图，其中igraph用于数据准备和绘图,ggraph使用图形语法进行绘图图形以及networkD3包来绘制交互性图形。下面的代码绘制了一副交互式的网络图，这个例子显示了学者之间相互和做的关系，如果两个学者至少在同一出版物上合作发表过论文过一次,则这两个学者则通过链接连接。结果如图所示：
+```{r}
+# 加载包
+library(tidyverse)
+library(viridis)
+library(patchwork)
+library(hrbrthemes)
+library(ggraph)
+library(igraph)
+library(networkD3)
+
+#  加载数据集
+dataUU <- read.table("https://raw.githubusercontent.com/holtzy/data_to_viz/master/Example_dataset/13_AdjacencyUndirectedUnweighted.csv", header=TRUE)
+
+# 以长格式转换邻接矩阵
+connect <- dataUU %>% 
+  gather(key="to", value="value", -1) %>%
+  na.omit()
+
+# 计算连接数量
+c( as.character(connect$from), as.character(connect$to)) %>%
+  as.tibble() %>%
+  group_by(value) %>%
+  summarize(n=n()) -> coauth
+colnames(coauth) <- c("name", "n")
+
+#  生成 NetworkD3 格式的数据
+graph=simpleNetwork(connect)
+
+# 绘制图形
+simpleNetwork(connect,     
+        Source = 1,                 # 连接的起点列
+        Target = 2,                 # 连接的终点列
+        height = 880,               # 高度
+        width = 1980,
+        linkDistance = 10,         # 节点之间的距离
+        charge = -4,              # 表示节点斥力(负值)或吸引力(正值)的数值
+        fontSize = 5,              # 节点名称的大小
+        fontFamily = "serif",       # 节点名
+        linkColour = "#666",        # 边的颜色，必须是整个图形的常用颜色
+        nodeColour = "#69b3a2",     # 节点的颜色，必须是整个图的常用颜色
+        opacity = 0.9,              # 节点的模糊情况
+        zoom = T                    # 是否能够放大
+        )
+```
+
+上面的代码绘制了一副交互式的网络图，在交互式的图形中可以使用鼠标对图形进行放大或者缩小，并且可以使用鼠标对于图形的网络结构进行调整。
+
+根据数据输入的特征,存在四种主要类型的网络图。第一种是没有方向和权重（Undirected and Unweighted）也就是说图形中的连接没有方向,没有重量。如图
+```{r}
+# 创建数据集
+set.seed(2)
+data=matrix(sample(0:1, 25, replace=TRUE), nrow=5)
+data[lower.tri(data)] <- NA
+colnames(data)=rownames(data)=LETTERS[1:5]
+
+# 将其转换为graph格式
+network=graph_from_adjacency_matrix(data)
+
+# 绘制图形
+ggraph(network) + 
+  geom_edge_link(edge_colour="black", edge_alpha=0.3, edge_width=0.2) +
+  geom_node_point( color="#69b3a2", size=5) +
+  geom_node_text( aes(label=name), repel = TRUE, size=8, color="#69b3a2") +
+  theme_void() +
+  theme(
+    legend.position="none",
+    plot.margin=unit(rep(1,4), "cm")
+  ) 
+```
+
+这种图形仅仅表现出节点之间是存在关联的。第二种是无向但是有权重（Undirected and Weighted ），例如上文，在之前的共同作者网络中,如果他们一起发表科学论文,人们就会联系起来。权重则是是它合作的时间，时间越长，网络图中的连接越粗。如图所示：
+```{r}
+# 创建数据集
+set.seed(1)
+data=matrix(sample(0:3, 25, replace=TRUE), nrow=5)
+data[lower.tri(data)] <- NA
+colnames(data)=rownames(data)=LETTERS[1:5]
+ 
+# 转变成为graph 格式
+network=graph_from_adjacency_matrix(data, weighted = TRUE)
+
+# 绘制图形
+ggraph(network) + 
+  geom_edge_link( aes(edge_width=E(network)$weight), edge_colour="black", edge_alpha=0.3) +
+  geom_node_point( color="#69b3a2", size=5) +
+  geom_node_text( aes(label=name), repel = TRUE, size=8, color="#69b3a2") +
+  theme_void() +
+  theme(
+    legend.position="none",
+    plot.margin=unit(rep(1,4), "cm")
+  ) 
+```
+从图中可以看到，不同节点之间的权重是不一样的，在这样的网络图中，节点之间的关系并没有先后顺序，但是不同节点之间的权重是不一样的。第三种是有向无权重（Directed and Unweighted），例如，微博上小明关注了我，但是我不一定有关注了小明，这个时候网络图的连接就仅仅从小明指向了我。并且连接是没有权重的，这种关系只是连接与不连接。如图所示
+
+ 
+```{r}
+#  创建数据集
+set.seed(10)
+data=matrix(sample(0:1, 25, replace=TRUE), nrow=5)
+diag(data) = NA
+colnames(data)=rownames(data)=LETTERS[1:5]
+ 
+# 将其转换为图形格式
+network=graph_from_adjacency_matrix(data)
+
+# 绘制图形
+ggraph(network) + 
+  geom_edge_link(edge_colour="black", edge_alpha=0.8, edge_width=0.2, arrow = arrow(angle=20)) +
+  geom_node_point( color="#69b3a2", size=3) +
+  geom_node_text( aes(label=name), repel = TRUE, size=6, color="#69b3a2") +
+  theme_void() +
+  theme(
+    legend.position="none",
+    plot.margin=unit(rep(1,4), "cm")
+  ) 
+```
+
+从图中可以看到，网络图中的连接有了方向。这种网络图用于刻画节点之间的相互关系。第四种是有向并且有权重（Directed and Weighted）。例如，绘制从一个地区到另外一个地区的迁移的网络图，这个时候网络图中的权重是迁移的人数，方向表示从什么地区迁移到什么地区。如图所示：
+```{r}
+# 创建数据集
+set.seed(10)
+data=matrix(sample(0:3, 16, replace=TRUE), nrow=4)
+diag(data) <- NA
+colnames(data)=rownames(data)=LETTERS[1:4]
+ 
+# 转变为 graph 格式
+network=graph_from_adjacency_matrix(data, weighted=TRUE)
+
+# 绘制图形
+ggraph(network) + 
+  geom_edge_link(edge_colour="black", edge_alpha=0.3, aes(edge_width=E(network)$weight) , arrow=arrow()) +
+  scale_edge_width(range=c(1,3)) +
+  geom_node_point( color="#69b3a2", size=3) +
+  geom_node_text( aes(label=name), repel = TRUE, size=6, color="#69b3a2") +
+  theme_void() +
+  theme(
+    legend.position="none",
+    plot.margin=unit(rep(1,4), "cm")
+  ) 
+```
+从图中可以开到，当一个节点被多个节点指向的时候，箭头会被重叠覆盖掉。这个时候就很难清晰的观察到哪些节点之间有直向。对于这种图形应该选择桑基图或者和弦图来进行可视化。
+
+更进一步可以向节点添加信息，根据其他变量自定义每个节点的颜色,形状或大小,从而为图形添加更多洞察力。
+
+调整网络图的布局，为每个节点找到最佳位置是一项非常棘手的工作,布局的设置会对输出产生很大影响。目前已经有了几种网络布局算法,数据选择合适的算法进行绘图是至关重要的一步。下面的代码实现了三种不同的布局方式。首先是Fruchterman-Reingold算法，这个算法可能是使用最广泛的算法,使用力导向方法。目的是减少布局中边的交叉，尽量保持边的长度一致。下面的代码中使用了Fruchterman-Reingold布局算法绘制了网络图，如图所示：
+```{r}
+# 获取数据及
+dataUU <- read.table("https://raw.githubusercontent.com/holtzy/data_to_viz/master/Example_dataset/13_AdjacencyUndirectedUnweighted.csv", header=TRUE)
+
+# 以长格式转换邻接矩阵
+connect <- dataUU %>% 
+  gather(key="to", value="value", -1) %>%
+  na.omit()
+
+# 计算连接数
+c( as.character(connect$from), as.character(connect$to)) %>%
+  as.tibble() %>%
+  group_by(value) %>%
+  summarize(n=n()) -> coauth
+colnames(coauth) <- c("name", "n")
+
+# 创建一个graph 对象
+mygraph <- graph_from_data_frame( connect, vertices = coauth )
+
+# 绘制图形
+ggraph(mygraph, layout="fr") + 
+  #geom_edge_density(edge_fill="#69b3a2") +
+  geom_edge_link(edge_colour="black", edge_alpha=0.2, edge_width=0.3) +
+  geom_node_point(aes(size=n, alpha=n)) +
+  theme_void() +
+  theme(
+    legend.position="none",
+    plot.margin=unit(rep(1,4), "cm")
+  ) 
+```
+上面的代码中，ggraph函数中的layout参数用于指定使用使用何种布局算法。这里设置layout = ’fr‘表示使用的是Fruchterman-Reingold布局算法。第二种是DrL，其实强制导向的图形布局工具箱,适合用于真实世界的大型图形。
+```{r}
+# 绘制图形
+ggraph(mygraph, layout="drl") + 
+  #geom_edge_density(edge_fill="#69b3a2") +
+  geom_edge_link(edge_colour="black", edge_alpha=0.2, edge_width=0.3) +
+  geom_node_point(aes(size=n, alpha=n)) +
+  theme_void() +
+  theme(
+    legend.position="none",
+    plot.margin=unit(rep(1,4), "cm")
+  ) 
+```
+
+代码中设置此种布局方法与上文一直，通过调整layout参数设置drl布局。从图中可以看到，这样的布局方式会显得网络图比较的稀疏。第三种是随机分布(Randomly)
+如果节点位置是随机设置的,则会发生这种情况
+
+```{r}
+ggraph(mygraph, layout="igraph", algorithm="randomly") + 
+  #geom_edge_density(edge_fill="#69b3a2") +
+  geom_edge_link(edge_colour="black", edge_alpha=0.2, edge_width=0.3) +
+  geom_node_point(aes(size=n, alpha=n)) +
+  theme_void() +
+  theme(
+    legend.position="none",
+    plot.margin=unit(rep(1,4), "cm")
+  ) 
+```
+
+从图中可以看到，随机分布的图形网络图的节点会显得比较混乱。这样的图形是应该避免的。另外，需要注意的是，当图形中的连接太多而没有便显出一定的模式的时候,图形变得混乱且不可读。
+
+
+## 绘制基础的网络图
+
+构建网络图总是很复杂,因为有许多不同的输入格式：
+
+1. 邻接矩阵
+2. 关联矩阵
+3. 边缘列表
+
+此外,需要知道尝试构建的网络是定向还是非定向,加权或未加权。然后再使用igraph包包进行绘制网络图。首先使用邻接矩阵格式的数据来绘制网络图，它通常是在计算每对个体或者变量之间的相关性时得到的一种矩阵。在这个例子中,我们有一个从E到C的连接,以及从C到E的2个连接。数据如图：
+
+![](/Users/milin/Documents/邻接矩阵.jpg)
+
+默认情况下,我们得到一个未加权和定向的网络。如图所示：
+```{r}
+#加载包
+library(igraph)
+
+#  创建数据集
+set.seed(10)
+data <- matrix(sample(0:2, 25, replace=TRUE), nrow=5)
+colnames(data) = rownames(data) = LETTERS[1:5]
+ 
+# 创建 graph 对象t
+network <- graph_from_adjacency_matrix(data)
+ 
+# 绘制图形
+plot(network)
+```
+上面的代码首先创建了一个邻接矩阵，然后使用graph_from_adjacency_matrix函数将邻接矩阵转变成为graph对象，最后使用plot将图形绘制出来。从图中可以看到，绘制了一副未加权的有向图。
+
+
+关联矩阵中，行和列中提供的实体（变量）不必相同。关联矩阵如图所示：
+![](/Users/milin/Documents/发生概率矩阵.jpg)
+
+注意，默认情况下,图形对象从行指向列。下面的代码根据关联矩阵绘制出一幅无向图，如图所示：
+
+```{r}
+# 加载包
+library(igraph)
+
+# 创建数据集
+set.seed(1)
+data <- matrix(sample(0:2, 15, replace=TRUE), nrow=3)
+colnames(data) <- letters[1:5]
+rownames(data) <- LETTERS[1:3]
+ 
+# 创建 network 对象
+network <- graph_from_incidence_matrix(data)
+ 
+# 绘制图形
+plot(network)
+```
+
+上面的代码中，首先还是创建了一个关联矩阵，然后使用graph_from_incidence_matrix函数将数据转变成为一个网络图对象。最后使用plot函数将网络图绘制出来。从图形中可以观察到，网络图没有方向，并且图中有一个节点与其他的所有节点都不相交。
+
+边列表有2列，每行表示原点(第一列)和目标(左列)之间的连接。边列表的格式类似于图。。。
+
+下面的代码使用边列表数据集进行网络图的绘制，结果如图所示：
+```{r}
+#  创建数据集
+links <- data.frame(
+    source=c("A","A", "A", "A", "A","F", "B"),
+    target=c("B","B", "C", "D", "F","A","E")
+    )
+
+# 创建一个 network 对象
+network <- graph_from_data_frame(d=links, directed=F) 
+
+# 绘制图形
+plot(network)
+
+```
+上面的代码中首先还是创建了一个关联列表，然后使用graph_from_data_frame函数将数据集转变成为一个graph图形对象，其中参数directed=F表示绘制的图形是无向图。最后使用plot函数将网络图绘制出来。
+
+下面还有一种数据格式可以用于绘制网络图，文字连接列表，这是最不经常使用一种类型。线面的代码使用了文字连接表的数据类型来绘制图形：
+
+```{r}
+# 创建数据集
+network <- graph_from_literal( A-B-C-D, E-A-E-A, D-C-A, D-A-D-C )
+
+# 绘制图形
+plot(network)
+```
+从上面的代码可以看到，网络图的连接通过字母和'-'的方式来表示。这里使用的是graph_from_literal函数将数据转变成为graph图形对象，然后使用plot函数绘制出图形。
+
+
+## 调整网络图的参数
+
+
+在绘制了基础的网络图之后，可以进一步调整网络图形的参数,其中包括允许自定义图形的节点,图形的链接和图形的标签。
+ 
+
+```{r}
+# 加载包
+library(igraph)
+
+# 创建数据集
+set.seed(1)
+data <- matrix(sample(0:1, 100, replace=TRUE, prob=c(0.8,0.2)), nc=10)
+network <- graph_from_adjacency_matrix(data , mode='undirected', diag=F )
+
+plot(network,
+    vertex.color = rgb(0.8,0.2,0.2,0.9),           # 节点颜色
+    vertex.frame.color = "Forestgreen",            #节点边框颜色
+    vertex.shape=c("circle","square"),             # 节点形状，包括 “none”, “circle”, “square”, “csquare”, “rectangle” “crectangle”, “vrectangle”, “pie”, “raster”, or “sphere”
+    vertex.size=c(15:24),                          # 节点大小(默认为15)
+    vertex.size2=NA,                               # 节点的第二大小(例如，对于矩形)
+    )
+```
+
+上面的代码中对于网络图的节点进行了设置，节点的相关参数都是'vertex.'开头的参数。
+
+从图形中可以到，节点的大小经过了调整，不同的节点大小不一样。另外，节点的形状被调整成为圆形和正方形，节点的颜色表设置成为红色。
+
+
+如果希望调整节点的标签，则需要修改'vertex.label.'开头的参数，下面的代码修改了网络图中节点的标签，结果如图所示：
+```{r}
+plot(network,
+    vertex.label=LETTERS[1:10],                    # 用于标记节点的字符向量
+    vertex.label.color=c("red","blue"),
+    vertex.label.family="Times",                   # 标签字体 (例如“Times”、“Helvetica”)
+    vertex.label.font=c(1,2,3,4),                  # 字体:1普通，2粗体，3斜体，4粗体，5符号
+    vertex.label.cex=c(0.5,1,1.5),                 #字体大小 
+    vertex.label.dist=0,                           # 标签到顶点的距离
+    vertex.label.degree=0 ,                        # 标签相对于顶点的位置 
+    )
+
+```
+
+（解释一下参数）
+从图形中可以看到，不同的节点标签被设置成为了不同的颜色，以及不同的大小。最后，还可以调整网络图的边。网络图的边的设置是通过'edge.'开头的参数。 下面的图形对于网络图的线条进行了调整。
+```{r}
+plot(network,
+    edge.color=rep(c("red","pink"),5),           #边缘的颜色
+    edge.width=seq(1,10),                        # 边缘宽度，默认为1
+    edge.arrow.size=1,                           # 箭头大小，默认为1
+    edge.arrow.width=1,                          # 箭头宽度，默认为1
+    edge.lty=c("solid")                           #线条种类,   0 or “blank”, 1 or “solid”, 2 or “dashed”, 3 or “dotted”, 4 or “dotdash”, 5 or “longdash”, 6 or “twodash”
+ 
+    )
+```
+
+从图中可以观察到，不同节点的连接线条颜色不一样，并且不同节点连线的粗细也不一样。在绘制网络图中，有三类参数需要进行调整，节点，标签以及网络图的边，通常在绘制网络图的时候，这三类参数都需要进行调整。下面的代码调整了这三类参数，使得图形达到更好的表现效果。如图所示：
+```{r}
+par(bg="black")
+
+plot(network, 
+    
+    # === vertex
+    vertex.color = rgb(0.8,0.4,0.3,0.8),          # 节点颜色
+    vertex.frame.color = "white",                 # 节点边界颜色
+    vertex.shape="circle",                        # 形状 “none”, “circle”, “square”, “csquare”, “rectangle” “crectangle”, “vrectangle”, “pie”, “raster”, or “sphere”
+    vertex.size=14,                               # 节点大小
+    vertex.size2=NA,                              # 节点的第二个大小(例如，对于矩形)
+    
+    # === vertex label
+    vertex.label=LETTERS[1:10],                   # 用于标记节点的字符向量
+    vertex.label.color="white",
+    vertex.label.family="Times",                  # 标签字体系列(例如“Times”、“Helvetica”)
+    vertex.label.font=2,                          # 字体:1普通，2粗体，3斜体，4粗体，5符号
+    vertex.label.cex=1,                           # 字体大小 
+    vertex.label.dist=0,                          # 标签到顶点的距离
+    vertex.label.degree=0 ,                       # 标签相对于顶点的位置 
+    
+    # === Edge
+    edge.color="white",                           # 边缘的颜色
+    edge.width=4,                                 # 边缘宽度，默认为1
+    edge.arrow.size=1,                            # 箭头大小，默认为1
+    edge.arrow.width=1,                           # 箭头宽度，默认为1
+    edge.lty="solid",                             #线条种类, could be 0 or “blank”, 1 or “solid”, 2 or “dashed”, 3 or “dotted”, 4 or “dotdash”, 5 or “longdash”, 6 or “twodash”
+    edge.curved=0.3 ,                          #边缘曲率，范围0-1 
+    )
+
+```
+
+从图中可以观察到，整个图形的背景颜色被设置成为了黑色，网络图中的节点被设置成文了红色，网络图的连线被设置成为了白色。
+
+## 网络图布局
+
+网络布局对于绘制网络图形非常的动摇，网络布局是返回网络中每个节点的坐标的算法。合适的网络布局算法能够使得图形更加的清晰，美观。igraph库提供了几种内置布局,
+包括sphere，circle，random和fruchterman reingold。
+
+其中sphere是球面上的顶点的图形布局，可以将顶点按其顶点ID的顺序大致均匀地放置在球体上。circle是圆形布局，是将顶点按其顶点ID的顺序大致均匀地放置在圆形的边上。random是随机布局，这种情况加节点的位置会被随机放置。Fruchterman-Reingold算法是一种力导向的布局算法，去是最经常用的布局。
+
+下面的代码中，分别使用四种布局方式对同样的数据绘制了网络图。如图所示：
+```{r}
+# 加载包
+library(igraph)
+ 
+# 创建数据集
+data <- matrix(sample(0:1, 400, replace=TRUE, prob=c(0.8,0.2)), nrow=20)
+network <- graph_from_adjacency_matrix(data , mode='undirected', diag=F )
+ 
+# 使用不同的布局
+par(mfrow=c(2,2), mar=c(1,1,1,1))
+plot(network, layout=layout.sphere, main="sphere")
+plot(network, layout=layout.circle, main="circle")
+plot(network, layout=layout.random, main="random")
+plot(network, layout=layout.fruchterman.reingold, main="fruchterman.reingold")
+ 
+ 
+```
+
+从图形中可以看到，左上的图形中，网络的结构与一个球体非常的相似。右上的图形中可以看到，网络图的节点分布在一个圆形的周围。在第三幅图，左下的图形中可以看到，网络图的结构是杂乱无章的。第四幅图使用的是Fruchterman-Reingold算法，这种算法能够有效地减少布局中边的交叉，与随机布局的网络图比较，第四幅图中的边要更少的交叉。
+
+## 将变量映射到节点和链接特征
+
+在绘制网络图的时候，可以将变量映射到节点或者链接。考虑一个有10人的网络。每个人都是成人,老人或年轻人,我们希望每个类别都有一种特定的颜色。下面的代码将节点关于年龄的三种类别设置了不同的颜色。
+```{r}
+# 加载包
+library(igraph)
+ 
+# 创建数据集
+links <- data.frame(
+    source=c("A","A", "A", "A", "A","J", "B", "B", "C", "C", "D","I"),
+    target=c("B","B", "C", "D", "J","A","E", "F", "G", "H", "I","I"),
+    importance=(sample(1:4, 12, replace=T))
+    )
+nodes <- data.frame(
+    name=LETTERS[1:10],
+    carac=c( rep("young",3),rep("adult",2), rep("old",5))
+    )
+ 
+# 转变成为 igraph 数据集
+network <- graph_from_data_frame(d=links, vertices=nodes, directed=F) 
+ 
+# 调色板上有三种颜色
+library(RColorBrewer)
+coul  <- brewer.pal(3, "Set1") 
+ 
+# 创建一个颜色向量
+my_color <- coul[as.numeric(as.factor(V(network)$carac))]
+ 
+# 绘制图形
+plot(network, vertex.color=my_color)
+ 
+# 添加一个图例
+legend("bottomleft", legend=levels(as.factor(V(network)$carac))  , col = coul , bty = "n", pch=20 , pt.cex = 3, cex = 1.5, text.col=coul , horiz = FALSE, inset = c(0.1, 0.1))
+
+```
+上面的代码中，首先创建了一个数据集，这个数据集包含三列，source，target和importance。nodes数据集记录了所有顶点的名称，在上文的代码中，还在nodes中添加了一个新的变量carac，这个变量表示了顶点的分组。然后使用graph_from_data_frame函数将数据转变成为igraph对象。然后使用carac变量生成了一组颜色my_color，然后再绘图的时候设定参数vertex.color = my_color。最后使用legend函数在图形的左下方添加了图例。
+
+从图中可以看到，网络图的节点被设置成为了三种颜色，分别为蓝色，绿色和红色。左下角的图例显示出不同的颜色所对应的的分组。
+
+
+出了将变量映射到节点的颜色，还可以将变量映射到网络图中的连线。调整的方式与将变量映射到节点类似，遵循相同的原则,将其他变量映射到其他参数的实现方式也是类似的。
+
+下面的代码中，将不同节点的重要性映射到网络图的连接中。图形如图所示：
+```{r}
+ 
+# 绘制图形
+plot(network, vertex.color=my_color, edge.width=E(network)$importance*2 )
+
+legend("bottomleft", legend=levels(as.factor(V(network)$carac))  , col = coul , bty = "n", pch=20 , pt.cex = 3, cex = 1.5, text.col=coul , horiz = FALSE, inset = c(0.1, 0.1))
+
+```
+上面的代码在绘图的时候通过设置edge.width参数调整的网络图连接的粗细程度。其中函数E()表示的是获取网络图中的边，```E(network)$importance```表示不同变得权重（重要性），上面的代码将```edge.width```设置为```E(network)$importance*2```,表示将连接的权重（重要性）表示连接粗细。
+
+
+## 使用网络图可视化聚类结果
+
+使用网络图可视化聚类结果，首先需要计算数据集的相关矩阵或者相似性矩阵。计算的方式有很多，可以使用cor()函数计算数据集之间的相关系数，或者使用dist()函数来计算数据集之间的距离。下面的代码计算了mtcars数据集的相关系数矩阵：
+
+```{r}
+# 加载包
+library(igraph)
+ 
+ 
+# 制作相关矩阵:
+mat <- cor(t(mtcars[,c(1,3:6)]))
+
+```
+上面的代码中计算了mtcars数据集中连续变量的相关系数矩阵，然后将相关系数矩阵可视化为网络图。。数据集的每个变量都是一个节点。如果它们的相关性或距离达到阈值(0.995这里),则将连接2个节点。
+
+基本网络图
+可以将相关矩阵可视化为网络图。数据集的每个实体都是一个节点。如果它们的相关性或距离达到阈值(这里是0.995),则将连接2个节点。要从相关矩阵中创建igraph对象需要使用请使用包的graph_from_adjacency_matrix函数，然后使用plot进行绘图，结果如图显示：
+
+```{r}
+# 只保留高相关性
+mat[mat<0.995] <- 0
+ 
+# 从这个矩阵中创建一个Igraph对象:
+network <- graph_from_adjacency_matrix( mat, weighted=T, mode="undirected", diag=F)
+
+#绘制基本图形
+plot(network)
+```
+从图形中可以观察到，网络图中某些节点通过连接聚集在一起。这是因为数据中只有相关系数达到0.99，才会形成连接，因此只有高度相关的节点才会聚集一起。
+
+基本的图形以及绘制好了，可以进行更多的调整使得图形更好的可视化效果。可以根据需要自定义节点,链接,标签和背景,下面的代码将cyl变量映射到网络图中节点的颜色。
+如图所示：
+```{r}
+#  颜色调色板
+library(RColorBrewer)
+coul <- brewer.pal(nlevels(as.factor(mtcars$cyl)), "Set2")
+
+# 将颜色映射到柱面
+my_color <- coul[as.numeric(as.factor(mtcars$cyl))]
+
+# 绘制图形
+par(bg="grey13", mar=c(0,0,0,0))
+set.seed(4)
+plot(network, 
+    vertex.size=12,
+    vertex.color=my_color, 
+    vertex.label.cex=0.7,
+    vertex.label.color="white",
+    vertex.frame.color="transparent"
+    )
+
+# 设置标题和图例
+text(0,0,"Network Graph",col="white", cex=1.5)
+legend(x=-0.2, y=-0.12, 
+       legend=paste( levels(as.factor(mtcars$cyl)), " cylinders", sep=""), 
+       col = coul , 
+       bty = "n", pch=20 , pt.cex = 2, cex = 1,
+       text.col="white" , horiz = F)
+
+```
+上面的代码调整了网络图节点的颜色，并且调整了节点的大小，网络图中节点的文字标签被设置为白色，并且整个图形的背景颜色被设置为黑色。最后添加了标题，添加在图形的中心，然后再图形的下方添加了颜色的图例。
+从图形中可以看到，整个图形的以黑色为背景，文字通过白色来表示，不同的聚类中，节点的颜色大体是一致的。
+
+
+更进一步还可以调整网络图中的边。在下面的代码中，对于网络图的节点，边等等进行了调整，图形如图所示
+```{r}
+par(bg="black")
+# 绘制图形
+plot(network,
+
+    # === vertex
+    vertex.color = rgb(0.8,0.4,0.3,0.8),          # 节点颜色
+    vertex.frame.color = "white",                 # 节点边界颜色
+    vertex.shape="circle",                        # 设置节点形状 “none”, “circle”, “square”, “csquare”, “rectangle” “crectangle”, “vrectangle”, “pie”, “raster”, or “sphere”
+    vertex.size=14,                               # 节点的大小
+    vertex.size2=NA,                              
+
+    # === vertex label
+    vertex.label=LETTERS[1:10],                   # 用于标记节点的字符向量
+    vertex.label.color="white",
+    vertex.label.family="Times",                  # 标签字体系列(例如“Times”、“Helvetica”)
+    vertex.label.font=2,                          # 字体:1普通，2粗体，3斜体，4粗体，5符号
+    vertex.label.cex=1,                           # 字体大小 
+    vertex.label.dist=0,                          # 标签到顶点的距离
+    vertex.label.degree=0 ,                       # 标签相对于顶点的位置 
+
+ 
+    edge.color="white",                           #边缘的颜色
+    edge.width=4,                                 # 边缘宽度，默认为1
+    edge.arrow.size=1,                            # 箭头大小，默认为1
+    edge.arrow.width=1,                           # 箭头宽度，默认为1
+    edge.lty="solid",                             # 线条种类, could be 0 or “blank”, 1 or “solid”, 2 or “dashed”, 3 or “dotted”, 4 or “dotdash”, 5 or “longdash”, 6 or “twodash”
+    edge.curved=0.3    ,                          # 边缘曲率，范围0-1 (FALSE设置为0,TRUE设置为0.5)
+    )
+```
+
+从图形中可以看到，网络图的背景颜色是黑色，节点的颜色是红色，并且连线的颜色被设置为白色。
+
+<!-- ## 具有基于边数的节点大小的网络 -->
+
+<!-- 本文解释了如何构建网络图,其中节点大小与其与其他节点的连接数成比例。 -->
+<!-- 基本网络图 -->
+<!-- 当节点与其他节点紧密连接时,使节点更大是一项常见任务。实际上,这意味着它们在网络中具有重要性,因此值得强调。 -->
+
+<!-- 包的degree()功能igraph允许计算每个节点的连接数。可以将其结果传递给函数的vertex.size参数plot()以获取目标结果。 -->
+<!-- ```{r} -->
+
+
+<!-- # library -->
+<!-- library(igraph) -->
+
+<!-- # create data: -->
+<!-- links=data.frame( -->
+<!--     source=c("A","A", "A", "A", "A","J", "B", "B", "C", "C", "D","I"), -->
+<!--     target=c("B","B", "C", "D", "J","A","E", "F", "G", "H", "I","I") -->
+<!--     ) -->
+
+<!-- # Turn it into igraph object -->
+<!-- network <- graph_from_data_frame(d=links, directed=F)  -->
+
+<!-- # Count the number of degree for each node: -->
+<!-- deg <- degree(network, mode="all") -->
+
+<!-- # Plot -->
+<!-- plot(network, vertex.size=deg*6, vertex.color=rgb(0.1,0.7,0.8,0.5) ) -->
+<!-- ``` -->
+
+# 旭日图 （SUNBURST）
+
+
+旭日图用于显示分层结构。层次结构的起点由圆圈的中心表示,结构中的每个级别由一个附加的圆圈表示。最后一级(叶子)位于圆的最外部。它与树图非常相似,只是它使用了一个放射状布局。描述整体与部分之间的关系，可以使用旭日图进行展示，下面的代码不同地区人口的关系，世界通过不同大陆(组)进行划分,大陆划分为区域(子组),区域划分在各个国家。在这种树形结构中,国家被视为叶子，它们位于分支的末端。因此它们表示在圆的外部。图形如图所示：
+```{r}
+# 加载包
+library(tidyverse)
+library(treemap)
+library(sunburstR)
+
+#  获取数据及
+data <- read.table("https://raw.githubusercontent.com/holtzy/data_to_viz/master/Example_dataset/11_SevCatOneNumNestedOneObsPerGroup.csv", header=T, sep=";")
+data[ which(data$value==-1),"value"] <- 1
+colnames(data) <- c("Continent", "Region", "Country", "Pop")
+
+# 加载包
+data <- data %>%
+  filter(Continent != "") %>%
+  mutate(path = paste(Continent, Region, Country, sep="-")) %>%
+  dplyr::select(path, Pop)
+
+# 绘制图形
+p <- sunburst(data, legend=FALSE)
+p
+```
+上面的代码绘制出的是一副交互式的图形，将鼠标放在图形中会显示图形的详细数据。交互式的方式使得这种图形能够很好的表达数据，将鼠标放到你感兴趣的位置，则可以快速的获取相关的信息。
+需要注意的是，在旭日图上表示标签非常困难，因此往往需要创建交互式的旭日图。另外，旭日图通过圆环的大小表示数据，因此，这个图形有与饼图和甜甜圈图一样的缺点，人眼在阅读角度上很糟糕。因此,很难准确地判断出圆环的大小。另外，旭日图中相同的值，外部部分倾向于比内部部分更大，这是因为，同样的角度，离圆心越远，圆形周长越大。
+
+
+
+
+
+# 蜘蛛/雷达
+
+雷达图与条形图所表达的内容是一样的，都是显示数字和分类变量之间的关系。让我们考虑一下学生的考试成绩。对于数学,体育,统计等十个主题,他的值从0到20不等。雷达图为每个主题提供一个轴。通过该形状,可以查看学生在哪些主题中表现良好或表现不佳。下面的代码绘制了一副雷达图，图形如图所示：
+
+```{r}
+# 加载包
+library(tidyverse)
+library(viridis)
+library(patchwork)
+library(hrbrthemes)
+library(fmsb)
+library(colormap)
+
+#  创建数据集
+set.seed(1)
+data <- as.data.frame(matrix( sample( 2:20 , 10 , replace=T) , ncol=10))
+colnames(data) <- c("math" , "english" , "biology" , "music" , "R-coding", "data-viz" , "french" , "physic", "statistic", "sport" )
+
+# 要使用fmsb包， 必须在dataframe中添加两行：显示的最大值和最小值!
+data <- rbind(rep(20,10) , rep(0,10) , data)
+
+# 自定义图形
+par(mar=c(0,0,0,0))
+radarchart( data, axistype=1, 
+
+  #自定义多边形
+  pcol=rgb(0.2,0.5,0.5,0.9) , pfcol=rgb(0.2,0.5,0.5,0.5) , plwd=4 , 
+
+  #自定义网格
+  cglcol="grey", cglty=1, axislabcol="grey", caxislabels=seq(0,20,5), cglwd=0.8,
+
+  #自定义标签
+  vlcex=0.8 
+  )
+```
+
+上面的代码中，首先创建了一个关于学生成绩的数据集。然后使用fmsb包中的radarchart函数绘制了雷达图。pcol参数调整数据点的颜色,pfcol参数用于调整多边形的填充显色。plwd参数用于调整图形线条的宽度。参数cglcol用于调整网格线的颜色，cglty参数用于调整网格线的类型，axislabcol参数用于调整坐标轴标签和数字的颜色，caxislabels参数用于设置中心轴的标签，cglwd参数用于调整网格线的宽度。vlcex参数勇于挑战字体的大小。
+
+
+在上图中,只绘制了一组数据,显示了一个学生的课程表现表现。通常情况下，需要对多组数据进行比较。下面的代码使用了两个学生的数据来绘制雷达图：
+```{r}
+# 创建数据
+set.seed(1)
+data <-as.data.frame(matrix( c( sample( 2:20 , 10 , replace=T), sample( 2:9 , 10 , replace=T)) , ncol=10, byrow=TRUE))
+colnames(data) <- c("math" , "english" , "biology" , "music" , "R-coding", "data-viz" , "french" , "physic", "statistic", "sport" )
+data[2,2]=19
+
+#创建数据框
+data <-rbind(rep(20,10) , rep(0,10) , data)
+
+# 颜色
+colors_border=c( rgb(0.2,0.5,0.5,0.9), rgb(0.8,0.2,0.5,0.9)  )
+colors_in=c( rgb(0.2,0.5,0.5,0.4), rgb(0.8,0.2,0.5,0.4)  )
+
+#自定义图形
+radarchart( data, axistype=1, 
+
+  #自定义多边形
+  pcol=colors_border , pfcol=colors_in , plwd=4, plty=1 , 
+
+  #自定义网格
+  cglcol="grey", cglty=1, axislabcol="grey", caxislabels=seq(0,20,5), cglwd=1.1,
+
+  # 自定义标签
+  vlcex=0.8 
+  )
+
+# 图例
+legend(x=0.85, y=1, legend = c("A", "B"), bty = "n", pch=20 , col=colors_border , text.col = "black", cex=0.9, pt.cex=1.6)
+```
+上面的代码中，绘制了两组数据。从图中可以看到里很明显A从整体而言，表现优于B,但是B的运动,英语和R编程比A要更好。
+如果超过两个或三个系列,使用分面来避免图形的混乱是一个好习惯。每个学生都有自己的雷达图，。很容易理解特定个体的特征,并且寻找形状的相似性可以找到具有相似特征的学生。下面的代码使用分面的方式绘制了多幅雷达图，图形如图所示：
+
+```{r}
+# 创建数据集
+set.seed(1)
+data <-as.data.frame(matrix( sample( 2:20 , 60 , replace=T) , ncol=10, byrow=TRUE))
+colnames(data) <- c("math" , "english" , "biology" , "music" , "R-coding", "data-viz" , "french" , "physic", "statistic", "sport" )
+ 
+data <-rbind(rep(20,10) , rep(0,10) , data)
+
+# 设置颜色
+colors_border=colormap(colormap=colormaps$viridis, nshades=6, alpha=1)
+colors_in=colormap(colormap=colormaps$viridis, nshades=6, alpha=0.3)
+
+# 标题
+mytitle <- c("Max", "George", "Xue", "Tom", "Alice", "bob")
+
+# 把屏幕分成6部分
+par(mar=rep(0.8,4))
+par(mfrow=c(2,3))
+
+# 每个绘图的循环
+for(i in 1:6){
+
+  # 自定义图形
+  radarchart( data[c(1,2,i+2),], axistype=1, 
+  
+    #自定义多边形
+    pcol=colors_border[i] , pfcol=colors_in[i] , plwd=4, plty=1 , 
+  
+    #自定义网格
+    cglcol="grey", cglty=1, axislabcol="grey", caxislabels=seq(0,20,5), cglwd=0.8,
+  
+    # 自定义标签
+    vlcex=0.8,
+    
+    # 标题
+    title=mytitle[i]
+    )
+}
+
+```
+
+从图形中可以看到，通过分面的方式绘制了六幅雷达图。通过分面的方式绘制图形，能够有效地避免将多组雷达图绘制到同一幅图中造成的混乱。
+
+雷达图的表现形式很吸引人，但是雷达图的圆形布局让人对于图形难以理解，通常而言，小提琴图或者棒棒糖图是雷达图的一个好的替代方案。
+它有什么问题呢？下面的代码绘制了一个学成成绩的雷达图，然后使用相同的数据绘制了棒棒糖图,如图所示：
+```{r}
+# 创建数据及
+set.seed(1)
+data <-as.data.frame(matrix( sample( 2:20 , 10 , replace=T) , ncol=10))
+colnames(data) <- c("math" , "english" , "biology" , "music" , "R-coding", "data-viz" , "french" , "physic", "statistic", "sport" )
+
+ 
+data <-rbind(rep(20,10) , rep(0,10) , data)
+
+
+# 自定义图形
+par(mar=c(0,0,0,0))
+p1 <- radarchart( data, axistype=1, 
+
+  #自定义多边形
+  pcol=rgb(0.2,0.5,0.5,0.9) , pfcol=rgb(0.2,0.5,0.5,0.5) , plwd=4 , 
+
+  # 自定义网格
+  cglcol="grey", cglty=1, axislabcol="grey", caxislabels=seq(0,20,5), cglwd=0.8,
+
+  #自定义标签
+  vlcex=1.3 
+  )
+
+
+```
+从图中可以看到，在雷达图中很难对于结果进行直观的理解，比如，学生的成绩最高的是哪门成绩，或者第二高的是哪门成绩，从雷达图中很难直接看出来。但是，条形图或者棒棒糖图则能非常明显的体现出来，下面的代码使用了同样的数据绘制了棒棒糖图，如图所示：
+```{r}
+# 条形图
+data %>% slice(3) %>% t() %>% as.data.frame() %>% add_rownames() %>% arrange(V1) %>% mutate(rowname=factor(rowname, rowname)) %>%
+  ggplot( aes(x=rowname, y=V1)) +
+    geom_segment( aes(x=rowname ,xend=rowname, y=0, yend=V1), color="grey") +
+    geom_point(size=5, color="#69b3a2") +
+    coord_flip() +
+    theme_ipsum() +
+    theme(
+      panel.grid.minor.y = element_blank(),
+      panel.grid.major.y = element_blank(),
+      axis.text = element_text( size=48 ),
+      legend.position="none"
+    ) +
+    ylim(0,20) +
+    ylab("mark") +
+    xlab("")
+```
+
+从图中可以看到，排名第一的成绩是french，第二是data -viz。直方图或者小提琴图能够非常直观的对数图形的数据进行比较，然而，这对于雷达图是一件很困难的事情。另外，读者在阅读雷达图的时候会关注雷达图的形状，这个时候很容易产生误解，这是因为雷达图的形状很大程度上取决于数据点的排序，下面的代码绘制了多副雷达图，图形含义是一样的，但是图形的形状却有非常大的差别。图形如图所示：
+
+```{r}
+# 创建数据及
+set.seed(7)
+data <- as.data.frame(matrix( sample( 2:20 , 10 , replace=T) , ncol=10))
+colnames(data) <- c("math" , "english" , "biology" , "music" , "R-coding", "data-viz" , "french" , "physic", "statistic", "sport" )
+data[1,1:3]=rep(19,3)
+data[1,6:8]=rep(4,3)
+data <- rbind(rep(20,10) , rep(0,10) , data)
+
+# 改变顺序
+data2 <- data[,sample(1:10,10, replace=FALSE)]
+data3 <- data[,sample(1:10,10, replace=FALSE)]
+ 
+# 自定义图形
+par(mar=c(0,0,0,0))
+par(mfrow=c(1,3))
+radarchart( data, axistype=1, pcol=rgb(0.2,0.5,0.5,0.9) , pfcol=rgb(0.2,0.5,0.5,0.5) , plwd=4 ,   cglcol="grey", cglty=1, axislabcol="grey", caxislabels=seq(0,20,5), cglwd=0.8, vlcex=0.8  )
+radarchart( data2, axistype=1, pcol=rgb(0.2,0.5,0.5,0.9) , pfcol=rgb(0.2,0.5,0.5,0.5) , plwd=4 ,   cglcol="grey", cglty=1, axislabcol="grey", caxislabels=seq(0,20,5), cglwd=0.8, vlcex=0.8  )
+radarchart( data3, axistype=1, pcol=rgb(0.2,0.5,0.5,0.9) , pfcol=rgb(0.2,0.5,0.5,0.5) , plwd=4 ,   cglcol="grey", cglty=1, axislabcol="grey", caxislabels=seq(0,20,5), cglwd=0.8, vlcex=0.8  )
+```
+
+从图形中可以观察到，虽然使用的数据是一样的，但是三幅雷达图的形状却非常的不一样，读者很容易将这三幅图形认为是三幅不同的图形。这也是雷达图容易让人产生误解的一个方面。因此，通常而言，使用雷达图来对数据进行可视化并不是一个好的选择，替代的方法可以使直方图，棒棒糖图，或者是哑铃图。
+
+## 绘制雷达图
+
+绘制雷达图会使用到fmsb包。绘制图形所需数据的格式非常的具体，每一行表示一条数据，每一列表示一个定量变量，数据的前两行将用来表示每个变量的最小值和最大值。
+当数据满足了对应格式的要求，则可以使用radarchart()函数来绘制雷达图。
+```{r}
+# 加载包
+library(fmsb)
+ 
+#  创建数据及
+data <- as.data.frame(matrix( sample( 2:20 , 10 , replace=T) , ncol=10))
+colnames(data) <- c("math" , "english" , "biology" , "music" , "R-coding", "data-viz" , "french" , "physic", "statistic", "sport" )
+ 
+
+data <- rbind(rep(20,10) , rep(0,10) , data)
+
+# 绘图
+radarchart(data)
+
+```
+
+上面的代码绘制了一副基础的雷达图，将数据传入radarchart（）函数即可绘制出雷达图。从图中可以观察到雷达图中的网格线默认是虚线，数据的连线通过实线进行连接，图形没有任何填充颜色。
+在绘制好基础的雷达图之后可以对图标进行自定义的设定，radarchart()函数中的参数包括：
+
+1. pcol ：线条颜色
+2. pfcol ：填充颜色
+3. plwd ：线宽 
+4. cglcol ：网的颜色
+5. cglty：网线类型(见可能性)
+6. axislabcol ：轴标签的颜色
+7. caxislabels ：要显示的轴标签矢量
+8. cglwd ：净宽度 
+9. vlcex ：组标签大小
+
+```{r}
+# 加载包
+library(fmsb)
+ 
+# 创建数据集
+data <- as.data.frame(matrix( sample( 2:20 , 10 , replace=T) , ncol=10))
+colnames(data) <- c("math" , "english" , "biology" , "music" , "R-coding", "data-viz" , "french" , "physic", "statistic", "sport" )
+ 
+ 
+data <- rbind(rep(20,10) , rep(0,10) , data)
+ 
+ 
+
+#  自定义图形
+radarchart( data  , axistype=1 , 
+ 
+    #自定义多边形
+    pcol='yellow', pfcol=rgb(0.2,0.5,0.5,0.5) , plwd=4 , 
+ 
+    #自定义网格
+    cglcol="red", cglty=1, axislabcol="red", caxislabels=seq(0,20,5), cglwd=0.8,
+ 
+    #自定义标签
+    vlcex=0.8 
+    )
+```
+
+上面的代码对于雷达图进行了自定义的设定。从图中可以观察到，雷达图的网格线被设置为红色，数据之间的连线是黄色，
+
+## 绘制多组雷达图
+
+使用fmsb包中的radarchart()函数绘制多组雷达图非常的简单，只需要数据集中包含多组的数据，然后使用radarchart()函数，即可绘制出多组的雷达图。但是，需要注意的是，不要在同一个雷达图表上显示更多2或3个组，因为这会造成图形的混乱，使得图形变得无法阅读。下面的代码绘制了多组雷达图：
+```{r}
+# 加载包
+library(fmsb)
+ 
+#创建数据集
+set.seed(99)
+data <- as.data.frame(matrix( sample( 0:20 , 15 , replace=F) , ncol=5))
+colnames(data) <- c("math" , "english" , "biology" , "music" , "R-coding" )
+rownames(data) <- paste("mister" , letters[1:3] , sep="-")
+ 
+ 
+data <- rbind(rep(20,5) , rep(0,5) , data)
+ 
+# 绘制图形
+radarchart(data)
+
+```
+上面的代码中，在构造数据的时候生成了两组成绩数据，使用radarchart()绘制图形即可绘制出分组的雷达图。从图中可以看出两组雷达图中，其中一组的数据点是黑色，通过实线进行连接，另一组的数据集是红色，通过虚线进行连接。如果想要绘制更多组的雷达图，只需要准备好数据即可，但是，最好不要绘制超过3组以上的雷达图，太多组会让图形无法阅读。
+
+# 词云（Wordcloud）
+
+词云是一种文本数据的可视化表示。单词通常在词云中通过单个单词表示,每个单词的重要性用字体大小或颜色显示。下面举了一个例子,显示了Nekfeu,一个着名的法国说唱歌手,下面的代码显示了他的一些歌曲中使用的最频繁的单词。如图所示：
+
+```{r}
+# 加载包
+library(tidyverse)
+library(hrbrthemes)
+library(tm)
+library(proustr)
+
+# 获取数据集
+data <- read.table("https://raw.githubusercontent.com/holtzy/data_to_viz/master/Example_dataset/14_SeveralIndepLists.csv", header=TRUE) 
+to_remove <- c("_|[0-9]|\\.|function|^id|script|var|div|null|typeof|opts|if|^r$|undefined|false|loaded|true|settimeout|eval|else|artist")
+data <- data %>% filter(!grepl(to_remove, word)) %>% filter(!word %in% stopwords('fr')) %>% filter(!word %in% proust_stopwords()$word)
+
+# 加载包
+library(wordcloud2)
+
+# 准备一个单词列表(最常用的50个单词)
+mywords <- data %>%
+  filter(artist=="nekfeu") %>%
+  dplyr::select(word) %>%
+  group_by(word) %>%
+  summarize(freq=n()) %>%
+  arrange(freq) %>%
+  tail(30)
+
+#  绘制图形
+wordcloud2(mywords,  minRotation = -pi/2, maxRotation = -pi/2,
+         backgroundColor = "white", color="#69b3a2")
+```
+
+
+上面的代码中，首先获取了需要使用的数据集。然后对于字符串数据进行了处理。绘制词云所使用的的R包是wordcloud2包。绘制的函数是wordcloud2函数。从图中可以看到，词云图中显示出很多的词语，不同的词语的大小是不一样的，词语越大，表示词语出现的频率越高。
+
+
+词云（Wordcloud）对于快速感知最突出的词语非常有用。它被广泛用于媒体,并为公众所熟知。然而,由于缺乏准确性,这是一种备受批评的传播信息的方式。这是由于两个主要原因：首先，区域大小，或者区域范围是人类几乎感觉不到的数值的隐喻。因此,读者很难将字的大小转换为准确的数值。另外，较长的单词在构造时看起来更大,因为它们由更多的字母组成，这就容易产生某种误解,使使得词云的结果（wordcloud）更不准确。
+一个好的解决方法是使用条形图或棒棒糖图代替。以下是使用与上一个图表相同的数据绘制了棒棒糖图，如图所示：
+
+```{r}
+# 准备单词列表
+data %>%
+  filter(artist=="nekfeu") %>%
+  dplyr::select(word) %>%
+  group_by(word) %>%
+  summarize(freq=n()) %>%
+  arrange(freq) %>%
+  tail(30) %>%
+  mutate(word=factor(word, word)) %>%
+  ggplot( aes(x=word, y=freq) ) + # 绘制图形
+    geom_segment( aes(x=word ,xend=word, y=0, yend=freq), color="grey") +
+    geom_point(size=3, color="#69b3a2") +
+    coord_flip() +
+    theme_ipsum() +
+    theme(
+      panel.grid.minor.y = element_blank(),
+      panel.grid.major.y = element_blank(),
+      legend.position="none"
+    ) +
+    xlab("")
+
+```
+
+上面的代码中使用了与图。。一样的数据绘制了一副棒棒糖图。从图中可以看到，在棒棒糖图中能够清晰的观察到每一个单词的具体的评率数值，并且单词之间的评率大小可以非常容易的进行比较。
+
+通常而言，词云并不是一个进行数据展示的一个好的方法，媒体的广泛应用是因为这种图形比较容易吸引人的眼球，而这正是媒体所需要的。词云的缺陷有两点，首先是人脑很难去理解区域大小的准确数值，其次是在词云中，单词越长会显得单词越大，这会造成读者的误解。总而言之，除非有其他的原因，最好避免使用词云这种图形来表示数据。
+
+## 绘制词云
+
+
+使用wordcloud2包的wordcloud2()函数可以非常快速额的绘制出词云图形。只需要准备好满足格式的数据框。wordcloud2()函数中有两个,第一个是data，需要传入一个数据框，数据框中有两列，第一列是单词，第二列是单词的频率。下面使用了很少的代码绘制了一副词云图.如图所示：
+
+```{r}
+# 加载包
+library(wordcloud2) 
+ 
+# 查看数据及
+head(demoFreq,3)
+
+#  绘制图形
+wordcloud2(data=demoFreq, size=1.6)
+```
+上面的代码中，使用了demoFreq数据集，这个数据集是wordcloud2包自带的一个数据集。从数据集的输出中可以看到，数据集包含了两列，第一列包含了各种单词，第二列是单词的评率。从图中可以观察到，默认情况下，图形的中不同的单词会显示出不同的颜色。另外，不同单词的大小表示了不同的单词频率。
+
+
+
+## 颜色和背景颜色
+
+如果希望对图形的颜色进行调整，则可以使用color参数更改单词颜色。可以提供颜色向量，,或使用random-dark或random-light。还可以使用自定义背景颜色。首先将color参数设置为random-dark。图形如图所示：
+```{r}
+# 加载包
+library(wordcloud2) 
+ 
+# 调整配色
+wordcloud2(demoFreq, size=1.6, color='random-dark')
+ 
+
+```
+
+上面的代码中将color参数设置为'random-dark'从图形中可以看到，图。。的颜色和图。。的颜色使用了不同的配色，对应单词的颜色发生了改变。下面的代码使用了指定的颜色向量来调整词云的颜色。
+
+
+```{r}
+# 或者是一个颜色向量。向量的长度必须与输入数据的长度相同
+wordcloud2(demoFreq, size=1.6, color=rep_len( c("green","blue"), nrow(demoFreq) ) )
+ 
+```
+
+下面的代码中，将color参数设置为一个颜色向量，这个箱梁中由两种颜色构成，分别为绿色和蓝色，向量的长度为数据集的行数。从图。。。可以看出，整个图形的单词通过绿色和蓝色两种颜色来表示。下面的代码设置了颜色参数，并且对于词云图的背景颜色进行了调整。
+
+```{r}
+# 改变背景的颜色
+wordcloud2(demoFreq, size=1.6, color='random-light', backgroundColor="black")
+```
+
+上面的代码中，color参数设置为'random-light'，然后设置backgroundColor参数为black。表示将图形的背景设置为黑色。从图。。中可也看到，图形的使用了一种新的配色方式，然后图形的背景被设置为了黑色。
+
+## 形状
+
+可以使用shape参数自定义词云（wordcloud）形状。可用的形状是：
+
+1. circle ：圆形
+2. cardioid :心形
+3. diamond ：钻石形状
+4. triangle-forward ：朝前的三角形
+5. triangle ：三角形
+6. pentagon ：五角形
+7. star ：星形
+
+可以使用这些形状来作为词云图的形状。下面的代码使用了五角形的形状来绘制词云图，如图所示：
+```{r}
+# 加载包
+library(wordcloud2) 
+ 
+# 改变形状
+wordcloud2(demoFreq, size = 0.7, shape = 'pentagon')
+```
+上面的代码中，将shape参数设置为了'pentagon'。从图。。可以看出，词云的单词都被聚集在五角形的里面。
+
+
+## 单词方向
+
+
+进一步可以调整图形中单词的方向，用3个参数旋转单词：minRotation,maxRotation和rotateRatio。下面的代码绘制了一副调整单词角度的词云图，如图所示：
+```{r}
+# 加载包
+library(wordcloud2) 
+ 
+# 词云
+wordcloud2(demoFreq, size = 2.3, minRotation = -pi/3, maxRotation = -pi/6, rotateRatio = 0.5)
+
+```
+上面的代码调整了词云图中单词的角度，使用了三个参数进行调整，包括minRotation,maxRotation和rotateRatio。其中minRotation表示单词的最小旋转角度，maxRotation表示单词的最大旋转角度，rotateRatio表示单词的旋转概率（如果是1表示所有单词都调整角度）。从图。。中可以看到有一部分单词的角度发生了改变，有一部分单词的角度没有改变。并且，单词的角度变化不完全一样。
+
+# 平行图（Parallel plot）
+
+平行图或平行坐标图允许在一组数值变量上比较几个单独观测值(系列)的特征。每个垂直条代表一个变量,通常有自己的比例。然后将值绘制为跨越每个轴连接的一系列线。
+
+下面的代码绘制了iris数据集的平行图，iris数据集包含了150条花样本的数据，数据集中包含4个特征，数据集分为三个物种。下面的代码绘制了一副iris数据集四个特征的平行图。如图所示：
+
+```{r}
+# 加载包
+library(tidyverse)
+library(hrbrthemes)
+library(patchwork)
+library(GGally)
+library(viridis)
+
+# 使用iris数据集
+data <- iris
+
+# 绘制图形
+data %>% 
+  ggparcoord(
+    columns = 1:4, groupColumn = 5, order = "anyClass",
+    showPoints = TRUE, 
+    title = "Parallel Coordinate Plot for the Iris Data",
+    alphaLines = 0.3
+    ) + 
+  scale_color_viridis(discrete=TRUE) +
+  theme_ipsum()+
+  theme(
+    plot.title = element_text(size=10)
+  )
+```
+
+上面的代码使用了iris数据集绘制了一副平行图。从图中可以看到，不同物种(Species)，被设置成为了不同的颜色。图形显示了不同物种的4个特征的区别，从图。。可以观察到setosa这一组，Petal.Length变量的值比较小，但是其Spepal.Width的值却比较大。
+图形很好的比较了iris数据集中不同分组下四个特征之间的关系。
+
+
+平行图允许研究多个数值变量的关系。它的优势在于变量甚至可以是不同范围甚至是不同的单位。在上图中,花卉特征按物种分组,所有变量均归一化并显示在同一个坐标轴里面。下面的代码绘制了另外一幅平行图，使用的是ggplot2包中的diamonds数据集,比较了数据集中的四个变量,这些变量的单位不一样,例如有些单位是美元，有些单位是克拉，进行比较需要先对数据进行处理。图形如图所示：
+
+```{r}
+set.seed(2) # 设置随机种子
+diamonds %>% 
+  sample_n(10) %>%
+    ggparcoord(
+      columns = c(1,5:7), 
+      groupColumn = 2, 
+      #order = "anyClass",
+      showPoints = TRUE, scale = "uniminmax",
+      title = "Diamonds features",
+      alphaLines = 0.3
+      ) + 
+    scale_color_viridis(discrete=TRUE) +
+    theme_ipsum()+
+    theme(
+      plot.title = element_text(size=10)
+    )
+
+```
+
+上面的代码绘制了diamonds数据集中carat，depth，table和price这四个变量的平行图，数据根据cut变量进行分组。ggparcoord（）函数中，showPoints = TRUE表示在平行图中显示数据点。scale = 'uniminmax'表示将数据缩放到0到1之间。
+从图中可以看到，图形中的中的点被分成了三组，不同的组别用不同的颜色进行表示。图形的y轴的坐标范围为0到1.从图中可以观察到，如果切工(cut)为完美的（Ideal），这个时候钻石的price变量和depth变量会比较高，tbale变量和carat变量会比较小。
+
+
+对于不同量纲的数据进行处理是比较不具有相同单位的变量的关键步骤，下面的代码绘制了多种数据变换的方式。如图所示
+
+```{r}
+# 绘制图形
+p1 <- data %>% 
+  ggparcoord(
+    columns = 1:4, groupColumn = 5, order = "anyClass",
+    showPoints = TRUE, 
+    title = "No scaling",
+    alphaLines = 0.3
+    ) + 
+  scale_color_viridis(discrete=TRUE) +scale_x_discrete(labels = c("SL",'SW','PL','PW'))+
+  theme_ipsum()+
+  theme(
+    legend.position="none",
+    plot.title = element_text(size=10)
+  ) +
+  xlab("")
+  
+p2 <- data %>% 
+  ggparcoord(
+    columns = 1:4, groupColumn = 5, order = "anyClass",
+    scale="uniminmax",
+    showPoints = TRUE, 
+    title = "Standardize to Min = 0 and Max = 1",
+    alphaLines = 0.3
+    ) + 
+  scale_color_viridis(discrete=TRUE) +scale_x_discrete(labels = c("SL",'SW','PL','PW'))+
+  theme_ipsum()+
+  theme(
+    legend.position="none",
+    plot.title = element_text(size=10)
+  ) +
+  xlab("")
+
+
+p3 <- data %>% 
+  ggparcoord(
+    columns = 1:4, groupColumn = 5, order = "anyClass",
+    scale="std",
+    showPoints = TRUE, 
+    title = "Normalize univariately (substract mean & divide by sd)",
+    alphaLines = 0.3
+    ) + 
+  scale_color_viridis(discrete=TRUE) +scale_x_discrete(labels = c("SL",'SW','PL','PW'))+
+  theme_ipsum()+
+  theme(
+    legend.position="none",
+    plot.title = element_text(size=10)
+  ) +
+  xlab("")
+
+
+p4 <- data %>% 
+  ggparcoord(
+    columns = 1:4, groupColumn = 5, order = "anyClass",
+    scale="center",
+    showPoints = TRUE, 
+    title = "Standardize and center variables",
+    alphaLines = 0.3
+    ) + 
+  scale_color_viridis(discrete=TRUE) +scale_x_discrete(labels = c("SL",'SW','PL','PW'))+
+  theme_ipsum()+
+  theme(
+    legend.position="none",
+    plot.title = element_text(size=10)
+    
+  ) +
+  xlab("")
+
+
+p1 + p2 + p3 + p4 + plot_layout(ncol = 2) # 将图形合并起来
+```
+上面的代码中，第一幅图的数据并没有任何的改变，第二幅图中将数据进行了归一化，归一化指的将数据概括带0到1的区间之内。其转换的公式如下：
+
+$X^{\prime}=\frac{X-X_{\min }}{X_{\max }-X_{\min }}$
+
+第三幅图对于数据进行了标准化，将数据减去其均值然后除以标准差。其公式如下：
+
+$\frac{X-\mu}{\sigma}$
+
+第四幅图对于数据进行了中心化，首先对数据进行归一化，然后再除以数据的标准差。
+
+
+更进一步的调整还包括调整轴顺序，优化垂直轴的顺序可以减少线条的交叉。线条的交叉越多，图形则越难以理解。下面的代码绘制了两幅平行图，第一幅图形是原始图，第二幅图形调整了坐标轴的顺序。
+
+```{r}
+# 绘制图形
+p1 <- data %>% 
+  ggparcoord(
+    columns = 1:4, groupColumn = 5, order = c(1:4),
+    showPoints = TRUE, 
+    title = "Original",
+    alphaLines = 0.3
+    ) + 
+  scale_color_viridis(discrete=TRUE) +scale_x_discrete(labels = c("SL",'SW','PL','PW'))+
+  theme_ipsum()+
+  theme(
+    legend.position="Default",
+    plot.title = element_text(size=10)
+  ) +
+  xlab("")
+  
+p2 <- data %>% 
+  ggparcoord(
+    columns = 1:4, groupColumn = 5, order = c(4,3,2,1),
+    showPoints = TRUE, 
+    title = "Re-ordered",
+    alphaLines = 0.3
+    ) + 
+  scale_color_viridis(discrete=TRUE) +scale_x_discrete(labels = c('PW','PL','SW','SL'))+
+  theme_ipsum()+
+  theme(
+    legend.position="none",
+    plot.title = element_text(size=10)
+  ) +
+  xlab("")
+
+p1 + p2  # 将图形合并起来
+
+```
+
+上面的代码中，第一幅图使用ggparcoord（）函数绘图的时候调整order参数为1:4，表示按原始的顺序进行绘图。第二幅图order参数设置为4：1，表示将原始的顺序倒转过来。第一幅图坐标轴的顺序是SL，SW，PL，PW。第二幅图坐标轴的顺序是PW，PL，SW，SL。
+
+
+如果对数据中某一特别的分组感兴趣，则可以是对图形进行突出显示。平行图是线图，当线条过多的时候线条会重叠，使得图形难以阅读。对感兴趣的内容突出表示则可以解决这个问题。下面的代码中对于某一组别进行了突出显示。如图所示
+
+```{r}
+# 绘制图形
+data %>% 
+  ggparcoord(
+    columns = 1:4, groupColumn = 5, order = "anyClass",
+    showPoints = TRUE, 
+    title = "Original",
+    alphaLines = 0.3
+    ) + 
+  scale_color_manual(values=c( "red", "grey", "grey") ) +
+  theme_ipsum()+
+  theme(
+    legend.position="Default",
+    plot.title = element_text(size=10)
+  ) +
+  xlab("")
+```
+
+上面的代码中使用scale_color_manual函数对于不同组别的颜色进行了调整，三个组别分别设置为红色，灰色和灰色。从图。。中可以看出有一个组别的线条通过红色来表示，比较与灰色，红色则显得更加的突出，从而起到了突出某个部分的作用。
+
+
+## 基本的平行图
+
+
+使用ggally包和ggparcoord()函数可以轻松的绘制平行图。在绘图之前，输入数据集必须是具有多个数字变量的数据框,每个数字变量都用作图表上的垂直轴。这些变量的列数在函数的参数columns中指定。在图中,分类变量用于着色线的颜色,下面的代码绘制了一副基础的平行图。如图所示
+
+```{r}
+# 加载包
+library(GGally)
+
+# 使用iris数据集
+data <- iris
+
+# 绘制图形
+ggparcoord(data,
+    columns = 1:4, groupColumn = 5
+    ) 
+```
+
+这里使用的数据集是iris数据，使用使用数据集的前四列进行绘制，groupColumn参数用于指定颜色，上面的代码groupColumn = 5表示将数据集的第五列映射到颜色。从图中可以看到，第五列的变量是Species，不同的值对应图形中的线条被设置为不同的颜色。
+
+
+## 自定义颜色,主题,一般外观
+
+在绘制好基础的平行图之后，可以对于图形的更多细节进行自定义。可以使用不同的调色板，可以显示数据点，可以设置透明度等等。下面的代码在上文代码的基础之上进行了一些调整。结果如图所示：
+```{r}
+# 加载包
+library(hrbrthemes)
+library(GGally)
+library(viridis)
+
+# 使用iris数据集绘图
+data <- iris
+
+# 绘制图形
+ggparcoord(data,
+    columns = 1:4, groupColumn = 5, order = "anyClass",
+    showPoints = TRUE, 
+    title = "Parallel Plot",
+    alphaLines = 0.3
+    ) + 
+  scale_color_viridis(discrete=TRUE) +
+  theme_ipsum()+
+  theme(
+    plot.title = element_text(size=10),
+    axis.text.x = element_text(size=8)
+  )
+
+```
+
+上面的代码中，order = 'anyClass'表示图形中x轴变量的顺序通过随机的方式进行排序。showPoints =TRUE表示显示数据点。然后通过title参数设置了图形的标题，使用alphaLines参数调整了图形中线条的透明度。然后使用scale_color_viridis函数调整了图形的配色，使用
+theme_ipsum函数对于图形的主题进行了设置，调整了图形的外观。最后使用了theme函数调整了标题文字的。
+从图中可以看到，相比如上图。两幅图之间存在很大的差别。
+
+
+
+<!-- ## 缩放 -->
+<!-- Scaling将原始数据转换为与其他变量相同的新比例。这是比较不具有相同单位的变量的关键步骤,但也可以帮助,如下面的示例所示。 -->
+
+<!-- 该ggally软件包提供了一个scale参数。以下四个可能的选项应用于同一数据集： -->
+
+<!-- globalminmax →没有缩放 -->
+<!-- uniminmax →标准化为Min = 0和Max = 1 -->
+<!-- std →单变量归一化(减去平均值并除以sd) -->
+<!-- center →标准化和居中变量 -->
+<!-- ```{r} -->
+<!-- ggparcoord(data, -->
+<!--     columns = 1:4, groupColumn = 5, order = "anyClass", -->
+<!--     scale="globalminmax", -->
+<!--     showPoints = TRUE,  -->
+<!--     title = "No scaling", -->
+<!--     alphaLines = 0.3 -->
+<!--     ) +  -->
+<!--   scale_color_viridis(discrete=TRUE) + -->
+<!--   theme_ipsum()+ -->
+<!--   theme( -->
+<!--     legend.position="none", -->
+<!--     plot.title = element_text(size=13) -->
+<!--   ) + -->
+<!--   xlab("") -->
+<!-- ggparcoord(data, -->
+<!--     columns = 1:4, groupColumn = 5, order = "anyClass", -->
+<!--     scale="uniminmax", -->
+<!--     showPoints = TRUE,  -->
+<!--     title = "Standardize to Min = 0 and Max = 1", -->
+<!--     alphaLines = 0.3 -->
+<!--     ) +  -->
+<!--   scale_color_viridis(discrete=TRUE) + -->
+<!--   theme_ipsum()+ -->
+<!--   theme( -->
+<!--     legend.position="none", -->
+<!--     plot.title = element_text(size=13) -->
+<!--   ) + -->
+<!--   xlab("") -->
+<!-- ggparcoord(data, -->
+<!--     columns = 1:4, groupColumn = 5, order = "anyClass", -->
+<!--     scale="std", -->
+<!--     showPoints = TRUE,  -->
+<!--     title = "Normalize univariately (substract mean & divide by sd)", -->
+<!--     alphaLines = 0.3 -->
+<!--     ) +  -->
+<!--   scale_color_viridis(discrete=TRUE) + -->
+<!--   theme_ipsum()+ -->
+<!--   theme( -->
+<!--     legend.position="none", -->
+<!--     plot.title = element_text(size=13) -->
+<!--   ) + -->
+<!--   xlab("") -->
+<!-- ggparcoord(data, -->
+<!--     columns = 1:4, groupColumn = 5, order = "anyClass", -->
+<!--     scale="center", -->
+<!--     showPoints = TRUE,  -->
+<!--     title = "Standardize and center variables", -->
+<!--     alphaLines = 0.3 -->
+<!--     ) +  -->
+<!--   scale_color_viridis(discrete=TRUE) + -->
+<!--   theme_ipsum()+ -->
+<!--   theme( -->
+<!--     legend.position="none", -->
+<!--     plot.title = element_text(size=13) -->
+<!--   ) + -->
+<!--   xlab("") -->
+<!-- ``` -->
+
+<!-- <!-- ## 突出显示一个组 --> -->
+<!-- <!-- 数据可视化旨在突出数据中的故事。如果您对特定组感兴趣,可以将其突出显示如下： --> -->
+
+
+<!-- <!-- ```{r} --> -->
+<!-- <!-- # Libraries --> -->
+<!-- <!-- library(GGally) --> -->
+<!-- <!-- library(dplyr) --> -->
+
+<!-- <!-- # Data set is provided by R natively --> -->
+<!-- <!-- data <- iris --> -->
+
+<!-- <!-- # Plot --> -->
+<!-- <!-- data %>% --> -->
+<!-- <!--   arrange(desc(Species)) %>% --> -->
+<!-- <!--   ggparcoord( --> -->
+<!-- <!--     columns = 1:4, groupColumn = 5, order = "anyClass", --> -->
+<!-- <!--     showPoints = TRUE,  --> -->
+<!-- <!--     title = "Original", --> -->
+<!-- <!--     alphaLines = 1 --> -->
+<!-- <!--     ) +  --> -->
+<!-- <!--   scale_color_manual(values=c( "#69b3a2", "#E8E8E8", "#E8E8E8") ) + --> -->
+<!-- <!--   theme_ipsum()+ --> -->
+<!-- <!--   theme( --> -->
+<!-- <!--     legend.position="Default", --> -->
+<!-- <!--     plot.title = element_text(size=10) --> -->
+<!-- <!--   ) + --> -->
+<!-- <!--   xlab("") --> -->
+
+<!-- <!-- ``` --> -->
+
+<!-- <!-- ## MASS 包绘制 --> -->
+
+<!-- <!-- 图书馆的parcoord()功能MASS。 --> -->
+<!-- <!-- 该MASS库提供parcoord()自动构建平行坐标图的功能。 --> -->
+
+<!-- <!-- 输入数据集必须是仅由数字变量组成的数据框。每个变量将用于构建图表的一个垂直轴。 --> -->
+
+<!-- <!-- ```{r} --> -->
+<!-- <!-- # You need the MASS library --> -->
+<!-- <!-- library(MASS) --> -->
+
+<!-- <!-- # Vector color --> -->
+<!-- <!-- my_colors <- colors()[as.numeric(iris$Species)*11] --> -->
+
+<!-- <!-- # Make the graph ! --> -->
+<!-- <!-- parcoord(iris[,c(1:4)] , col= my_colors  ) --> -->
+<!-- <!-- ``` --> -->
+
+<!-- <!-- 重新排序变量 --> -->
+<!-- <!-- 在平行坐标图中找到最佳变量顺序非常重要。要更改它,只需更改输入数据集中的顺序即可。 --> -->
+
+<!-- <!-- 注意：该RColorBrewer包用于生成漂亮可靠的调色板。 --> -->
+<!-- <!-- ```{r} --> -->
+<!-- <!-- # You need the MASS library --> -->
+<!-- <!-- library(MASS) --> -->
+
+<!-- <!-- # Vector color --> -->
+<!-- <!-- library(RColorBrewer) --> -->
+<!-- <!-- palette <- brewer.pal(3, "Set1")  --> -->
+<!-- <!--  my_colors <- palette[as.numeric(iris$Species)] --> -->
+
+<!-- <!-- # Make the graph ! --> -->
+<!-- <!-- parcoord(iris[,c(1,3,4,2)] , col= my_colors  ) --> -->
+<!-- <!-- ``` --> -->
+
+<!-- <!-- 突出显示一个组 --> -->
+<!-- <!-- 数据可视化旨在突出数据中的故事。如果您对特定组感兴趣,可以将其突出显示如下： --> -->
+<!-- <!-- ```{r} --> -->
+<!-- <!-- # You need the MASS library --> -->
+<!-- <!-- library(MASS) --> -->
+
+<!-- <!-- # Let's use the Iris dataset as an example --> -->
+<!-- <!-- data(iris) --> -->
+
+<!-- <!-- # Vector color: red if Setosa, grey otherwise. --> -->
+<!-- <!-- isSetosa <- ifelse(iris$Species=="setosa","red","grey") --> -->
+
+<!-- <!-- # Make the graph ! --> -->
+<!-- <!-- parcoord(iris[,c(1,3,4,2)] , col=isSetosa  ) --> -->
+<!-- <!-- ``` --> -->
+
+<!-- <!-- <!-- # 维恩图 --> --> -->
+
+<!-- <!-- <!-- 定义 --> --> -->
+<!-- <!-- <!-- A Venn diagram(也称为主图,设置图或逻辑图)是显示不同集的有限集合之间的所有可能逻辑关系的图。 --> --> -->
+
+<!-- <!-- <!-- 每个集合由圆圈表示。圆圈大小有时代表了小组的重要性,但并非总是如此。这些组通常是重叠的：重叠的大小代表两个组之间的交集。 --> --> -->
+
+
+
+<!-- <!-- <!-- 这是一个例子,显示了3位着名法国歌手的歌词中的共享词数:( Nekfeu,Booba)和Georges Brassens。你可以在这里阅读更多关于这个故事。 --> --> -->
+
+<!-- <!-- <!-- ```{r} --> --> -->
+<!-- <!-- <!-- # Libraries --> --> -->
+<!-- <!-- <!-- library(tidyverse) --> --> -->
+<!-- <!-- <!-- library(hrbrthemes) --> --> -->
+<!-- <!-- <!-- library(tm) --> --> -->
+<!-- <!-- <!-- library(proustr) --> --> -->
+
+<!-- <!-- <!-- # Load dataset from github --> --> -->
+<!-- <!-- <!-- data <- read.table("https://raw.githubusercontent.com/holtzy/data_to_viz/master/Example_dataset/14_SeveralIndepLists.csv",header=TRUE)  --> --> -->
+<!-- <!-- <!-- to_remove <- c("_|[0-9]|\\.|function|^id|script|var|div|null|typeof|opts|if|^r$|undefined|false|loaded|true|settimeout|eval|else|artist") --> --> -->
+<!-- <!-- <!-- data <- data %>% filter(!grepl(to_remove, word)) %>% filter(!word %in% stopwords('fr')) %>% filter(!word %in% proust_stopwords()$word) --> --> -->
+
+<!-- <!-- <!-- # library --> --> -->
+<!-- <!-- <!-- library(VennDiagram) --> --> -->
+
+<!-- <!-- <!-- #cMake the plot --> --> -->
+<!-- <!-- <!-- venn.diagram( --> --> -->
+<!-- <!-- <!--   x = list( --> --> -->
+<!-- <!-- <!--     data %>% filter(artist=="booba") %>% select(word) %>% unlist() ,  --> --> -->
+<!-- <!-- <!--     data %>% filter(artist=="nekfeu") %>% select(word) %>% unlist() ,  --> --> -->
+<!-- <!-- <!--     data %>% filter(artist=="georges-brassens") %>% select(word) %>% unlist() --> --> -->
+<!-- <!-- <!--     ), --> --> -->
+<!-- <!-- <!--   category.names = c("Booba (1995)" , "Nekfeu (663)" , "Brassens (471)"), --> --> -->
+<!-- <!-- <!--   filename = 'venn.png', --> --> -->
+<!-- <!-- <!--   output = T , --> --> -->
+<!-- <!-- <!--           imagetype="png" , --> --> -->
+<!-- <!-- <!--           height = 480 ,  --> --> -->
+<!-- <!-- <!--           width = 480 ,  --> --> -->
+<!-- <!-- <!--           resolution = 300, --> --> -->
+<!-- <!-- <!--           compression = "lzw", --> --> -->
+<!-- <!-- <!--           lwd = 1, --> --> -->
+<!-- <!-- <!--           col=c("#440154ff", '#21908dff', '#fde725ff'), --> --> -->
+<!-- <!-- <!--           fill = c(alpha("#440154ff",0.3), alpha('#21908dff',0.3), alpha('#fde725ff',0.3)), --> --> -->
+<!-- <!-- <!--           cex = 0.5, --> --> -->
+<!-- <!-- <!--           fontfamily = "sans", --> --> -->
+<!-- <!-- <!--           cat.cex = 0.3, --> --> -->
+<!-- <!-- <!--           cat.default.pos = "outer", --> --> -->
+<!-- <!-- <!--           cat.pos = c(-27, 27, 135), --> --> -->
+<!-- <!-- <!--           cat.dist = c(0.055, 0.055, 0.085), --> --> -->
+<!-- <!-- <!--           cat.fontfamily = "sans", --> --> -->
+<!-- <!-- <!--           cat.col = c("#440154ff", '#21908dff', '#fde725ff'), --> --> -->
+<!-- <!-- <!--           rotation = 1 --> --> -->
+<!-- <!-- <!--         ) --> --> -->
+<!-- <!-- <!-- ``` --> --> -->
+
+
+<!-- <!-- <!-- 在这里,很容易理解Booba在数据集中使用了1995个独特的单词。其中44个也被Brassens 和 Nekfeu使用,126个仅与Nekfeu共享。 --> --> -->
+
+<!-- <!-- <!-- 做什么的 --> --> -->
+<!-- <!-- <!-- 维恩图非常适合研究2或3组之间的交集。用更多的组来阅读变得非常困难,因此必须避免。 --> --> -->
+
+<!-- <!-- <!-- 这是一个着名的例子：在Nature上发表的六组维恩图,显示了香蕉基因组与其他五个物种的基因组之间的关系。 --> --> -->
+
+<!-- <!-- <!-- ![](/Users/milin/Documents/nature.jpg) --> --> -->
+
+
+
+<!-- <!-- <!-- 变异 --> --> -->
+<!-- <!-- <!-- 要显示3组以上的交集,最佳选择是使用UpSet图。 --> --> -->
+
+<!-- <!-- <!-- 以下是UpsetR R库提供的示例,该库显示之前看到的香蕉基因组信息。每个集合的总大小在左侧条形图上表示。每个可能的交叉点由底部图表示,它们的出现在顶部条形图上显示。 --> --> -->
+<!-- <!-- <!-- ```{r} --> --> -->
+<!-- <!-- <!-- # Specific library --> --> -->
+<!-- <!-- <!-- library(UpSetR) --> --> -->
+
+<!-- <!-- <!-- # Dataset --> --> -->
+<!-- <!-- <!-- input <- c( --> --> -->
+<!-- <!-- <!--   M.acuminata = 759, --> --> -->
+<!-- <!-- <!--   P.dactylifera = 769, --> --> -->
+<!-- <!-- <!--   A.thaliana = 1187, --> --> -->
+<!-- <!-- <!--   O.sativa = 1246, --> --> -->
+<!-- <!-- <!--   S.bicolor = 827, --> --> -->
+<!-- <!-- <!--   B.distachyon = 387, --> --> -->
+<!-- <!-- <!--   "P.dactylifera&M.acuminata" = 467, --> --> -->
+<!-- <!-- <!--   "O.sativa&M.acuminata" = 29, --> --> -->
+<!-- <!-- <!--   "A.thaliana&O.sativa" = 6, --> --> -->
+<!-- <!-- <!--   "S.bicolor&A.thaliana" = 9, --> --> -->
+<!-- <!-- <!--   "O.sativa&P.dactylifera" = 32, --> --> -->
+<!-- <!-- <!--   "S.bicolor&P.dactylifera" = 49, --> --> -->
+<!-- <!-- <!--   "S.bicolor&M.acuminata" = 49, --> --> -->
+<!-- <!-- <!--   "B.distachyon&O.sativa" = 547, --> --> -->
+<!-- <!-- <!--   "S.bicolor&O.sativa" = 1151, --> --> -->
+<!-- <!-- <!--   "B.distachyon&A.thaliana" = 10, --> --> -->
+<!-- <!-- <!--   "B.distachyon&M.acuminata" = 9, --> --> -->
+<!-- <!-- <!--   "B.distachyon&S.bicolor" = 402, --> --> -->
+<!-- <!-- <!--   "M.acuminata&A.thaliana" = 155, --> --> -->
+<!-- <!-- <!--   "A.thaliana&P.dactylifera" = 105, --> --> -->
+<!-- <!-- <!--   "B.distachyon&P.dactylifera" = 25, --> --> -->
+<!-- <!-- <!--   "S.bicolor&O.sativa&P.dactylifera" = 42, --> --> -->
+<!-- <!-- <!--   "B.distachyon&O.sativa&P.dactylifera" = 12, --> --> -->
+<!-- <!-- <!--   "S.bicolor&O.sativa&B.distachyon" = 2809, --> --> -->
+<!-- <!-- <!--   "B.distachyon&O.sativa&A.thaliana" = 18, --> --> -->
+<!-- <!-- <!--   "S.bicolor&O.sativa&A.thaliana" = 40, --> --> -->
+<!-- <!-- <!--   "S.bicolor&B.distachyon&A.thaliana" = 14, --> --> -->
+<!-- <!-- <!--   "O.sativa&B.distachyon&M.acuminata" = 28, --> --> -->
+<!-- <!-- <!--   "S.bicolor&B.distachyon&M.acuminata" = 13, --> --> -->
+<!-- <!-- <!--   "O.sativa&M.acuminata&P.dactylifera" = 35, --> --> -->
+<!-- <!-- <!--   "M.acuminata&S.bicolor&A.thaliana" = 21, --> --> -->
+<!-- <!-- <!--   "B.distachyon&M.acuminata&A.thaliana" = 7, --> --> -->
+<!-- <!-- <!--   "O.sativa&M.acuminata&A.thaliana" = 13, --> --> -->
+<!-- <!-- <!--   "M.acuminata&P.dactylifera&A.thaliana" = 206, --> --> -->
+<!-- <!-- <!--   "P.dactylifera&A.thaliana&S.bicolor" = 4, --> --> -->
+<!-- <!-- <!--   "O.sativa&A.thaliana&P.dactylifera" = 6, --> --> -->
+<!-- <!-- <!--   "S.bicolor&O.sativa&M.acuminata" = 64, --> --> -->
+<!-- <!-- <!--   "S.bicolor&M.acuminata&P.dactylifera" = 19, --> --> -->
+<!-- <!-- <!--   "B.distachyon&A.thaliana&P.dactylifera" = 3, --> --> -->
+<!-- <!-- <!--   "B.distachyon&M.acuminata&P.dactylifera" = 12, --> --> -->
+<!-- <!-- <!--   "B.distachyon&S.bicolor&P.dactylifera" = 23, --> --> -->
+<!-- <!-- <!--   "M.acuminata&B.distachyon&S.bicolor&A.thaliana" = 54, --> --> -->
+<!-- <!-- <!--   "P.dactylifera&S.bicolor&O.sativa&M.acuminata" = 62, --> --> -->
+<!-- <!-- <!--   "B.distachyon&O.sativa&M.acuminata&P.dactylifera" = 18, --> --> -->
+<!-- <!-- <!--   "S.bicolor&B.distachyon&O.sativa&A.thaliana" = 206, --> --> -->
+<!-- <!-- <!--   "B.distachyon&M.acuminata&O.sativa&A.thaliana" = 29, --> --> -->
+<!-- <!-- <!--   "O.sativa&M.acuminata&A.thaliana&S.bicolor" = 71, --> --> -->
+<!-- <!-- <!--   "M.acuminata&O.sativa&P.dactylifera&A.thaliana" = 28, --> --> -->
+<!-- <!-- <!--   "B.distachyon&M.acuminata&O.sativa&A.thaliana" = 7, --> --> -->
+<!-- <!-- <!--   "B.distachyon&S.bicolor&P.dactylifera&A.thaliana" = 11, --> --> -->
+<!-- <!-- <!--   "B.distachyon&O.sativa&P.dactylifera&A.thaliana" = 5, --> --> -->
+<!-- <!-- <!--   "A.thaliana&P.dactylifera&S.bicolor&O.sativa" = 21, --> --> -->
+<!-- <!-- <!--   "M.acuminata&S.bicolor&P.dactylifera&A.thaliana" = 23, --> --> -->
+<!-- <!-- <!--   "M.acuminata&B.distachyon&S.bicolor&P.dactylifera" = 24, --> --> -->
+<!-- <!-- <!--   "M.acuminata&O.sativa&S.bicolor&B.distachyon" = 368, --> --> -->
+<!-- <!-- <!--   "P.dactylifera&B.distachyon&S.bicolor&O.sativa" = 190, --> --> -->
+<!-- <!-- <!--   "P.dactylifera&B.distachyon&S.bicolor&O.sativa&A.thaliana" = 258, --> --> -->
+<!-- <!-- <!--   "P.dactylifera&M.acuminata&S.bicolor&B.distachyon&O.sativa" = 685, --> --> -->
+<!-- <!-- <!--   "M.acuminata&S.bicolor&B.distachyon&O.sativa&A.thaliana" = 1458, --> --> -->
+<!-- <!-- <!--   "S.bicolor&M.acuminata&P.dactylifera&O.sativa&A.thaliana" = 149, --> --> -->
+<!-- <!-- <!--   "B.distachyon&M.acuminata&P.dactylifera&O.sativa&A.thaliana" = 80, --> --> -->
+<!-- <!-- <!--   "M.acuminata&S.bicolor&B.distachyon&P.dactylifera&A.thaliana" = 113, --> --> -->
+<!-- <!-- <!--   "M.acuminata&S.bicolor&B.distachyon&P.dactylifera&O.sativa&A.thaliana" = 7674 --> --> -->
+<!-- <!-- <!-- ) --> --> -->
+
+<!-- <!-- <!-- # Plot --> --> -->
+<!-- <!-- <!-- upset(fromExpression(input), nintersects = 40, nsets = 6, order.by = "freq", decreasing = T, mb.ratio = c(0.6, 0.4), --> --> -->
+<!-- <!-- <!--       number.angles = 0, text.scale = 1.1, point.size = 2.8, line.size = 1) --> --> -->
+<!-- <!-- <!-- ``` --> --> -->
+
+<!-- <!-- <!-- 在这里,很容易理解绝大多数基因在所有植物之间共享,哪个交叉点是最大的。 --> --> -->
+
+<!-- <!-- <!-- 常见错误 --> --> -->
+<!-- <!-- <!-- 在经典的维恩图中不要显示超过3组。超过此限制,图形变得非常难以阅读,最好使用不正常情节。 --> --> -->
+<!-- <!-- <!-- 如果使用2组,请使圆形区域与所表示的值成比例。 --> --> -->
+<!-- <!-- <!-- 将数字写入每个区域。 --> --> -->
+
+
+<!-- <!-- <!-- ## 绘制基本的韦恩图 --> --> -->
+
+<!-- <!-- <!-- 最基本的 --> --> -->
+<!-- <!-- <!-- VennDiagram由于其venn.diagram()功能,该软件包允许构建维恩图。它将矢量列表作为输入。每个向量提供单词。 --> --> -->
+
+<!-- <!-- <!-- 该函数首先计算每对列表之间共有多少个单词。然后它绘制结果,将每个集合显示为一个圆圈。 --> --> -->
+
+<!-- <!-- <!-- 输出可用作.png当前工作目录中的文件。 --> --> -->
+<!-- <!-- <!-- ```{r} --> --> -->
+<!-- <!-- <!-- # Load library --> --> -->
+<!-- <!-- <!-- library(VennDiagram) --> --> -->
+
+<!-- <!-- <!-- # Generate 3 sets of 200 words --> --> -->
+<!-- <!-- <!-- set1 <- paste(rep("word_" , 200) , sample(c(1:1000) , 200 , replace=F) , sep="") --> --> -->
+<!-- <!-- <!-- set2 <- paste(rep("word_" , 200) , sample(c(1:1000) , 200 , replace=F) , sep="") --> --> -->
+<!-- <!-- <!-- set3 <- paste(rep("word_" , 200) , sample(c(1:1000) , 200 , replace=F) , sep="") --> --> -->
+
+<!-- <!-- <!-- # Chart --> --> -->
+<!-- <!-- <!-- venn.diagram( --> --> -->
+<!-- <!-- <!--   x = list(set1, set2, set3), --> --> -->
+<!-- <!-- <!--   category.names = c("Set 1" , "Set 2 " , "Set 3"), --> --> -->
+<!-- <!-- <!--   filename = '#14_venn_diagramm.png', --> --> -->
+<!-- <!-- <!--   output=TRUE --> --> -->
+<!-- <!-- <!-- ) --> --> -->
+<!-- <!-- <!-- ``` --> --> -->
+
+
+<!-- <!-- <!-- 自定义它 --> --> -->
+<!-- <!-- <!-- 该venn.diagram()功能提供了几个自定义输出的选项。这些选项允许自定义圆,集名称和交集值。 --> --> -->
+
+<!-- <!-- <!-- ```{r} --> --> -->
+<!-- <!-- <!-- # Load library --> --> -->
+<!-- <!-- <!-- library(VennDiagram) --> --> -->
+
+<!-- <!-- <!-- # Generate 3 sets of 200 words --> --> -->
+<!-- <!-- <!-- set1 <- paste(rep("word_" , 200) , sample(c(1:1000) , 200 , replace=F) , sep="") --> --> -->
+<!-- <!-- <!-- set2 <- paste(rep("word_" , 200) , sample(c(1:1000) , 200 , replace=F) , sep="") --> --> -->
+<!-- <!-- <!-- set3 <- paste(rep("word_" , 200) , sample(c(1:1000) , 200 , replace=F) , sep="") --> --> -->
+
+<!-- <!-- <!-- # Prepare a palette of 3 colors with R colorbrewer: --> --> -->
+<!-- <!-- <!-- library(RColorBrewer) --> --> -->
+<!-- <!-- <!-- myCol <- brewer.pal(3, "Pastel2") --> --> -->
+
+<!-- <!-- <!-- # Chart --> --> -->
+<!-- <!-- <!-- venn.diagram( --> --> -->
+<!-- <!-- <!--         x = list(set1, set2, set3), --> --> -->
+<!-- <!-- <!--         category.names = c("Set 1" , "Set 2 " , "Set 3"), --> --> -->
+<!-- <!-- <!--         filename = '#14_venn_diagramm.png', --> --> -->
+<!-- <!-- <!--         output=TRUE, --> --> -->
+
+<!-- <!-- <!--         # Output features --> --> -->
+<!-- <!-- <!--         imagetype="png" , --> --> -->
+<!-- <!-- <!--         height = 480 ,  --> --> -->
+<!-- <!-- <!--         width = 480 ,  --> --> -->
+<!-- <!-- <!--         resolution = 300, --> --> -->
+<!-- <!-- <!--         compression = "lzw", --> --> -->
+
+<!-- <!-- <!--         # Circles --> --> -->
+<!-- <!-- <!--         lwd = 2, --> --> -->
+<!-- <!-- <!--         lty = 'blank', --> --> -->
+<!-- <!-- <!--         fill = myCol, --> --> -->
+
+<!-- <!-- <!--         # Numbers --> --> -->
+<!-- <!-- <!--         cex = .6, --> --> -->
+<!-- <!-- <!--         fontface = "bold", --> --> -->
+<!-- <!-- <!--         fontfamily = "sans", --> --> -->
+
+<!-- <!-- <!--         # Set names --> --> -->
+<!-- <!-- <!--         cat.cex = 0.6, --> --> -->
+<!-- <!-- <!--         cat.fontface = "bold", --> --> -->
+<!-- <!-- <!--         cat.default.pos = "outer", --> --> -->
+<!-- <!-- <!--         cat.pos = c(-27, 27, 135), --> --> -->
+<!-- <!-- <!--         cat.dist = c(0.055, 0.055, 0.085), --> --> -->
+<!-- <!-- <!--         cat.fontfamily = "sans", --> --> -->
+<!-- <!-- <!--         rotation = 1 --> --> -->
+<!-- <!-- <!-- ) --> --> -->
+<!-- <!-- <!-- ``` --> --> -->
+
+
+# 时间序列图
+
+时间序列旨在研究一个或多个变量随时间的演变。绘制时间序列图形的时候，会涉及到非常多的时间数据的处理。处理时间数据的相关包是lubridate包，这个包提供了一套非常友好的处理时间数据的方法。另外，dygraphs包可以非常容易的绘制出交互式的时间序列图性。
+
+构建时间序列要求时间变量为date格式。分析的第一步必须是仔细检查是否正确读取数据,即date格式。使用str函数可以查看数据集中变量的数据类型，下面的代码查看了iris数据集的变量的类型：
+```{r}
+str(iris) # 查看数据及
+```
+从上面的代码的输出结果可以看到。数据集包含了4个数值型变量（num），一个因子型的变量（Factor）。将其他类型的数据转变成为date格式通常而言是一眼比较麻烦的时候，然后lubridate包提供了一套比较好用的解决方案。它提供了几个函数,其名称由3个字母组成：year(y),month(m)和day(d)。下面的代码将字符串格式的数据使用ymd函数转换成为时间格式的数据：
+```{r}
+library(lubridate)
+time <- c("2019-10-01","2019-11-01") # 构建时间数据
+str(ymd(time))
+```
+
+ggplot2 包为时间序列可视化提供了强大功能。时间序列本质上还是折线图 ggplot2包
+的ggplot2函数会识别date格式,并自动使用特定类型的X轴。如果时间变量不是date格式,则不起作用。因此，在绘图的时候，首先需要检查数据的类型。如果数据斌那个不是日期格式的,需要先使用lubridate进行转换。下面的代码绘制了一副时间序列图形，图形如图所示：
+
+```{r}
+# 加载包
+library(ggplot2)
+library(dplyr)
+
+#  创建数据及
+data <- data.frame(
+  day = as.Date("2017-06-14") - 0:364,
+  value = runif(365) + seq(-140, 224)^2 / 10000
+)
+
+#  绘制图形
+p <- ggplot(data, aes(x=day, y=value)) +
+  geom_line() + 
+  xlab("")
+p
+```
+上面的代码首先创建了一个数据集，数据集包含两个变量，day和value，其中date是时间格式。然后绘图的方式和绘制折线图的方式是一样的。另外，只要在绘图的时候x对应的变量是时间格式，就可以使用scale_x_date()函数设置X轴的显示格式。
+以下是有关如何调用该函数的1个示例。图形如图所示 
+```{r}
+# 调整坐标轴
+p+scale_x_date(date_labels = "%b")
+
+```
+上面的代码使用了scale_x_date（）函数对x轴的坐标名称进行了修改。参数date_labels = "%b"表示显示时间中的月份。更多的设置如下图所示：
+![](/Users/milin/写书/datelabel.png)
+
+使用scale_x_date函数的limit参数可以选择数据中的时间范围：
+```{r}
+# 加载包
+library(ggplot2)
+library(dplyr)
+library(hrbrthemes)
+
+# 创建数据及
+data <- data.frame(
+  day = as.Date("2017-06-14") - 0:364,
+  value = runif(365) + seq(-140, 224)^2 / 10000
+)
+
+summary(data)
+#  绘制数据集
+p <- ggplot(data, aes(x=day, y=value)) +
+  geom_line( color="steelblue") + 
+  geom_point() +
+  xlab("") +
+  theme_ipsum() +
+  theme(axis.text.x=element_text(angle=60, hjust=1)) +
+  scale_x_date(limit=c(as.Date("2017-01-01"),as.Date("2017-02-11"))) +
+  ylim(0,1.5)
+
+p
+
+```
+上面的代码中,从summary的输出结果中可以看到，时间的最小值为'2016-06-15',最大值为'2017-06-14'。通过代码'scale_x_date(limit=c(as.Date("2017-01-01"),as.Date("2017-02-11")))',选取了一段时间的结果绘制图形，这里选取的时间段是'2017-01-01'到'2017-02-11'。从图中可以观察到，实现序列图形中的时间范围就是'2017-01-01'到'2017-02-11'。下面的代码绘制了一副时间序列图，代码中调整了时间序列的线段颜色，并且设置了y轴的范围，图形如图所示
+```{r}
+# 加载包
+library(ggplot2)
+library(dplyr)
+library(plotly)
+library(hrbrthemes)
+
+# 获取数据及
+data <- read.table("https://raw.githubusercontent.com/holtzy/data_to_viz/master/Example_dataset/3_TwoNumOrdered.csv", header=T)
+data$date <- as.Date(data$date)
+
+# 绘制图形
+data %>% 
+  ggplot( aes(x=date, y=value)) +
+    geom_line(color="red") +
+    ylim(0,22000) +
+    # annotate(geom="text", x=as.Date("2017-01-01"), y=20089, 
+    #          label="Bitcoin price reached 20k $\nat the end of 2017") +
+    # annotate(geom="point", x=as.Date("2017-12-17"), y=20089, size=10, shape=21, fill="transparent") +
+    # geom_hline(yintercept=5000, color="orange", size=.5) +
+    theme_ipsum()
+
+```
+上面的代码绘制的是比特币（bitcoin）在2013-04-28到2018-04-23这个时间段内的价格。从图中可以观察到，比特币在2017年和2018年之间，价格有一个疯涨的郭恒，然后再2018之后有所下跌。
+
+
+## 时间序列 DYGRAPH
+
+
+使用dygraphs包可以制作交互式时间序列图表：对于图形可以缩放和悬停数据点以获取其他信息。dygraphs包允许表示时间序列，X轴表示时间,Y轴表示一个或多个变量的演变。使用dygraphs允许制作交互式图表，可以缩放特定时间段,将数据点悬停以获得更多信息等。下面的代码绘制了一副简单的时间序列图形。结果如图所示
+```{r}
+# 加载包
+library(dygraphs)
+ 
+# 创建数据集
+data <- data.frame( 
+  time=c( seq(0,20,0.5), 40), 
+  value=runif(42)
+)
+
+# 查看数据集合
+str(data)
+
+# 绘制图形
+p <- dygraph(data)
+p
+
+```
+
+## 时间序列热图
+
+时间序列是按时间顺序索引的一系列数据。时间顺序可以以天，周，月或年表示。可视化时间序列数据的最常见方法是使用简单的折线图，其中水平轴绘制时间增量，垂直轴绘制要测量的变量。可以使用ggplot2包中的geom_line()函数进行绘制。
+
+而时间序列热图则是通过在时间的维度上通过热力图的方式展示数据，下面的代码绘制了一副时间序列热力图。
+```{r}
+# 加载包
+library(ggplot2)
+library(dplyr)  
+library(viridis)  
+library(Interpol.T)  
+library(lubridate)  
+library(ggExtra)  
+library(tidyr) 
+ 
+ 
+data <- data(Trentino_hourly_T,package = "Interpol.T")
+ 
+names(h_d_t)[1:5]<- c("stationid","date","hour","temp","flag")
+df <- tbl_df(h_d_t) %>%
+  filter(stationid =="T0001")
+ 
+df <- df %>% mutate(year = year(date),
+                  month = month(date, label=TRUE),
+                  day = day(date))
+  
+df$date<-ymd(df$date) # 不是必须的，但是想对数据做进一步的处理，这是非常有用的
+ 
+#删除多余的数据
+rm(list=c("h_d_t","mo_bias","Tn","Tx",
+          "Th_int_list","calibration_l",
+          "calibration_shape","Tm_list"))
+ 
+ 
+#处理数据，选择需要的列
+df <-df %>% select(stationid,day,hour,month,year,temp)%>%
+        fill(temp) #optional - see note below
+
+ 
+ 
+statno <-unique(df$stationid)
+ 
+ # 绘制图形
+ 
+p <-ggplot(df,aes(day,hour,fill=temp))+
+  geom_tile(color= "white",size=0.1) + 
+  scale_fill_viridis(name="Hrly Temps C",option ="C")
+p <-p + facet_grid(year~month)
+p <-p + scale_y_continuous(trans = "reverse", breaks = unique(df$hour))
+p <-p + scale_x_continuous(breaks =c(1,10,20,31))
+p <-p + theme_minimal(base_size = 8)
+p <-p + labs(title= paste("Hourly Temps - Station",statno), x="Day", y="Hour Commencing")
+p <-p + theme(legend.position = "bottom")+
+  theme(plot.title=element_text(size = 14))+
+  theme(axis.text.y=element_text(size=6)) +
+  theme(strip.background = element_rect(colour="white"))+
+  theme(plot.title=element_text(hjust=0))+
+  theme(axis.ticks=element_blank())+
+  theme(axis.text=element_text(size=7))+
+  theme(legend.title=element_text(size=8))+
+  theme(legend.text=element_text(size=6))+
+  removeGrid()#ggExtra
+ 
+ 
+p  
+
+```
+上面的代码中所使用的的到的数据集是Trentino_hourly_T，这个数据集是意大利特伦蒂诺小时温度数据集。图形显示了2004年和2005年两个年份中每天，不同时间的一个温度变化。这样的图形非常的有表现能力。从图中可以看到，不管是哪个年份，中间的月份颜色呈现出黄色，不表示温度比较高。从实践来看，不管是哪个月份，12到14这个时间段的图形颜色偏黄，表示温度比较高。这个图形展示了三个时间维度的气温的变化，是一副非常高级的图形。
+
+# 交互式图形
+
+
+http://rpubs.com/liam/plotly(添加内容
+)
+
+交互式图表允许用户执行操作：缩放,悬停标记以获取工具提示,选择要显示的变量等。R提供了一组名为html widgets：它们允许直接从中构建交互式数据R。
+
+
+散点图和气泡图：使用PLOTLY。
+从R构建交互式气泡图的最佳方法是通过plotly库。如果您知道如何制作ggplot2图表,那么您距离渲染交互式版本只需10秒钟=只需调用该ggplotly()函数,您就完成了。
+
+```{r}
+# 加载包
+library(ggplot2)
+library(plotly)
+library(gapminder)
+
+# 绘制图形
+p <-  gapminder%>%
+  filter(year == 1977)%>%
+  ggplot(aes(gdpPercap,lifeExp,size = pop,color = continent))+ 
+  geom_point() + 
+  theme_bw()
+# 构建交互式图形
+ggplotly(p)
+```
+
+<!-- ## HEATMAPS：使用PLOTLY,D3HEATMAP或HEATMAPLY。 -->
+
+<!-- 从以下三个选项构建交互式热图R： -->
+
+<!-- plotly：如上所述,plotly允许转动任何用交互式制作的热图ggplot2。 -->
+
+<!-- d3heatmap：一个包使用与基本R heatmap()函数相同的语法来创建交互式版本。 -->
+
+<!-- heatmaply：最灵活的选项,允许许多不同类型的自定义。请参阅此处旁边的图表代码。 -->
+
+# 动画
+
+动画图表会一个接一个地显示几张图表，非常的像动画，因为动画本质上也是一张一张的图片。但是动画图并不等于交互式图形，这两者还是有明显的区别的。有很多种方式构建交互式图形，使用plotly包也可以绘制动画图。gganimate包是一个专门用于绘制动画图形的包。
+gganimate包是ggplot2的一个扩展包，可以非常轻松的将数据转变成为动画图。下面的代码使用了gapminder数据集绘制了一副动画图,这个数据集记录了不同地区预期寿命、人均GDP和地区人口的数据。
+
+```{r}
+# 加载包
+library(gapminder)
+library(ggplot2)
+library(gganimate)
+ 
+# 使用ggplot绘图, 添加一个参数frame=year: 使得每一年对应一张图片
+ggplot(gapminder, aes(gdpPercap, lifeExp, size = pop, color = continent)) +
+  geom_point() +
+  scale_x_log10() +
+  theme_bw() +
+ 
+  labs(title = 'Year: {frame_time}', x = 'GDP per capita', y = 'life expectancy') +
+  transition_time(year) +
+  ease_aes('linear')
+
+ 
+```
+
+上面的代码中，绘制动画的过程中，首先还是使用ggplot2进行绘图，绘图的方式就是使用ggplot2包进行绘图一样。代码中transition_time函数是将ggplot的绘图转变成为动画图的关键函数。transition_time(year) 表示将数据通过year变量映射到时间维度，更具year变量的不同时间显示不同的图形。如图所示
+
+## 绘制基础的动画
+
+绘制动画图首先使用ggplot绘制一个基础的图形，然后使用transition_time()函数绘制出动画图。但是需要住，数据中需要有一个变量用于映射到动态图的时间。下面的代码绘制了一副非常简单的动画图。如图所示
+
+该gganimate软件包允许直接使用R语法构建animated图表ggplot2。这篇文章展示了如何将其应用于气泡图,以显示时间的演变。
+
+```{r}
+# 绘制图形
+p <- ggplot(data = diamonds %>% sample_frac(0.1),aes(x = price, y = carat,color = color)) +geom_point()
+
+p + transition_time(as.numeric(cut))
+
+```
+ 
+上面的代码使用了diamonds数据集，绘制了变量price 和carat的散点图。然后将cut变量映射到时间维度。动态图会不断的转换以显示cut变量不同值对应数据的散点图。
+
+
+## 使用分面
+
+由于gganimate是ggplot2包,任何ggplot2选项都可用于自定义动画图。这里是图。。使用分面的一个实例，每个分面表示不同的大陆。图形如图所示:
+```{r}
+#加载包
+library(gapminder)
+ 
+library(ggplot2)
+library(gganimate)
+ 
+# 制作一个ggplot，但是添加frame=year:表示每年一个图像
+ggplot(gapminder, aes(gdpPercap, lifeExp, size = pop, colour = country)) +
+  geom_point(alpha = 0.7, show.legend = FALSE) +
+  scale_colour_manual(values = country_colors) +
+  scale_size(range = c(2, 12)) +
+  scale_x_log10() +
+  facet_wrap(~continent) +
+   
+  labs(title = 'Year: {frame_time}', x = 'GDP per capita', y = 'life expectancy') +
+  transition_time(year) +
+  ease_aes('linear')
+
+# Save at gif:
+# anim_save("271-ggplot2-animated-gif-chart-with-gganimate2.gif")
+
+```
+
+## 带R的动画条形图过渡
+
+理论上，所有的ggplot图形都可以转化成为动画图，只需要添加一个用于表示状态变化的变量。例如他图表示的是不同年份GDP和寿命的散点图，其实相当于动态图年份这个变量表达出来了，年份，是一个状态，其实也可以绘制不同地区的GDP和人均寿命的散点图的动图。下面的代码绘制出了一副动态的条形图。
+
+```{r}
+# 加载包:
+library(ggplot2)
+library(gganimate)
+ 
+# 创建数据集
+a <- data.frame(group=c("A","B","C"), values=c(3,2,4), frame=rep('a',3))
+b <- data.frame(group=c("A","B","C"), values=c(5,3,7), frame=rep('b',3))
+data <- rbind(a,b)  
+
+ 
+# 绘制图形
+ggplot(data, aes(x=group, y=values, fill=group)) + 
+  geom_bar(stat='identity') +
+  theme_bw() +
+  # 设置frame参数
+  transition_states(
+    frame,
+    transition_length = 2,
+    state_length = 1
+  ) +
+  ease_aes('sine-in-out')
+
+# Save at gif:
+# anim_save("288-animated-barplot-transition.gif")
+```
+
+上面的代码首先创造了一个数据集，需要注意的数据集包含三个变量，group ，values和frame。绘制条形图只需要两个变量，因为需要绘制动画图，因此需要frame这个变量。首先使用ggplot绘制普通的条形图，然后调用transition_states函数绘制动画图。需要注意的是ease_aes函数，这个函数用于描述动画图是如何改变的，一个画面是如何变化到另外一个画面的，是突然变化还是慢慢。
+
+下面的代码绘制了一副渐进的折线动画图。如图所示：
+```{r}
+# 加载包:
+library(ggplot2)
+library(gganimate)
+library(babynames)
+library(hrbrthemes)
+
+# 对数据及进行处理
+don <- babynames %>% 
+  filter(name %in% c("Ashley", "Patricia", "Helen")) %>%
+  filter(sex=="F")
+  
+# 绘制图形
+don %>%
+  ggplot( aes(x=year, y=n, group=name, color=name)) +
+    geom_line() +
+    geom_point() +
+    scale_color_viridis(discrete = TRUE) +
+    ggtitle("Popularity of American names in the previous 30 years") +
+    theme_ipsum() +
+    ylab("Number of babies born") +
+    transition_reveal(year)
+
+
+
+# Save at gif:
+# anim_save("287-smooth-animation-with-tweenr.gif")
+
+```
+
+绘制线图的方式与普通绘图的方式一样。在最后面使用了transition_reveal（）函数，将图形变成了动图。

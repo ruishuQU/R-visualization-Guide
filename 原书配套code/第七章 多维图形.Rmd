@@ -1,0 +1,2108 @@
+---
+title: "高维图形"
+output:
+  html_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+在之前的章节，介绍了单个变量的相关图形的绘制与两个变量的相关图形绘制。但是在数据可视化的问题中，所涉及到的变量往往可能有多个。关于高维数据的可视化同样是常常遇到的问题。关于高维数据的可视化往往是一件比较困难的事情，理由很简单，平面通常而言只能展示二维数据，因此对于高维数据的可视化往往会采取一些特殊的方法。例如绘制三维图形，可以使用三维散点图来绘制，三维散点图新家了一个坐标轴来表示第三维的数据，还可以使用气泡图，通过二维图形中点的大小来表示第三维的数据。关于高维的图形还有很多，包括流型图，树状图，圆形包装图，树形图等等，不同的图形都有不一样的使用场。在本章节会对高维图形进行介绍。
+
+# 气泡图
+
+气泡图是一个散点图，然后将第三个连续变量映射到数据点的大小，因为不同大小的点非常的像气泡，因此被称为气泡图。使用ggplot函数绘制气泡图使用的函数是geom_point函数，其绘制的方法与散点图绘制的方法是一样的，只需要将第三维的连续变量设置为size 参数。
+
+因此数据集中，需要3个数值变量作为输入：一个表示X轴，一个表示Y轴，一个表示的点大小size。
+
+下面的代码使用了Gapminder数据集来绘制气泡图，数据集提供了100多个地区的平均预期寿命，人均GDP和人口规模。该数据集可通过gapminder包获得。图形结果如图所示：
+
+```{r}
+# 加载包
+library(tidyverse)
+library(hrbrthemes)
+library(viridis)
+library(gridExtra)
+library(ggrepel)
+library(plotly)
+
+# 数据集在gapminder包中提供
+library(gapminder)
+data <- gapminder %>% filter(year=="2002") %>% dplyr::select(-year)
+
+# 显示气泡图
+data %>%
+  mutate(pop=pop/1000000) %>%
+  arrange(desc(pop)) %>%
+  mutate(country = factor(country, country)) %>%
+  ggplot( aes(x=gdpPercap, y=lifeExp, size = pop, color = continent)) +
+    geom_point(alpha=0.7) +
+    scale_size(range = c(1, 19), name="Population (M)") +
+    scale_color_viridis(discrete=TRUE, guide=FALSE) +
+    theme_ipsum() +
+    theme(legend.position="bottom")
+
+```
+
+上面的代码中首先加载了相关的包，然后对数据及进行了筛选，因为数据集中包含了不同年份的数据，代码中筛选了数据集中年份为2002年的数据。然后将人口数量除以1000000，这样做是避免人口的数字太大，接下来对于pop变量进行了排序，并且设置了country的因子顺序。
+
+数据处理好之后则开始绘制，图形中gdpPercap变量设置为x轴，lifeExp变量设置为y轴，将size参数设置为pop，将color参数设置为continent变量。然后使用geom_point函数表示绘制散点图。
+
+然后对于图形细节进行了调整，使用scale_size函数调整数据点大小的范围，设置范围为(1,19)，并设置图里的名称为'"Population (M)"'。
+然后使用scale_color_viridis函数，对于图形颜色进行了调整，其中参数'guide=FALSE'表示表示不显示颜色的图例。接下来使用theme函数中的legend.position将图例放在图形的下方，这个参数有几个值可以选，包括，"none", "left", "right", "bottom"， "top",其中none表示不显示图例。
+
+从图中可以观察到，人均GDP和预期寿命之间的关系非常明显：富裕国家倾向于长寿，当人均GDP达到10,000时具有阈值效应，也就是说当人均gdp超过10000的时候，寿命的变化则不再明显。可以使用经典的散点图检测到这种关系，但是气泡大小允许使用第三维信息来细化此结果。
+
+
+
+最后一个变量比X轴和Y轴上的变量难以解释。实际上，人眼很难解释面积。但是，从图形中可以看出，似乎人口数量和gdp与寿命并没有明显的关系。
+
+上面的图形可以让人们理解人均gdp和预期寿命之间的关系。然而，如果不知道图形的极端部分中的国家是什么，或者总趋势中的哪个国家是什么，这是一个遗憾。如果不添加注释，读者没法获取其所关系的信息。因此还需要添加标签，添加标签是使图形具有洞察力的关键步骤：
+```{r}
+#  数据准备
+tmp <- data %>%
+ mutate(
+   annotation = case_when(
+    gdpPercap > 5000 & lifeExp < 60 ~ "yes",
+    lifeExp < 30 ~ "yes",
+     gdpPercap > 40000 ~ "yes"
+    )
+) %>%
+mutate(pop=pop/1000000) %>%
+  arrange(desc(pop)) %>%
+  mutate(country = factor(country, country))
+
+#  绘制图形
+ggplot( tmp, aes(x=gdpPercap, y=lifeExp, size = pop, color = continent)) +
+    geom_point(alpha=0.7) +
+    scale_size(range = c(1, 19), name="Population (M)") +
+    scale_color_viridis(discrete=TRUE) +
+    theme_ipsum() +
+    theme(legend.position="none") +
+    geom_text_repel(data=tmp %>% filter(annotation=="yes"), aes(label=country), size=4 )
+```
+上面的代码中，为气泡图添加了标签。代码中首先生成了一个新的变量annotation，使用这个变量来标记哪些数据需要添加标签，规则是,将'gdpPercap>5000并且lifeExp<60'的数据，'lifeExp < 30'的数据和' gdpPercap > 40000'的数据添加标签。
+
+数据处理好之后开始绘制气泡图，添加标签的函数是geom_text_repel函数，这个函数来自ggrepel包，ggrepel包是一个用于解决标签问题的包。geom_text_repel函数的第一个参数是需要添加标签的数据集，label参数用于指定需要添加的标签文本。
+
+气泡图的绘制需要注意一些问题，气泡图的问题在于X轴和Y轴的变量之间的关系比与第三个变量的关系更加明显。因子，选择和是的变量来表示气泡的大小是一件很关键的事情。在做这种图表之前，多尝试其他组合是一个好习惯，下面的代码绘制了两幅图形，分别使用不同变量来表示气泡图的大小：
+
+```{r}
+p2 <- data %>% # 绘制图形
+  mutate(pop=pop/1000000) %>%
+  arrange(desc(pop)) %>%
+  mutate(country = factor(country, country)) %>%
+  ggplot( aes(x=gdpPercap, y=pop, size = lifeExp, color = continent)) +
+    geom_point(alpha=0.7) +
+    scale_color_viridis(discrete=TRUE) +
+    scale_y_log10() +
+    theme_ipsum() +
+    theme(legend.position="none")
+
+p3 <- data %>% # 数据处理
+  mutate(pop=pop/1000000) %>%
+  arrange(desc(pop)) %>%
+  mutate(country = factor(country, country)) %>%
+  ggplot( aes(x=lifeExp, y=pop, size = gdpPercap, color = continent)) + # 绘制图形
+    geom_point(alpha=0.7) +
+    scale_color_viridis(discrete=TRUE) +
+    scale_y_log10() +
+    theme_ipsum() +
+    theme(legend.position="none")
+
+grid.arrange(p2,p3, ncol=2) # p2 + p3 合并图形
+```
+
+上面的代码中，第一幅图形的代码将gdpPercap变量映射到x，将pop变量映射到y，将lifeExp变量映射到size。第二幅图中，将lifeExp变量映射到x，将pop变量映射到y，将gdpPercap变量映射到size。
+从上面的两幅图形可以观察到，左边的图形气泡的大小变化不大，并且比较难看出数据之间的关系。但是从右边的气泡图可以观察到，从图形中可以观察到明显的趋势，lifeExp变量的值越大，气泡点越大，说明gdpPercap变量和lifeExp变量之间存在某种相关关系。
+
+因此，在绘制泡泡图的时候，需要将合适的变量映射到size参数。
+
+## 绘制基本的气泡图
+
+气泡图是一个散点图，其中添加了第三维，附加的数值变量的值通过点的尺寸来表示。
+使用ggplot2，可以通过该geom_point()功能构建气泡图。必须至少提供三个变量aes()：x，y和size。
+
+在这里，表示了世界不同地区的预期寿命（y）和人均gdp 之间的关系x。每个国家的人口通过圈子大小来表示。
+
+```{r}
+# 加载包
+library(ggplot2)
+library(dplyr)
+
+# 获取数据集，并对数据进行筛选
+library(gapminder)
+data <- gapminder %>% filter(year=="2002") %>% dplyr::select(-year)
+
+#  绘制气泡图
+ggplot(data, aes(x=gdpPercap, y=lifeExp, size = pop)) +
+    geom_point()
+```
+
+上面的代码首先筛选了数据集，然后绘制了气泡图。从上面的代码可以看出，图形的代码非常的简单，与绘制散点图的图形代码是一样的，只不过添加了size参数。从图中可以看到，不同的点有不同的大小，数据点的大小代表了pop变量的值。
+
+## 控制圆的大小 scale_size()
+
+上面的图形有很多地方可以进一步的完善，在上图中需要改进的第一件事是气泡大小。scale_size()允许使用range参数设置最小和最大圆的大小。另外，还可以使用自定义图例名称。
+需要注意的是，圆圈经常重叠。为避免在图表图层顶部放置大圆圈，必须先重新排序数据集，如下面的代码所示。
+另外，绘制气泡图常常用到的函数还包括，scale_radius，scale_size和scale_size_area等函数。
+```{r}
+# 加载包
+library(ggplot2)
+library(dplyr)
+
+#  获取数据集
+library(gapminder)
+data <- gapminder %>% filter(year=="2002") %>% dplyr::select(-year)
+
+#  绘制气泡图
+data %>%
+  arrange(desc(pop)) %>%
+  mutate(country = factor(country, country)) %>%
+  ggplot(aes(x=gdpPercap, y=lifeExp, size = pop)) +
+    geom_point(alpha=0.5) +
+    scale_size(range = c(.1, 24), name="Population (M)")
+```
+
+上面的代码首先对于数据集通过pop变量进行了排序，然后对于country变量的因子顺序进行了设置。然后开始绘图。这里在绘制散点图的时候设置了alpha参数，用于避免数据点的覆盖。然后使用scale_size函数设置了气泡垫的大小范围，从0.1到24，并且将气泡点的图例名称通过name变量改为'Population (M)'。从图中可以看到，气泡的大小差异明显的变大了，并且，气泡之间避免了覆盖的情况。
+
+## 设置颜色
+
+如果的数据集中还有一个变量，为什么不使用圆形颜色显示它？可以将变量映射到颜色参数，这样可以使用气泡图来表达第四维度的数据。在下面的代码中，将不同的地区设置成为不同的颜色：
+```{r}
+# 加载包
+library(ggplot2)
+library(dplyr)
+
+#  获取数据集
+library(gapminder)
+data <- gapminder %>% filter(year=="2007") %>% dplyr::select(-year)
+
+# 绘制气泡图
+data %>%
+  arrange(desc(pop)) %>%
+  mutate(country = factor(country, country)) %>%
+  ggplot(aes(x=gdpPercap, y=lifeExp, size=pop, color=continent)) +
+    geom_point(alpha=0.5) +
+    scale_size(range = c(.1, 24), name="Population (M)")
+
+```
+
+将一个新的维度添加到图形中实现起来非常的简单，只需要将变量映射成为color参数。从上面的图形中更可以看到，不同的地区被设置成为了不同的颜色。
+
+## 调整更多的细节
+
+上文中的内容对于气泡图进行了许多的调整，为了使得气泡图更有表现能力，可已进一步进行调整。这些调整包括
+
+1. 使用viridis包可以获得漂亮的调色板
+2. 使用hrbrthemes包的theme_ipsum()函数设置图形主题
+3. 使用xlab和ylab设置坐标轴的标签
+
+下面的代码绘制了更加美观，更加具有表现能力的图形，如图所示：
+```{r}
+# 加载包
+library(ggplot2)
+library(dplyr)
+library(hrbrthemes)
+library(viridis)
+
+# 获取数据集
+library(gapminder)
+data <- gapminder %>% filter(year=="2007") %>% dplyr::select(-year)
+
+# 绘制气泡图
+data %>%
+  arrange(desc(pop)) %>%
+  mutate(country = factor(country, country)) %>%
+  ggplot(aes(x=gdpPercap, y=lifeExp, size=pop, fill=continent)) +
+    geom_point(alpha=0.5, shape=21, color="black") +
+    scale_size(range = c(.1, 24), name="Population (M)") +
+    scale_fill_viridis(discrete=TRUE, guide=FALSE, option="A") +
+    theme_ipsum() +
+  #   theme(legend.position="bottom") +
+    ylab("Life Expectancy") +
+     xlab("Gdp per Capita") +
+   theme(legend.position = "none")
+```
+
+
+上面的代码中，对于气泡进行了更多地调整。首先，将continent变量映射成为fill参数。然后设置shape参数为21.更进一步使用scale_fill_viridis函数调整了图形的配色，并且取消了关于颜色的图例。然后使用theme_ipsum函数设置了图形主题，使用theme函数将图形的关于气泡大小的图例。使用ylab和xlab 设置了图形的坐标轴名称。
+
+从图中可以观察到，相比于上文的其他图形，这一幅图形更加美观，能够更加清晰的体现出数据之间的关系。
+
+## 绘制动态图
+
+交互式图形是一种更好的表现形式，这种图形允许读者和图形进行互动。可以通过选择感兴趣的区域进行缩放，将鼠标悬停在圆圈上以获取有关它的信息.
+
+plotly包是一个专门用于绘制交互式图形的包，使用这个包可以非常轻松的绘制出交互式图形，对于使用ggplot2绘图的用户，有一种更加快捷的方法，使用plotly包的ggplotly()函数，可以使得任何ggplot2图表对象转变成为一个可以交互的图标交互。因此，只要使用在使用ggplot绘制好图形之后使用ggplotly函数即可将图形变成交互式图形。
+```{r}
+# 加载包
+library(ggplot2)
+library(dplyr)
+library(plotly)
+library(viridis)
+library(hrbrthemes)
+
+# 获取数据集
+library(gapminder)
+data <- gapminder %>% filter(year=="2007") %>% dplyr::select(-year)
+
+# 对数据进行处理
+p <- data %>%
+  mutate(gdpPercap=round(gdpPercap,0)) %>%
+  mutate(pop=round(pop/1000000,2)) %>%
+  mutate(lifeExp=round(lifeExp,1)) %>%
+  
+  # 对数据进行排序
+  arrange(desc(pop)) %>%
+  mutate(country = factor(country, country)) %>%
+  
+  # 准备文本
+  mutate(text = paste("Country: ", country, "\nPopulation (M): ", pop, "\nLife Expectancy: ", lifeExp, "\nGdp per capita: ", gdpPercap, sep="")) %>%
+  
+  # 绘制图形
+  ggplot( aes(x=gdpPercap, y=lifeExp, size = pop, color = continent, text=text)) +
+    geom_point(alpha=0.7) +
+    scale_size(range = c(1.4, 19), name="Population (M)") +
+    scale_color_viridis(discrete=TRUE, guide=FALSE) +
+    theme_ipsum() +
+    theme(legend.position="none")
+
+# 将图形转变成为交互式图形
+pp <- ggplotly(p)
+pp
+
+```
+
+上面的代码中，绘制气泡图的代码与上图是一样的，绘制交互式图形的代码是在最后面的使用了ggplotly函数，将绘制好的气泡图转变成为交互式图形。
+
+ 
+
+# 三维散点图
+
+使用R语言可以三D，使用的包是rgl包，绘制3D图通常是一种不好的做法，应该尽量毕淼绘制3D图。三维图形虽然很受欢迎，但在大多数情况下，人们很难快速准确的理解图形中想要表达的信息。
+另外，不要建立3d条形图，甚至是更糟糕的图形，3D饼图。这些图形有都是非常糟糕的图形，最好避免使用。
+
+
+```{r}
+# 构建一个创建数据集的函数
+moxbuller = function(n) {   
+    u = runif(n)   
+    v = runif(n)   
+    x = cos(2*pi*u)*sqrt(-2*log(v))  
+    y = sin(2*pi*v)*sqrt(-2*log(u))
+    r = list(x=x, y=y)
+    return(r) 
+}
+r = moxbuller(50000)  # 创建数据集
+par(bg="black")  # 绘图
+par(mar=c(0,0,0,0)) 
+plot(r$x,r$y, pch=".", col="red", cex=1.2)
+```
+
+上面的代码使用plot函数绘制了一副3D散点图，虽然图形似乎看起来视觉效果非常的好，但是很难从图形中获取有效的数据信息。
+
+
+另外，rgl包是一个绘制3D图的很好的工具。下面使用rgl包绘制了一个三维散点图，显示出了三个变量的关系.rgl包会自动构建交互式图表，缩放和旋转确实可以使图表更具洞察力。
+构建三维散点图需要一个包含3个数字变量的数据集，每个数据变量都在轴上使用。这里iris使用了着名的数据集。
+该rgl软件包附带的plot3d()功能与基本R plot()功能非常接近。
+
+```
+library(rgl)
+plot3d(x = iris$Sepal.Length, y = iris$Sepal.Width, z =iris$Petal.Length)
+
+
+```
+上面的代码使用plot3d函数绘制了三维散点图。绘制三维散点图还有其他的包，包括plot3D，和scatterplot3d等包。
+```{r}
+# 加载包
+   library(plot3D)
+ # 绘制三维图形
+     scatter3D(x = iris$Sepal.Length, y = iris$Sepal.Width, z =iris$Petal.Length,
+     pch = 16, cex = 1.5, xlab = "Education", ylab = "Income",
+     zlab = "Seniority", theta = 60, d = 2,clab = c("Income"),
+     colkey = list(length = 0.5, width = 0.5, cex.clab = 0.75,
+     dist = -.08, side.clab = 3)
+     ,main = "Reltionship Between Income , Education and Seniority")
+```
+上面的代码中使用了plot3D包中的scatter3D函数绘制了三维散点图。
+```{r}
+ # 使用plot3D绘制三维散点图
+scatterplot3d::scatterplot3d(x = iris$Sepal.Length, y = iris$Sepal.Width, z =iris$Petal.Length)
+```
+
+上面的代码使用scatterplot3d包中的scatterplot3d函数绘制了三维散点图。通常而言，绘制三维散点图并不是一个很好的选择，应该避免绘制这样的图形。
+
+
+# 流型图
+
+流型图（streamgraph）是一种堆叠的面积图。它代表了几个组的数值变量的演变。区域通常围绕中心轴显示，并且图形的边缘是圆形的以提供流动的形状。
+
+绘制流型图可以使用streamgraph包，在R中构建流型图相对简单。流型图是一种堆积面积图。它显示数字值（Y轴）跟随另一个数值（X轴）的演变。这种演变可以代表不同的几个群体，图形都具有鲜明的色彩。
+与堆积区域相反，图形没有角落，边缘是圆形的，这给人以流畅的印象。此外，区域通常围绕中心轴线移位，从而形成流动的有机形状。
+以下示例显示了1880年至2015年间美国婴儿名称频率的变化情况。
+
+```{r}
+# 加载包
+library(tidyverse)
+library(babynames)
+library(streamgraph)
+
+
+# 获取数据
+data <- babynames %>% 
+  filter(name %in% c("Ashley", "Amanda", "Jessica",    "Patricia", "Linda", "Deborah",   "Dorothy", "Betty", "Helen")) %>%
+  filter(sex=="F")
+
+# 绘制图形
+data %>% 
+  streamgraph(key="name", value="n", date="year") %>%
+  sg_fill_brewer("BuPu")
+
+```
+
+上面的代码绘制绘制了一副流型图，绘制出的图形是交互式图形，将鼠标放到图形中可以显示出图形的具体数值。
+
+流程图很好地研究整体的相对比例。然而，研究每种方法并不能恨得分析单个组的数据，在每个时间点的数据很难取比较其他组的数据。要获得更准确但不太吸引人的数字，可以使用分面的折线图或面积图。当以交互模式显示时，流图表变得非常有用：突出显示组可以直接了解其演变。
+
+下面的代码将流型图的y中设置为从0开始。
+```{r}
+ 
+# 绘制图形
+data %>% 
+  streamgraph(key="name", value="n", date="year", offset="zero") %>%
+  sg_fill_brewer("BuPu")
+
+```
+上面的代码将流型图的y轴设置为从0开始，设置的方式是调整参数offset，将其设置为'zero'。
+
+另外，还可以创建百分比流程图，其中图形显示每个组的比例而不是其绝对值。在这里，婴儿名字的总数不再显示,因此，观察每个时期最流行的名字变得更加容易。如图所示
+```{r}
+# 绘制图形
+data %>% 
+  streamgraph(key="name", value="n", date="year", offset="expand") %>%
+  sg_fill_brewer("BuPu")
+```
+上面的代码绘制了百分比的流程图，绘制的方式是调整offset参数，设置offset = 'expand'。当数据中有明确的模式时，使用流型图来绘制图形非常的合适。如果每个组的比例在整个时间范围内保持大致相同，则流型图将不会非常有洞察力，因为很难读取比较小的变化。
+
+
+## 基本的流型图
+
+使用streamgraph包中的streamgraph函数可以非常方便的绘制出流型图。绘制流型图输入需要3各变量：
+
+1. X轴的数字变量。通常它提供时间。
+2. Y轴的数字变量：这是我们正在研究的变量
+3. 分类变量：每个组将绘制为不同的形状
+
+需要这3个变量输入streamgraph()函数才能绘制出流型图。
+
+下面的代码绘制出了一副基础的条形图。如图所示：
+```{r}
+# 加载包
+library(streamgraph)
+ 
+#  创建数据集
+data <- data.frame(
+  year=rep(seq(1990,2016) , each=10),
+  name=rep(letters[1:10] , 27),
+  value=sample( seq(0,1,0.0001) , 270)
+)
+ 
+# 绘制流型图
+pp <- streamgraph(data, key="name", value="value", date="year") # height="300px", width="1000px"
+pp 
+
+ 
+```
+
+上面的代码绘制出了一副基础的流型图，代码中首先创建了一个数据集，数据集中包含三个变量，year，name，value。其中value表示数值型的变量，year表示时间，name表示分组。
+
+数据准备好之后，可以开始使用streamgraph函数绘制流型图，将name变量映射到key参数，将value变量映射成为value参数，将year变量。映射成为date参数。然后则可以绘制出基础的流型图。
+
+## 调整流型图的偏移
+
+通过offset参数有三种方式来调整流型图的偏移，其中包括：
+
+1. silhouette：流型图显示在水平轴的两侧
+2. zero：流型图显示在0行的顶部。
+3. expand：相当于百分比堆积面积图：流型图完整高度用于显示百分比。
+
+下面的代码分别使用这三种方式绘制了流型图，如图所示
+```{r}
+# 加载包
+library(streamgraph)
+
+# 创建数据集
+data <- data.frame(
+  year=rep(seq(1990,2016) , each=10),
+  name=rep(letters[1:10] , 27),
+  value=sample( seq(0,1,0.0001) , 270)
+)
+
+# 绘制图形
+p1 <- streamgraph(data, key="name", value="value", date="year" , 
+    offset="silhouette"
+    )
+p1
+ 
+
+```
+
+上面的代码将offset参数设置为silhouette，从图中可以观察到，流型图显示在水平轴的两侧。
+
+```{r}
+# 绘制图形
+p2 <- streamgraph(data, key="name", value="value", date="year" , 
+    offset="zero",
+    width="400px", height="300px"
+    )
+ 
+
+```
+
+上面的代码将offset参数设置为zero，从图中可以观察到，流型图显示在流型图显示在0行的顶部。
+
+```{r}
+# 绘制图形
+p3 <- streamgraph(data, key="name", value="value", date="year" , 
+    offset="expand",
+    width="400px", height="300px"
+    )
+
+```
+
+上面的代码将offset参数设置为expand，从图中可以观察到，图形中的图形为百分比的流程图。
+
+## 调整流型图的形状与颜色
+
+根据定义，流图具有圆型的弧度，给人一种良好的流动感。另外，可以使用streamgraph函数中的interpolate参数调整流型图线条的形状。
+
+```{r}
+# 加载包
+library(streamgraph)
+
+# 创建数据集
+data <- data.frame(
+  year=rep(seq(1990,2016) , each=10),
+  name=rep(letters[1:10] , 27),
+  value=sample( seq(0,1,0.0001) , 270)
+)
+# 绘制图形
+p3 <- streamgraph(data, key="name", value="value", date="year" ,interpolate="step" ,
+    width="400px", height="300px"
+    )
+
+
+p3
+ 
+```
+
+上面的代码中，修改了流型图的interpolate参数，将参数设置为'step'，从图中可以看到，流型图的线条变成了矩形形状。
+
+另外，如果对于流型图的配色颜色不满意，可以对于流型图的颜色进行设置。使用streamgraph包中的sg_fill_brewer函数来调整图形的颜色。
+
+```{r}
+# 加载包
+library(streamgraph)
+
+# Create data:
+data <- data.frame(
+  year=rep(seq(1990,2016) , each=10),
+  name=rep(letters[1:10] , 27),
+  value=sample( seq(0,1,0.0001) , 270)
+)
+
+# 绘制图形，设置图形配色
+p1 <- streamgraph(data, key="name", value="value", date="year",
+    width="400px", height="300px"
+    ) %>%
+  sg_fill_brewer(palette = "Blues")
+
+
+```
+
+上面的代码中，使用sg_fill_brewer函数来调整推行的颜色，设置palette参数为'Blues',从图形中可以看到，图形的配色呈现出蓝色的色调。
+
+当数据中有明确的模式时，使用流型图来绘制图形是非常的合适的。如果每个组的数据比例在整个时间范围内保持大致相同，则流型图将不会非常有洞察力，因为很难读取比较小的变化。因此，在绘制流型图的时候，首先要判断所用的数据集是否适合。
+
+
+# 相关矩阵图
+
+相关矩阵图允许分析数据集中的每对数值变量之间的关系。它简要概述了整个数据集。它更多地用于探索目的而不是解释，因此在数据探索的过程中往往会绘制整个数据集的相关系数矩阵。
+
+相关矩阵图形允许分析数据集的每对数值变量之间的关系。每对变量之间的关系通过散点图或表示相关性的符号（气泡，线，数字......）来进行可视化。对角线通常使用直方图或密度图表示每个变量分布情况。因此，使用相关矩阵图可以直接的观察数据集中每一对数值变量之间的关系，并且能够了解到每一个变量的分布情况。
+
+但是需要注意的是：
+当需要显示超过10个变量之间的关系的时候，会使得相关矩阵图形变得非常难以阅读。另外，在绘制散点图和直方图需要注意的点，在绘制相关矩阵图的时候同样需要注意.
+
+## GGALLY包绘制相关系数图
+
+
+GGAlly包中的ggpairs（）函数可以构建相关矩阵图形。在图形中，每对数字变量的散点图绘制在图的左侧部分。数据间的相关性显示在右侧。对角线上显示出数据的分布。下面的代码使用ggpairs函数绘制一幅相关矩阵图
+
+```{r}
+# 绘制数据集的整体图形，以评估变量的分布和相关性
+library(GGally)
+ 
+# 创建数据集
+data <- data.frame( var1 = 1:100 + rnorm(100,sd=20), v2 = 1:100 + rnorm(100,sd=27), v3 = rep(1, 100) + rnorm(100, sd = 1)) 
+data$v4 = data$var1 ** 2 
+data$v5 = -(data$var1 ** 2) 
+ 
+# 检查相关系数(如散点图)、分布和显示出相关系数
+ggpairs(data, title="correlogram with ggpairs()") 
+```
+上面的代码中，绘制出相关矩阵图，绘制相关矩阵图非常的简单，将数据集传入ggpairs函数即可绘制出数据集的相关矩阵图。需要注意的是，数据集应该是数据框的格式，并且数据集中的变量需要是数值变量。
+
+如果数据集中包含发呢类变量，则还可以绘制出分组的相关矩阵图。下面的代码绘制出分组的相关矩阵图形：
+
+```{r}
+# 加载包
+library(GGally)
+ 
+# 获取数据
+data(flea)
+# 绘制图形
+ggpairs(flea, columns = 2:4, ggplot2::aes(colour=species)) 
+```
+
+从图形中可以观察到，左边的散点图中，有三种不同的颜色，每一种颜色表示一种分组。在对角线中的密度图中，有三组密度图，分别表示变量在不同分组情况下的密度分布，在右上角的相关性中，可以看到，图形中包含数据集整体的相关系以及在不同分组的情况下，数据的相关性。
+
+在上面的代码中，依然使用的是ggpairs函数，第一个参数是flea，表示数据集，colums参数用于选取绘制相关矩阵图所使用的的变量，这里表示绘制数据集中第2列到第4列之间的相关矩阵图。'ggplot2::aes(colour=species)'表示将species设置为颜色分组。
+
+相关矩阵图默认情况下，左边的图形是数据间的散点图，对角线的图形是数据的分布图，右边的显示出数据的相关性。如果有必要，可以更改绘图类型，更改相关矩阵图的每个部分的绘图类型，可以通过upper和lower参数完成的。
+
+```{r}
+# 加载包
+library(GGally)
+ 
+# 获取数据集
+data(tips, package = "reshape")
+ggpairs( # 绘制图形
+  tips[, c(1,2,7)],
+  upper = list(continuous = "density", combo = "box_no_facet"),
+  lower = list(continuous = "points", combo = "dot_no_facet")
+)
+```
+
+上面的代码中，修改了相关矩阵图中的。从图中可以看到，相关矩阵图中，右上边的图形变成了密度图。可以设置的图形有很多，例如添加模型的拟合曲线，箱线图，密度图等等。
+
+<!-- ## CORRGRAM包绘制相关图 -->
+
+<!-- corrgram包是建立相关图的另一个很好的选择。可以选择在图的上部，下部和对角线部分显示散点图，饼图，文本，椭圆等内容。 -->
+<!-- corrgram包允许构建相关图。输出允许分析每组数字变量之间的关系。可以使用不同的方法显示数据的关系： -->
+
+<!-- 1. panel.ellipse 显示省略号 -->
+<!-- 2. panel.shade 用于彩色方块 -->
+<!-- 3. panel.pie 饼图 -->
+<!-- 4. panel.pts 对于散点图 -->
+
+<!-- ```{r} -->
+<!-- # Corrgram library -->
+<!-- library(corrgram) -->
+
+<!-- # mtcars dataset is natively available in R -->
+<!-- # head(mtcars) -->
+
+<!-- # First -->
+<!-- corrgram(mtcars, order=TRUE, lower.panel=panel.shade, upper.panel=panel.pie, text.panel=panel.txt, main="Car Milage Data in PC2/PC1 Order")  -->
+
+<!-- # Second -->
+<!-- corrgram(mtcars, order=TRUE, lower.panel=panel.ellipse, upper.panel=panel.pts, text.panel=panel.txt, diag.panel=panel.minmax, main="Car Milage Data in PC2/PC1 Order")  -->
+
+<!-- # Third -->
+<!-- corrgram(mtcars, order=NULL, lower.panel=panel.shade, upper.panel=NULL, text.panel=panel.txt, main="Car Milage Data (unsorted)") -->
+<!-- ``` -->
+
+<!-- ## 其他方法 -->
+
+<!-- 使用R构建相关图的鲜为人知的方法，如ellipse包，plot()函数和car包。 -->
+
+<!-- Scatterplot矩阵 ggpairs() -->
+<!-- 该ellipse软件包允许通过该plotcorr()功能构建相关图。 -->
+
+<!-- 首先，您必须使用cor()R 的函数计算数据集的相关矩阵。每个相关将由函数表示为椭圆plotcorr()。颜色，形状和方向取决于相关值。 -->
+
+<!-- ```{r} -->
+<!-- # Libraries -->
+<!-- library(ellipse) -->
+<!-- library(RColorBrewer) -->
+
+<!-- # Use of the mtcars data proposed by R -->
+<!-- data <- cor(mtcars) -->
+
+<!-- # Build a Pannel of 100 colors with Rcolor Brewer -->
+<!-- my_colors <- brewer.pal(5, "Spectral") -->
+<!-- my_colors <- colorRampPalette(my_colors)(100) -->
+
+<!-- # Order the correlation matrix -->
+<!-- ord <- order(data[1, ]) -->
+<!-- data_ord <- data[ord, ord] -->
+<!-- plotcorr(data_ord , col=my_colors[data_ord*50+50] , mar=c(1,1,1,1)  ) -->
+
+<!-- ``` -->
+
+
+
+
+<!-- # 热力图 -->
+<!-- 甲热图是其中包含在一个矩阵单独的值被表示为颜色的数据的图形表示。 -->
+
+<!-- ggplot2也允许建立热图geom_tile()。但是，我个人更喜欢heatmap()上面的功能，因为它只提供标准化，聚类和树形图的选项。 -->
+
+<!-- A heatmap是数据的图形表示，其中矩阵中包含的各个值表示为颜色。这有点像从上面查看数据表。 -->
+
+<!-- 以下是2015年约30个国家的人口或预期寿命等8个一般特征的示例。数据来自法国国家人口研究所。 -->
+
+<!-- ```{r} -->
+<!-- # Libraries -->
+<!-- library(tidyverse) -->
+<!-- library(hrbrthemes) -->
+<!-- library(viridis) -->
+<!-- library(plotly) -->
+<!-- library(d3heatmap) -->
+
+<!-- # Load data  -->
+<!-- data <- read.table("../Example_dataset/multivariate.csv", header=T, sep=";") -->
+<!-- colnames(data) <- gsub("\\.", " ", colnames(data)) -->
+
+<!-- # Select a few country -->
+<!-- data <- data %>%  -->
+<!--   filter(Country %in% c("France", "Sweden", "Italy", "Spain", "England", "Portugal", "Greece", "Peru", "Chile", "Brazil", "Argentina", "Bolivia", "Venezuela", "Australia", "New Zealand", "Fiji", "China", "India", "Thailand", "Afghanistan", "Bangladesh", "United States of America", "Canada", "Burundi", "Angola", "Kenya", "Togo")) %>% -->
+<!--   arrange(Country) %>% -->
+<!--   mutate(Country = factor(Country, Country)) -->
+
+<!-- # Matrix format -->
+<!-- mat <- data -->
+<!-- rownames(mat) <- mat[,1] -->
+<!-- mat <- mat %>% dplyr::select(-Country, -Group, -Continent) -->
+<!-- mat <- as.matrix(mat) -->
+
+<!-- # Heatmap -->
+<!-- #d3heatmap(mat, scale="column", dendrogram = "none", width="800px", height="80Opx", colors = "Blues") -->
+
+<!-- library(heatmaply) -->
+<!-- p <- heatmaply(mat,  -->
+<!--         dendrogram = "none", -->
+<!--         xlab = "", ylab = "",  -->
+<!--         main = "", -->
+<!--         scale = "column", -->
+<!--         margins = c(60,100,40,20), -->
+<!--         grid_color = "white", -->
+<!--         grid_width = 0.00001, -->
+<!--         titleX = FALSE, -->
+<!--         hide_colorbar = TRUE, -->
+<!--         branches_lwd = 0.1, -->
+<!--         label_names = c("Country", "Feature:", "Value"), -->
+<!--         fontsize_row = 5, fontsize_col = 5, -->
+<!--         labCol = colnames(mat), -->
+<!--         labRow = rownames(mat), -->
+<!--         heatmap_layers = theme(axis.line=element_blank()) -->
+<!--         ) -->
+<!-- ``` -->
+
+<!-- 热图对于显示general view数值数据非常有用，而不是提取特定数据点。在上图中，中国和印度的庞大人口规模突然出现。 -->
+
+
+
+<!-- 热图也可用于显示结果hierarchical clustering。基本上，聚类检查哪些国家/地区的数字变量具有相同的特征，哪些国家/地区相似。表示结果的常用方法是使用树状图。这种类型的图表可以在热图上绘制 -->
+<!-- ```{r} -->
+<!-- p <- heatmaply(mat,  -->
+<!--         #dendrogram = "row", -->
+<!--         xlab = "", ylab = "",  -->
+<!--         main = "", -->
+<!--         scale = "column", -->
+<!--         margins = c(60,100,40,20), -->
+<!--         grid_color = "white", -->
+<!--         grid_width = 0.00001, -->
+<!--         titleX = FALSE, -->
+<!--         hide_colorbar = TRUE, -->
+<!--         branches_lwd = 0.1, -->
+<!--         label_names = c("Country", "Feature:", "Value"), -->
+<!--         fontsize_row = 5, fontsize_col = 5, -->
+<!--         labCol = colnames(mat), -->
+<!--         labRow = rownames(mat), -->
+<!--         heatmap_layers = theme(axis.line=element_blank()) -->
+<!--         ) -->
+<!-- ``` -->
+
+<!-- 在这里，阿富汗，印度和玻利维亚归为一类。事实上，他们是3个强势扩张的国家，每个妇女有很多孩子，但死亡率仍然很高。 -->
+
+<!-- 注意：在此热图中，功能也已集群化。例如，预期寿命和死亡率被归为一类，因为它们高度相关。 -->
+
+<!-- (解释一下层次聚类) -->
+
+<!-- 需要注意的是： -->
+
+<!-- 通常需要规范化您的数据 -->
+<!-- 使用聚类分析，从而置换矩阵的行和列，以根据聚类将相似的值放在彼此附近 -->
+<!-- 调色板很重要 -->
+
+
+<!-- ## 绘制热力图 -->
+<!-- 这是最基本的热图，你可以建造R和ggplot2使用geom_tile()功能。 -->
+
+<!-- 输入数据必须是长格式，其中每行提供观察。每次观察至少需要3个变量： -->
+
+<!-- x：X轴上的位置 -->
+<!-- y：Y轴上的位置 -->
+<!-- fill：将以颜色转换的数值 -->
+<!-- ```{r} -->
+<!-- # Library -->
+<!-- library(ggplot2) -->
+
+<!-- # Dummy data -->
+<!-- x <- LETTERS[1:20] -->
+<!-- y <- paste0("var", seq(1,20)) -->
+<!-- data <- expand.grid(X=x, Y=y) -->
+<!-- data$Z <- runif(400, 0, 5) -->
+
+<!-- # Heatmap  -->
+<!-- ggplot(data, aes(X, Y, fill= Z)) +  -->
+<!--   geom_tile() -->
+<!-- ``` -->
+
+<!-- 调整颜色： -->
+
+<!-- 可以像任何ggplot2图表一样更改调色板。以上是使用不同方法的3个示例： -->
+
+<!-- 1.scale_fill_gradient() 提供极致的调色板颜色 -->
+<!-- 2.scale_fill_distiller)提供ColorBrewer调色板 -->
+<!-- 3. scale_fill_viridis()使用Viridis。不要忘记discrete=FALSE连续变量。 -->
+<!-- ```{r} -->
+<!-- # Library -->
+<!-- library(ggplot2) -->
+<!-- library(hrbrthemes) -->
+
+<!-- # Dummy data -->
+<!-- x <- LETTERS[1:20] -->
+<!-- y <- paste0("var", seq(1,20)) -->
+<!-- data <- expand.grid(X=x, Y=y) -->
+<!-- data$Z <- runif(400, 0, 5) -->
+
+<!-- # Give extreme colors: -->
+<!-- ggplot(data, aes(X, Y, fill= Z)) +  -->
+<!--   geom_tile() + -->
+<!--   scale_fill_gradient(low="white", high="blue") + -->
+<!--   theme_ipsum() -->
+
+<!-- # Color Brewer palette -->
+<!-- ggplot(data, aes(X, Y, fill= Z)) +  -->
+<!--   geom_tile() + -->
+<!--   scale_fill_distiller(palette = "RdPu") + -->
+<!--   theme_ipsum() -->
+
+<!-- # Color Brewer palette -->
+<!-- library(viridis) -->
+<!-- ggplot(data, aes(X, Y, fill= Z)) +  -->
+<!--   geom_tile() + -->
+<!--   scale_fill_viridis(discrete=FALSE) + -->
+<!--   theme_ipsum() -->
+<!-- ``` -->
+
+
+<!-- 宽格式绘制 -->
+<!-- 与volcano数据集一样，将宽矩阵作为输入是一个常见问题。在这种情况下，您需要使用包的gather()功能对其进行整理，以tidyr使用ggplot对其进行可视化。 -->
+<!-- ```{r} -->
+<!-- # Library -->
+<!-- library(ggplot2) -->
+<!-- library(tidyr) -->
+<!-- library(tibble) -->
+<!-- library(hrbrthemes) -->
+<!-- library(dplyr) -->
+
+<!-- # Volcano dataset -->
+<!-- #volcano -->
+
+<!-- # Heatmap  -->
+<!-- volcano %>% -->
+
+<!--   # Data wrangling -->
+<!--   as_tibble() %>% -->
+<!--   rowid_to_column(var="X") %>% -->
+<!--   gather(key="Y", value="Z", -1) %>% -->
+
+<!--   # Change Y to numeric -->
+<!--   mutate(Y=as.numeric(gsub("V","",Y))) %>% -->
+
+<!--   # Viz -->
+<!--   ggplot(aes(X, Y, fill= Z)) +  -->
+<!--     geom_tile() + -->
+<!--     theme_ipsum() + -->
+<!--     theme(legend.position="none") -->
+<!-- ``` -->
+
+<!-- <!-- ## R基础函数绘制热力图 --> -->
+
+<!-- <!-- 该heatmap()函数在R中原生提供。它生成高质量矩阵，并提供统计工具来规范化输入数据，运行聚类算法并使用树形图可视化结果。这是我更喜欢基地R的非常罕见的情况之一ggplot2。 --> -->
+
+<!-- <!-- 怎么做：下面是你可以在基础R中构建的最基本的热图，使用heatmap()没有参数的函数。请注意，它将矩阵作为输入。如果您有数据框，可以将其转换为矩阵as.matrix()，但只需要数字变量。 --> -->
+
+<!-- <!-- 如何阅读：每列都是一个变量。每次观察都是一排。每个方块都是一个值，越接近黄色越高。您可以将矩阵转置t(data)为交换X轴和Y轴。 --> -->
+
+<!-- <!-- 注意：正如您所看到的，这个热图不是很有见地：所有变量都被hp与其他disp变量相比具有很高值的变量所吸收。我们需要规范化数据，如下一节所述。 --> -->
+<!-- <!-- ```{r} --> -->
+<!-- <!-- # The mtcars dataset: --> -->
+<!-- <!-- data <- as.matrix(mtcars) --> -->
+
+<!-- <!-- # Default Heatmap --> -->
+<!-- <!-- heatmap(data) --> -->
+
+<!-- <!-- ``` --> -->
+
+<!-- <!-- 数据标准化 --> -->
+<!-- <!-- 使用函数的scale参数来标准化矩阵heatmap()。它可以应用于row或column。这里column选择了选项，因为我们需要吸收列之间的变化。 --> -->
+<!-- <!-- ```{r} --> -->
+<!-- <!-- # Use 'scale' to normalize --> -->
+<!-- <!-- heatmap(data, scale="column") --> -->
+<!-- <!-- ``` --> -->
+
+<!-- <!-- 树形图和重新排序 --> -->
+<!-- <!-- 您可能已经注意到，与原生mtcar矩阵相比，行和列的顺序不同。这是因为heatmap()使用聚类算法对变量和观察值进行重新排序：它计算每对行和列之间的距离，并尝试按相似性对它们进行排序。 --> -->
+
+<!-- <!-- 此外，dendrograms在热图旁边提供相应的对应物。我们可以避免它，只是可视化原始矩阵：使用Rowv和Colv参数如下。 --> -->
+<!-- <!-- ```{r} --> -->
+<!-- <!-- # No dendrogram nor reordering for neither column or row --> -->
+<!-- <!-- heatmap(data, Colv = NA, Rowv = NA, scale="column") --> -->
+<!-- <!-- ``` --> -->
+
+<!-- <!-- 颜色调整 --> -->
+<!-- <!-- 有几种方法可以自定义调色板： --> -->
+
+<!-- <!-- 使用R的本地调色板：terrain.color()，rainbow()，heat.colors()，topo.colors()或cm.colors() --> -->
+<!-- <!-- 使用提出的调色板RColorBrewer。请在此处查看可用调色板列表。 --> -->
+<!-- <!-- ```{r} --> -->
+<!-- <!-- # 1: native palette from R --> -->
+<!-- <!-- heatmap(data, scale="column", col = cm.colors(256)) --> -->
+<!-- <!-- heatmap(data, scale="column", col = terrain.colors(256)) --> -->
+
+<!-- <!-- # 2: Rcolorbrewer palette --> -->
+<!-- <!-- library(RColorBrewer) --> -->
+<!-- <!-- coul <- colorRampPalette(brewer.pal(8, "PiYG"))(25) --> -->
+<!-- <!-- heatmap(data, scale="column", col = coul) --> -->
+
+<!-- <!-- ``` --> -->
+
+
+<!-- <!-- 细节调整 --> -->
+
+<!-- <!-- 您可以使用常规main和xlab/ ylab参数自定义标题和轴标题（左）。 --> -->
+
+<!-- <!-- 您也可以更改与标签labRow/ colRow及其与大小cexRow/ cexCol。 --> -->
+<!-- <!-- ```{r} --> -->
+<!-- <!-- # Add classic arguments like main title and axis title --> -->
+<!-- <!-- heatmap(data, Colv = NA, Rowv = NA, scale="column", col = coul, xlab="variable", ylab="car", main="heatmap") --> -->
+
+<!-- <!-- # Custom x and y labels with cexRow and labRow (col respectively) --> -->
+<!-- <!-- heatmap(data, scale="column", cexRow=1.5, labRow=paste("new_", rownames(data),sep=""), col= colorRampPalette(brewer.pal(8, "Blues"))(25)) --> -->
+
+<!-- <!-- ``` --> -->
+
+
+<!-- <!-- 在热图旁边添加颜色 --> -->
+
+<!-- <!-- 通常，热图旨在将观察到的结构与预期结构进行比较。 --> -->
+
+<!-- <!-- 您可以在热图旁边添加颜色矢量，以使用RowSideColors参数表示预期的结构。 --> -->
+<!-- <!-- ```{r} --> -->
+<!-- <!-- # Example: grouping from the first letter: --> -->
+<!-- <!-- my_group <- as.numeric(as.factor(substr(rownames(data), 1 , 1))) --> -->
+<!-- <!-- colSide <- brewer.pal(9, "Set1")[my_group] --> -->
+<!-- <!-- colMain <- colorRampPalette(brewer.pal(8, "Blues"))(25) --> -->
+<!-- <!-- heatmap(data, Colv = NA, Rowv = NA, scale="column" , RowSideColors=colSide, col=colMain   ) --> -->
+<!-- <!-- ``` --> -->
+
+
+
+# 树状图
+
+树状图（或树图）是一种网络结构图。它由一个根节点构成，它产生了由边或分支连接的几个节点。层次结构的最后一个节点称为叶子。
+树形图可以通过以下方式构建，也就是说两种类型的树状图：
+
+1. 分层数据集所构建的树形图：考虑CEO管理团队领导管理员工等等。
+2. 聚类结果：聚类根据组的相似性划分组中的一组个体。其结果可以看作是一棵树。
+
+树形图是一个网络结构（network structure）。它是由一个根节点（root node）生成的通过多个子节点连接而成一种树形结构图。层次结构的最后一个节点是叶子。在以下示例中，CEO是根节点。他管理着2名经理，经理管理8名员工的。
+
+```{r}
+# 加载包
+library(ggraph)
+library(igraph)
+library(tidyverse)
+library(dendextend)
+library(colormap)
+library(kableExtra)
+options(knitr.table.format = "html")
+
+# 创建一个数据集
+data=data.frame(
+  level1="CEO",
+  level2=c( rep("boss1",4), rep("boss2",4)),
+  level3=paste0("mister_", letters[1:8])
+)
+ 
+# 转换为边缘列表 
+edges_level1_2 = data %>% select(level1, level2) %>% unique %>% rename(from=level1, to=level2)
+edges_level2_3 = data %>% select(level2, level3) %>% unique %>% rename(from=level2, to=level3)
+edge_list=rbind(edges_level1_2, edges_level2_3)
+ 
+# 绘制数据
+mygraph <- graph_from_data_frame( edge_list )
+ggraph(mygraph, layout = 'dendrogram', circular = FALSE) + 
+  geom_edge_diagonal() +
+  geom_node_point(color="#69b3a2", size=3) +
+  geom_node_text(
+    aes(  label=c("CEO", "Manager", "Manager", LETTERS[8:1]) ), 
+    hjust=c(1,0.5, 0.5, rep(0,8)), 
+    nudge_y = c(-.02, 0, 0, rep(.02,8)),
+    nudge_x = c(0, .3, .3, rep(0,8))
+  ) +
+  theme_void() +
+  coord_flip() +
+  scale_y_reverse() 
+
+```
+
+上面的代码绘制了一副树形图，树形图很好的表现出一种层级关系。这是一类树形图，另外一类树形图是对聚类结果的可视化展示。
+
+下面的代码中首先计算出不同城市的距离，在这种情况下，距离可以来表示数据间的一个相似性。
+```{r}
+# 加载数据
+data <- read.table("https://raw.githubusercontent.com/holtzy/data_to_viz/master/Example_dataset/13_AdjacencyUndirecterWeighted.csv", header=T, row.names="Cities.", sep=",") %>% as.matrix
+colnames(data) <- gsub("\\.", " ", colnames(data))
+
+# 显示数据集
+tmp <- data %>% as.data.frame() %>% select(1,3,6) %>% .[c(1,3,6),]
+tmp[is.na(tmp)] <- "-"
+tmp %>% kable() %>%
+  kable_styling(bootstrap_options = "striped", full_width = F)
+```
+
+可以进一步对于这组数据进行分层聚类分析。基本上，这种统计方法试图建立一个具有层次结构的集群，层次聚类试图对彼此接近的样本进行分组。并且，最后聚类的结果可以看作是树状图：
+```{r}
+# 进行层次聚类分析。
+dend <- as.dist(data) %>% 
+  hclust(method="ward.D") %>% 
+  as.dendrogram()
+
+# 不同集群显示出不同的颜色
+leafcolor <- colormap(colormap = colormaps$viridis, nshades = 5, format = "hex", alpha = 1, reverse = FALSE)
+par(mar=c(1,1,1,7))
+dend %>%
+  set("labels_col", value = leafcolor, k=5) %>%
+  set("branches_k_color", value = leafcolor, k = 5) %>%
+  plot(horiz=TRUE, axes=FALSE)
+```
+
+从图中可以观察达到，同一地理区域的城市往往聚类在一起。例如，黄色聚类由数据集的所有亚洲城市组成。需要注意的是，树形图提供了更多信息。例如，悉尼似乎比加尔各答更远离加尔各答来自东京：这可以从代表距离的分支大小推断出来。
+
+
+树形图存在许多变化。它可以是水平的或垂直的，如前所示。它也可以是线性的或圆形的。圆形版本的优点是它可以更有效地使用图形空间：
+```{r}
+# 加载包
+library(ggraph)
+library(igraph)
+library(tidyverse)
+library(RColorBrewer) 
+set.seed(1)
+
+# 创建一个数据框架，显示出数据的层次结构
+d1=data.frame(from="origin", to=paste("group", seq(1,10), sep=""))
+d2=data.frame(from=rep(d1$to, each=10), to=paste("group", seq(1,100), sep="_"))
+edges=rbind(d1, d2)
+ 
+# 创建一个顶点数据。层次结构中的每个对象为一行
+vertices = data.frame(
+  name = unique(c(as.character(edges$from), as.character(edges$to))) , 
+  value = runif(111)
+) 
+
+vertices$group = edges$from[ match( vertices$name, edges$to ) ]
+ 
+ 
+# 添加的标签的信息:角度，水平调整和潜在的翻转
+# 计算标签的角度
+vertices$id=NA
+myleaves=which(is.na( match(vertices$name, edges$from) ))
+nleaves=length(myleaves)
+vertices$id[ myleaves ] = seq(1:nleaves)
+vertices$angle= 90 - 360 * vertices$id / nleaves
+ 
+# 计算标签的对齐方式 
+# 如果 在左边，我的标签当前的角度< -90
+vertices$hjust<-ifelse( vertices$angle < -90, 1, 0)
+ 
+#  翻转角度 
+vertices$angle<-ifelse(vertices$angle < -90, vertices$angle+180, vertices$angle)
+ 
+# 创建一个图形对象
+mygraph <- graph_from_data_frame( edges, vertices=vertices )
+
+# 设置颜色
+mycolor <- colormap(colormap = colormaps$viridis, nshades = 6, format = "hex", alpha = 1, reverse = FALSE)[sample(c(1:6), 10, replace=TRUE)]
+
+# 绘制图形
+ggraph(mygraph, layout = 'dendrogram', circular = TRUE) + 
+  geom_edge_diagonal(colour="grey") +
+  scale_edge_colour_distiller(palette = "RdPu") +
+  geom_node_text(aes(x = x*1.15, y=y*1.15, filter = leaf, label=name, angle = angle, hjust=hjust, colour=group), size=2.7, alpha=1) +
+  geom_node_point(aes(filter = leaf, x = x*1.07, y=y*1.07, colour=group, size=value, alpha=0.2)) +
+  scale_colour_manual(values= mycolor) +
+  scale_size_continuous( range = c(0.1,7) ) +
+  theme_void() +
+  theme(
+    legend.position="none",
+    plot.margin=unit(c(0,0,0,0),"cm"),
+  ) +
+  expand_limits(x = c(-1.3, 1.3), y = c(-1.3, 1.3))
+```
+
+另一个常见的变化是在树形图的底部显示热图。实际上，它允许可视化每个样本之间的距离，从而理解为什么聚类算法将2个样本彼此相邻放置。
+
+```{r}
+library(d3heatmap)# 加载包
+# 绘制图形
+d3heatmap(mtcars, scale = "column", colors = "Blues")
+```
+
+
+
+## 绘制基础的树形图
+
+使用ggraph包中的可以非常轻松的绘制树形图。这个包的图形语法，与ggplot图形的绘制遵循相同的逻辑ggplot2。
+
+绘制树形图通常会考虑两种输入格式：
+
+1. 边列表，这个列表包括两列，第一列表示连接的起点，第二列表示连接的终点
+2. 嵌套数据框，每一行是从根到叶的一条路径。数据包含与层次结构中的级别数一样多的列
+
+
+边列表是绘制树形图最方便的的格式，使用这种数据格式绘制图形非常的方便，首先使用graph_from_data_frame()函数将输入数据框转换为igraph图形对象，然后使用ggraph函数绘制树形图，并设置参数layout = 'dendrogram'，然后调用geom_edge_diagonal函数绘制图形。
+
+```{r,message=FALSE,warning=FALSE}
+# 加载包
+library(ggraph)
+library(igraph)
+library(tidyverse)
+ 
+# 创建一个边缘列表数据框架，给出数据层次结构
+d1 <- data.frame(from="origin", to=paste("group", seq(1,5), sep=""))
+d2 <- data.frame(from=rep(d1$to, each=5), to=paste("subgroup", seq(1,25), sep="_"))
+edges <- rbind(d1, d2)
+ 
+# 创建一个图形对象
+mygraph <- graph_from_data_frame( edges )
+ 
+# 绘制图形
+ggraph(mygraph, layout = 'dendrogram', circular = FALSE) + 
+  geom_edge_diagonal() +
+  geom_node_point() +
+  theme_void()
+```
+
+从图中可以看到，使用第一种格式的数据绘制出了一副树形图。
+另一种常见格式是嵌套数据框架。在这种情况下，需要首先将数据转变成为第一种个数的数据框，然后在绘制图形。下面的代码显示了如何轻松地将嵌套数据框转换为边列表数据。完成后，再次使用上面的代码绘制树形图。
+
+```{r}
+# 加载包
+library(ggraph)
+library(igraph)
+library(tidyverse)
+ 
+# 创建数据集
+data <- data.frame(
+  level1="CEO",
+  level2=c( rep("boss1",4), rep("boss2",4)),
+  level3=paste0("mister_", letters[1:8])
+)
+data %>% head(3)
+ 
+# 转换为边缘列表 
+edges_level1_2 <- data %>% select(level1, level2) %>% unique %>% rename(from=level1, to=level2)
+edges_level2_3 <- data %>% select(level2, level3) %>% unique %>% rename(from=level2, to=level3)
+edge_list=rbind(edges_level1_2, edges_level2_3)
+ 
+#绘制图形
+mygraph <- graph_from_data_frame( edge_list )
+ggraph(mygraph, layout = 'dendrogram', circular = FALSE) + 
+  geom_edge_diagonal() +
+  geom_node_point() +
+  theme_void()
+
+```
+
+
+从图中可以看到绘制出来的树形图，这里使用的是第二种类型的数据进行的绘制。在遇到这样的数据之前,需要先对数据进行转换，然后再进行图形的绘制。
+
+
+## 绘制圆形树状图
+
+ggraph包的可以绘制圆形树形图，这种图形在树形图分支比较多的时候非常有用。但是其绘制起来晒微有一些困难，其标签调整可能也有点棘手。下面的代码绘制了一副圆形条形图：
+```{r}
+# 加载包
+library(ggraph)
+library(igraph)
+library(tidyverse)
+library(RColorBrewer) 
+# 创建一个数据框，给出数据的层次结构
+d1=data.frame(from="origin", to=paste("group", seq(1,10), sep=""))
+d2=data.frame(from=rep(d1$to, each=10), to=paste("subgroup", seq(1,100), sep="_"))
+edges=rbind(d1, d2)
+ 
+# 创建一个顶点数据。 
+vertices = data.frame(
+  name = unique(c(as.character(edges$from), as.character(edges$to))) , 
+  value = runif(111)
+) 
+#  设置颜色
+vertices$group = edges$from[ match( vertices$name, edges$to ) ]
+ 
+ 
+# 添加的标签的信息:角度，水平调整和潜在的翻转
+# 计算标签的角度
+vertices$id=NA
+myleaves=which(is.na( match(vertices$name, edges$from) ))
+nleaves=length(myleaves)
+vertices$id[ myleaves ] = seq(1:nleaves)
+vertices$angle= 90 - 360 * vertices$id / nleaves
+ 
+# 计算标签的对齐方式: 
+#如果在左边，我的标签当前的角度< -90
+vertices$hjust<-ifelse( vertices$angle < -90, 1, 0)
+ 
+#  翻转角度 
+vertices$angle<-ifelse(vertices$angle < -90, vertices$angle+180, vertices$angle)
+ 
+# 创建一个图形对象
+mygraph <- graph_from_data_frame( edges, vertices=vertices )
+ 
+#  绘制图形
+ggraph(mygraph, layout = 'dendrogram', circular = TRUE) + 
+  geom_edge_diagonal(colour="grey") +
+  scale_edge_colour_distiller(palette = "RdPu") +
+  geom_node_text(aes(x = x*1.15, y=y*1.15, filter = leaf, label=name, angle = angle, hjust=hjust, colour=group), size=2.7, alpha=1) +
+  geom_node_point(aes(filter = leaf, x = x*1.07, y=y*1.07, colour=group, size=value, alpha=0.2)) +
+  scale_colour_manual(values= rep( brewer.pal(9,"Paired") , 30)) +
+  scale_size_continuous( range = c(0.1,10) ) +
+  theme_void() +
+  theme(
+    legend.position="none",
+    plot.margin=unit(c(0,0,0,0),"cm"),
+  ) +
+  expand_limits(x = c(-1.3, 1.3), y = c(-1.3, 1.3))
+```
+
+
+从图中可以看到，树形图围绕成为一个圆形。实际上，由于树形图的分支太多，此时不能通过普通的树形图绘制出来，此时，绘制一个圆形树形图是一个很好的选择。
+
+## 聚类结果的树形图
+
+分层聚类是数据科学中的常见任务，可以使用R中hclust()的函数进行构建聚类模型。以下示例将介绍了聚类的整个过程，演示如何准备数据，如何运行聚类以及如何构建适当的图表以进行可视化结果。聚类允许通过相似性对样本进行分组，并且可以将其结果可视化为树状图。处理的步骤如下：
+
+1. 输入数据集是矩阵形式，其中每行代表的是样本，每列代表的是变量。
+
+2. 在进行聚类之间，需要提供样本之间的距离或者相似性度量。数据集的距离或者相似性度量，可以使用dist()或cor()函数计算，具体方法取决于具体情况。
+
+3. 使用hclust()函数用于执行分层聚类
+
+4. 可以使用该plot()函数直接显示其聚类输出。
+```{r}
+# 创建一个数据集 
+data <- matrix( sample(seq(1,2000),200), ncol = 10 )
+rownames(data) <- paste0("sample_" , seq(1,20))
+colnames(data) <- paste0("variable",seq(1,10))
+
+# 计算距离
+dist <- dist(data[ , c(4:8)] , diag=TRUE)
+
+# 层次聚类
+hc <- hclust(dist)
+
+#  绘制图形
+plot(hc)
+
+
+
+
+```
+
+上面的代码中，首先使用dist函数计算了数据集第四个变量到第八个变量之间的相互距离。然后使用hclust函数对数据及进行聚类，最后使用plot函数将聚类的结果进行可视化。如果对于聚类的结果中某个特定的部分感兴趣，可以放大树的特定部分。使用[[]]运算符选择感兴趣的组即可：
+```{r}
+# 将dedrogram存储在对象中
+dhc <- as.dendrogram(hc)
+
+# 设置保证金
+par(mar=c(4,4,2,2))
+
+# 绘制第二组
+plot(dhc[[2]] , main= "zoom on a part of the dendrogram")
+
+```
+
+上面的代码中首先使用as.dendrogram将聚类的结果转变成为dendrogram.然后在绘图性使用使用[[]]符号选取dhc对象的第二个部分进行绘图。最后图形所呈现的结果则是整个聚类图的第二部分。从图中可以观察到，图形显示了整个树形图中，根节点下的第二个分支的结果。
+更进一步，可以为树形图中的叶子节点添加颜色。在下面的例子中，展示如何为叶子中添加特定颜色。这样可以观察数据在聚类之后是否确实找到了预期的分组。
+```{r}
+# 构建数据集 
+sample <- paste(rep("sample_",24) , seq(1,24) , sep="")
+specie <- c(rep("dicoccoides" , 8) , rep("dicoccum" , 8) , rep("durum" , 8))
+treatment <- rep(c(rep("High",4 ) , rep("Low",4)),3)
+data <- data.frame(sample,specie,treatment)
+for (i in seq(1:5)){
+  gene=sample(c(1:40) , 24 )
+  data=cbind(data , gene)
+  colnames(data)[ncol(data)]=paste("gene_",i,sep="")
+ }
+data[data$treatment=="High" , c(4:8)]=data[data$treatment=="High" , c(4:8)]+100
+data[data$specie=="durum" , c(4:8)]=data[data$specie=="durum" , c(4:8)]-30
+rownames(data) <- data[,1]    
+
+ 
+
+# 计算样本间的欧氏距离
+dist=dist(data[ , c(4:8)] , diag=TRUE)
+
+# 层次聚类
+hc <- hclust(dist)
+dhc <- as.dendrogram(hc)
+
+#  树的每一片叶子都有几个属性，比如颜色、形状等等。看看吧:
+specific_leaf <- dhc[[1]][[1]][[1]]
+ 
+
+#改变叶子节点的属性
+i=0
+colLab<<-function(n){
+    if(is.leaf(n)){
+        
+        # 选取当前的属性
+        a=attributes(n)
+        
+ 
+        ligne=match(attributes(n)$label,data[,1])
+        treatment=data[ligne,3];
+            if(treatment=="Low"){col_treatment="blue"};if(treatment=="High"){col_treatment="red"}
+        specie=data[ligne,2];
+            if(specie=="dicoccoides"){col_specie="red"};if(specie=="dicoccum"){col_specie="Darkgreen"};if(specie=="durum"){col_specie="blue"}
+        
+        #叶子属性修改
+        attr(n,"nodePar")<-c(a$nodePar,list(cex=1.5,lab.cex=1,pch=20,col=col_treatment,lab.col=col_specie,lab.font=1,lab.cex=1))
+        }
+    return(n)
+}
+
+# 设置参数
+dL <- dendrapply(dhc, colLab)
+ 
+# 绘制图形
+plot(dL , main="structure of the population")
+legend("topright", 
+     legend = c("High Nitrogen" , "Low Nitrogen" , "Durum" , "Dicoccoides" , "Dicoccum"), 
+     col = c("red", "blue" , "blue" , "red" , "Darkgreen"), 
+     pch = c(20,20,4,4,4), bty = "n",  pt.cex = 1.5, cex = 0.8 , 
+     text.col = "black", horiz = FALSE, inset = c(0, 0.1))
+```
+
+从图中可以观察到，树形图中的叶子节点被设置了颜色。从图中的结果可以观察到，所有的点都被正确的分类了，因为在不同枝干下面，叶节点的颜色都是一样的。
+
+## 更多的调整
+
+
+使用dendextend包能够对于树状图进行更多的定制，例如在底部添加颜色调，绘制面对面的树形图等等。绘制一幅基本的树状图，首先，输入数据集是一个数据框，其中行表示数据，列表式变量，然后使用dist()函数来计算样本之间的距离，使用hclust() 函数进行分层聚类。最受使用plot()函数将聚类的结果输出为树形图。
+
+在基础的图形之上，可以使用set函数对属性图进行调整。dendextend包中的set()函数允许修改树型图中特定部分的属性。
+
+使用set函数可以修改树形图中的标签，节点，枝干的颜色，大小，种类等等。
+```{r}
+# 加载包
+library(tidyverse)
+ 
+# 数据集
+head(mtcars)
+ 
+# 使用三个变量进行聚类
+mtcars %>% 
+  select(mpg, cyl, disp) %>% 
+  dist() %>% 
+  hclust() %>% 
+  as.dendrogram() -> dend
+ 
+# 绘制图形
+par(mar=c(7,3,1,1))  # 增加底边距离以得到完整的标签
+plot(dend)
+
+```
+
+上面的代码绘制了一副基础的树形图。然后使用set函数对图形进行更多的修改。
+
+```{r}
+# 加载包
+library(dendextend)
+
+# 绘制图形
+dend %>% 
+  # 自定义枝干
+  set("branches_col", "black") %>% set("branches_lwd", 3) %>%
+  # 自定义标签
+  set("labels_col", "red") %>% set("labels_cex", 0.8) %>%
+  plot()
+
+```
+
+上面的代码中修改了树形图中枝干线条的颜色和线条的大小。修改了标签的颜色和标签的大小。代码中'set("branches_col", "black")'表示将枝干的颜色设置为黑色，代码set("branches_lwd", 3)表示将枝干的粗细程度设置为3.
+代码中 set("labels_col", "red") 表示将叶子节点的标签设置为红色，代码set("labels_cex", 0.8)表示将叶子节点的标签的大小设置为0.8。
+从图中可以看出，树形图枝干线条变得更粗，并且最底下叶子节点的标签变成了红色。
+
+```{r}
+#绘制图形
+dend %>% 
+  set("nodes_pch", 3)  %>% 
+  set("nodes_cex", 0.7) %>% 
+  set("nodes_col", "red") %>% 
+  plot()
+
+```
+
+上面的代码中，对树形图中的节点仅进行了调整。代码中 set("nodes_pch", 3) 表示将树形图中的节点通过'+'号来表示。代码 set("nodes_cex", 0.7)表示设置节点的大小为0.7。代码set("nodes_col", "red")表示设置树形图节点的颜色为红色。
+
+从图中可以看到，节点变成了'+'号，并且颜色变成了红色。
+```{r}
+# 绘制图形
+dend %>% 
+  set("leaves_pch", 2)  %>% 
+  set("leaves_cex", 0.7) %>% 
+  set("leaves_col", "skyblue") %>% 
+  plot()
+```
+
+上面的代码对于树形图的叶子节点进行了设置，设置了叶子节点的形状，颜色和大小。从图中可以看到，叶子节点的形状全部变成了三角形。
+
+有是有在分析的过程中，对于树形图中的某一个集群比较感兴趣。这个时候突出的显示群集是一个比较好的选择。可以再树形图中为分支和标签添加颜色，以指定所需的群集。其中rect.dendrogram()函数甚至允许使用矩形突出显示一个或多个特定聚类。
+```{r}
+# 不同的聚类设置不同的颜色
+par(mar=c(1,1,1,7))
+dend %>%
+  set("labels_col", value = c("skyblue", "orange", "grey"), k=3) %>%
+  set("branches_k_color", value = c("skyblue", "orange", "grey"), k = 3) %>%
+  plot(horiz=TRUE, axes=FALSE)
+abline(v = 350, lty = 2)
+
+
+```
+
+
+上面的代码中，将不同的族群设置成为了不同的颜色，并且添加了一条垂直线。从图形中可以观察到，这里会绘制了一副水平的树形图，不同的族群通过蓝色，橘色和灰色这三种颜色区分开来。
+
+
+```{r}
+# 通过矩阵包裹聚类集群
+par(mar=c(9,1,1,1))
+dend %>%
+  set("labels_col", value = c("skyblue", "orange", "grey"), k=3) %>%
+  set("branches_k_color", value = c("skyblue", "orange", "grey"), k = 3) %>%
+  plot(axes=FALSE)
+rect.dendrogram( dend, k=3, lty = 5, lwd = 0, x=1, col=rgb(0.1, 0.2, 0.4, 0.1) ) 
+```
+
+上面的代码对于树形图中的族群设置了不同的颜色，并且使用矩形将某一个族群包裹起来。从图形中可以看到，左边的族群被一个浅色的透明矩阵包裹起来了，这样的话，矩阵起到了一个突出的作用。
+
+还可以在树形图中添加预期的分组。这样就可以对于聚类的结果和预期的聚类结果进行一个比较。
+
+下面的代码中使用了mtcars的数据集来构建树形图，其中有一个变量am是二进制变量，可以使用这个变量与聚类的结果进行对比，观察聚类的结果与这个变量的结果是否一致。
+
+```{r}
+# 创建一个颜色向量，如果am是0，则为深绿色，如果是1，则为绿色。
+my_colors <- ifelse(mtcars$am==0, "forestgreen", "green")
+ 
+# 绘制图形
+par(mar=c(10,1,1,1))
+dend %>%
+  set("labels_col", value = c("skyblue", "orange", "grey"), k=3) %>%
+  set("branches_k_color", value = c("skyblue", "orange", "grey"), k = 3) %>%
+  set("leaves_pch", 19)  %>% 
+  set("nodes_cex", 0.7) %>% 
+  plot(axes=FALSE)
+ 
+# 添加颜色
+colored_bars(colors = my_colors, dend = dend, rowLabels = "am")
+```
+上面的代码中，使用colored_bars函数添加了一个颜色条，用于比较叶子节点的聚类结果是不是与预期的结果一直。从图中可以看到，聚类的结果与预期的结果并不一致，因为，在同一个聚类的结果中，颜色条中存在两种颜色。通过图形可以很容易的比较聚类的结果与预期结果的差距。
+
+更加高级的用法可以比较两个树形图，使用该tanglegram()函数可以比较2个树形图。在进行聚类分析的时候，使用这种图形可以来比较两种不同的聚类方法的结果的差异。
+
+```{r}
+# 使用两种不同的聚类方法制作2个树图
+d1 <- USArrests %>% dist() %>% hclust( method="average" ) %>% as.dendrogram()
+d2 <- USArrests %>% dist() %>% hclust( method="complete" ) %>% as.dendrogram()
+ 
+# 绘制图形
+dl <- dendlist(
+  d1 %>% 
+    set("labels_col", value = c("skyblue", "orange", "grey"), k=3) %>%
+    set("branches_lty", 1) %>%
+    set("branches_k_color", value = c("skyblue", "orange", "grey"), k = 3),
+  d2 %>% 
+    set("labels_col", value = c("skyblue", "orange", "grey"), k=3) %>%
+    set("branches_lty", 1) %>%
+    set("branches_k_color", value = c("skyblue", "orange", "grey"), k = 3)
+)
+ 
+# 将图形合并到
+tanglegram(dl, 
+           common_subtrees_color_lines = FALSE, highlight_distinct_edges  = TRUE, highlight_branches_lwd=FALSE, 
+           margin_inner=7,
+           lwd=2
+)
+
+```
+
+上面的代码中，使用两种方法进行了聚类，并且绘制了两个树形图。从图中可以看到两种聚类结果是一样的，因为从图中可以看到，虽然两幅树形图并不完全一样，但是在一副树形图中的，某个叶节点属于某一个类别，在另外一副树形图中，该叶节点同样属于此类别。使用这样的图形在比较多种聚类方法的时候是非常有用的。
+
+# 圆形包装图（Circular Packing）
+
+圆形包装图或圆形树形图允许可视化分层组织。它相当于树形图，其中树型图的每个节点表示为圆形，其子节点表示为圆形内部的圆形，其中每个圆的大小可以与特定值成比例。
+
+下面的代码世界人口在200多个地区中的分配情况。世界分为大陆（组），区域（子组）和国家。国家被视为叶子：它们位于分支的末端。
+
+```{r}
+# 加载包
+library(tidyverse)
+library(hrbrthemes)
+library(circlepackeR)  
+# devtools::install_github("jeromefroe/circlepackeR")
+# 从数据集中获取数据集
+data <- read.table("https://raw.githubusercontent.com/holtzy/data_to_viz/master/Example_dataset/11_SevCatOneNumNestedOneObsPerGroup.csv", header=T, sep=";")
+data[ which(data$value==-1),"value"] <- 1
+colnames(data) <- c("Continent", "Region", "Country", "Pop")
+
+# 删除一些有问题的行
+data <- data %>% filter(Continent!="") %>% droplevels()
+
+# 改变格式。
+library(data.tree)
+data$pathString <- paste("world", data$Continent, data$Region, data$Country, sep = "/")
+population <- as.Node(data)
+ 
+# 自定义颜色范围的最小值和最大值。
+circlepackeR(population, size = "Pop", color_min = "hsl(56,80%,80%)", color_max = "hsl(341,30%,40%)")
+
+```
+
+上面的图形绘制了一副圆形包装图，从图中可以看到，亚洲地区的人口是最多的，其次是美洲。使用圆形包装图可以非常清晰的显示出不同层级的数量的差异。
+
+但是需要注意的是，如果需要精确比较不同组的值，建议不要使用圆形包装图。实际上，人眼很难将一个区域翻译成一个准确的数字。如果需要准确的了解数据，更好的选择是使用条形图或棒棒糖图。
+
+但是，圆形包装图非常清楚地显示了整体与局部之间的关系。它使用的空间的结果比树形图阅读效率低一点，但是圆形包装图的层次结构变得非常整洁。
+
+
+
+
+```{r}
+# 加载包
+library(ggraph)
+library(igraph)
+library(viridis)
+ 
+# 给出层次结构的数据框架
+edges=flare$edges
+vertices = flare$vertices
+mygraph <- graph_from_data_frame( edges, vertices=vertices )
+ 
+# 增加一个因子
+ggraph(mygraph, layout = 'circlepack', weight="size") + 
+  geom_node_circle(aes(fill = as.factor(depth), color = as.factor(depth) )) +
+  scale_fill_manual(values=c("0" = "white", "1" = "white", "2" = magma(4)[2], "3" = magma(4)[3], "4"=magma(4)[4])) +
+  scale_color_manual( values=c("0" = "white", "1" = "white", "2" = "black", "3" = "black", "4"="black") ) +
+  theme_void() + 
+  theme(legend.position="FALSE")
+```
+
+
+上面的代码中删除图中最外层的园，这样的调整改善了图形的外观。从图中可以观察到。最外圈代表整体的圆圈被取消了。
+
+另外，如果仅显示一个级别的层次结构，则它将等同于条形图。区别是它不是将值显示为条形，而是使用圆圈。
+
+
+
+需要注意的是，如果层次结构中有多个级别，建议使用交互式图形。在图形中添加太多的标签会让图形变得不可读。
+
+##  具有一个层次的包装图
+
+下面介绍如何构建仅具有一个层次结构的基本圆形包装图表。基本上，只需用圆圈表示数据集的每个实体或个体，其大小取决于提供的值。
+
+它就像一个条形图，但是使用圆形大小而不是条形长度。它接近于泡沫图，但X和Y位置并不意味着什么。它是树形图的圆形版本。下面的代码绘制出了只有一个层次结构的圆形图：
+```{r}
+# 加载包
+library(packcircles)
+library(ggplot2)
+ 
+# 创建数据集
+data <- data.frame(group=paste("Group", letters[1:20]), value=sample(seq(1,100),20)) 
+ 
+# 创建布局 
+# 给出了圆心(x和y)和半径，与值成比例
+packing <- circleProgressiveLayout(data$value, sizetype='area')
+ 
+# 生成数据框
+data <- cbind(data, packing)
+dat.gg <- circleLayoutVertices(packing, npoints=50)
+ 
+#绘制图形
+ggplot() + 
+  geom_polygon(data = dat.gg, aes(x, y, group = id, fill=as.factor(id)), colour = "black", alpha = 0.6) +
+  
+  # 添加文本
+  geom_text(data = data, aes(x, y, size=value, label = group)) +
+  scale_size_continuous(range = c(1,4)) +
+  
+  # 设置主题
+  theme_void() + 
+  theme(legend.position="none") +
+  coord_equal()
+```
+
+从图中可以看到，图形非常类似于条形图，只不过一个层次的圆形包装图通过园的大小来表示对应值的大小。
+
+### 调整颜色
+
+下面介绍使用viridis包来调整圆形包装图的颜色，其中有五种配色方式，如图所示：
+
+![](/Users/milin/Documents/color.jpg)
+
+设置不同配色的函数分别是：
+
+1. viridis
+2. viridisMap
+3. magma
+4. inferno
+5. plasma
+6. cividis
+
+```{r}
+# 加载包
+library(packcircles)
+library(ggplot2)
+library(viridis)
+ 
+# 创建数据集
+data <- data.frame(group=paste("Group", letters[1:20]), value=sample(seq(1,100),20)) 
+ 
+# 生成的布局。
+packing <- circleProgressiveLayout(data$value, sizetype='area')
+data <- cbind(data, packing)
+dat.gg <- circleLayoutVertices(packing, npoints=50)
+ 
+# 基本的颜色定制
+ggplot() + 
+  geom_polygon(data = dat.gg, aes(x, y, group = id, fill=as.factor(id)), colour = "black", alpha = 0.6) +
+  scale_fill_manual(values = magma(nrow(data))) +
+  geom_text(data = data, aes(x, y, size=value, label = group)) +
+  scale_size_continuous(range = c(1,4)) +
+  theme_void() + 
+  theme(legend.position="none") +
+  coord_equal()
+```
+
+上面的代码使用使用了magma函数来对不同的分组设置了不同的颜色。从图中可以观察到，圆圈越大颜色越深。
+
+还可以将某一个变量映射到颜色参数，根据数据值使的图形的颜色更亮或更暗是一项常见操作。下面的代码通过将value变量映射到fill参数，来调整图形的颜色：
+```{r}
+ 
+#这里重复了51次每个值，因为用50行创建了多边形
+dat.gg$value <- rep(data$value, each=51)
+
+# 绘制图形
+ggplot() + 
+  # 添加气泡
+  geom_polygon(data = dat.gg, aes(x, y, group = id, fill=value), colour = "black", alpha = 0.6) +
+  scale_fill_distiller(palette = "BuPu", direction = 1 ) +
+ 
+  # 在每个气泡的中心添加文本+控制其大小
+  geom_text(data = data, aes(x, y, size=value, label = group)) +
+  scale_size_continuous(range = c(1,4)) +
+ 
+  # 设置主题
+  theme_void()  + 
+  theme(legend.position="none") + 
+  coord_equal()
+
+```
+
+
+上面的代码通过讲一个变量映射成为颜色参数来调整图形的颜色，这样图形会更具对应变量的不同，将图形中的圆圈设置为不同的颜色。theme_void()函数去除了坐标轴与坐标轴网格，代码theme(legend.position="none")去除了图形中的图例。
+从图中可以看到，园越大，颜色也越深，但是整体的颜色与上图还是有区别的。
+
+进一步，还可以对图形的背景调整，通过theme()函数及其plot.background(),legend.position参数，更改背景。
+
+
+```{r}
+ggplot() + 
+  
+  # 创建一个气泡
+  geom_polygon(data = dat.gg, aes(x, y, group = id, fill=value), colour = "grey", alpha = 0.6, size=.5) +
+  scale_fill_distiller(palette = "Spectral", direction = 1 ) +
+  
+  # 添加文本
+  geom_label(data = data, aes(x, y, size=value, label = group)) +
+  scale_size_continuous(range = c(1,4)) +
+  
+  # 设置主题
+  theme_void()  + 
+  theme(
+    legend.position="none",
+    plot.background = element_rect(fill="black"),
+    plot.title = element_text(color="white") 
+  ) + 
+  coord_equal() +
+  ggtitle("black backgroud")
+
+```
+
+上面的代码中修改了图形的背景，代码中，legend.position="none"表示去除图形的图例，plot.background = element_rect(fill="black")表示将图形的背景设置为黑色。
+plot.title = element_text(color="white") 表示将图形中文本设置为白色。
+
+从图形中可以看到，整个图形的背景变成了黑色，标题的文本变成了白色。通过黑白对比的图形显得非常的醒目。
+
+
+### 调整气泡之间的距离
+
+上文的内容描述了制作单层圆形包装图表的基本过程，使图形变得更加美观的一个方法是每个圆圈之间添加一些空间。
+实现的方式就是调整radius变量的数值，只需将它乘以0以下的数字，它就会减小圆的大小。
+
+```{r}
+# 加载包
+library(packcircles)
+library(ggplot2)
+library(viridis)
+
+# 创建数据集
+data <- data.frame(group=paste("Group", letters[1:20]), value=sample(seq(1,100),20)) 
+
+# 初始化布局
+packing <- circleProgressiveLayout(data$value, sizetype='area')
+packing$radius <- 0.95*packing$radius
+data <- cbind(data, packing)
+dat.gg <- circleLayoutVertices(packing, npoints=50)
+
+# 绘制图形
+ggplot() + 
+  geom_polygon(data = dat.gg, aes(x, y, group = id, fill=id), colour = "black", alpha = 0.6) +
+  scale_fill_viridis() +
+  geom_text(data = data, aes(x, y, size=value, label = group), color="black") +
+  theme_void() + 
+  theme(legend.position="none")+ 
+  coord_equal()
+```
+
+上面的代码调整了圆形包装图中圆形的间隔。从图中可以看到图形中圆圈之间不再紧挨着，图形之间的出现了一定的间隔。实现的方式是使用circleProgressiveLayout函数对于数据集进行了处理之后，修改了其返回的数据框packing中radius变量的大小，调整的代码是'packing$radius <- 0.95*packing$radius'。其他的代码与上文绘制图形是一样的。如果是乘以一个更小的值，则园之间的距离会变得更大。
+
+## 多个层次的包装图
+
+如果数据集是多层次结构，则可以绘制多层次的圆形包装图。圆形包装图表示数据的层次结构：最大的圆圈（层次结构的原点）包含几个大圆圈（级别1的节点），大圆圈包含较小的圆圈（级别2），依此类推。最后一个级别称为叶子。
+
+
+使用ggraph可以很轻松的绘制出圆形包装图，绘制图形的第一步是通过igraph包的graph_from_data_frame()函数将数据框转换为图形对象。然后，使用ggraph提供geom_node_circle()函数构件图形，下面的代码绘制了一副多层次的圆形包装图：
+
+```{r}
+# 加载包
+library(ggraph)
+library(igraph)
+library(tidyverse)
+ 
+# 创建一个给出层次结构的数据框 
+edges <- flare$edges
+
+head(edges)
+# 通常关联另一个数据集，它给出数据集的每个节点的信息:
+vertices <- flare$vertices
+ vertices %>% head(3)
+# 然后必须使用igraph库创建一个“graph”对象:
+mygraph <- graph_from_data_frame( edges, vertices=vertices )
+ 
+# 绘制图形
+ggraph(mygraph, layout = 'circlepack') + 
+  geom_node_circle() +
+  theme_void()
+```
+
+
+上面的代码中绘制了一副错层次的圆形包装图，从图中可以看到，园通过一层一层的嵌套包裹起来，很清晰的体现出数据中的不同层次。在代码中,vertice数据集记录了数据的不同层次，从输出的数据中可以看到，数据集分为两列.然后，使用graph_from_data_frame函数将数据框转变成为图形对象。然后使用geom_node_circle函数绘制圆形条形图。
+
+ggraph包允许将一种表示形式轻松地转变到另一种表示形式。实际上，几种类型的表示都适用于分层数据：树形图（可以是圆形），旭日形图或网络图！
+
+```{r}
+# 绘制图形
+ggraph(mygraph, layout='dendrogram', circular=TRUE) + 
+  geom_edge_diagonal() +
+  theme_void() +
+  theme(legend.position="none")
+
+```
+
+上面的代码将圆形包装图转变成为了圆形的树状图。
+
+```{r}
+# 绘制图形
+ggraph(mygraph, layout='dendrogram', circular=FALSE) + 
+  geom_edge_diagonal() +
+  theme_void() +
+  theme(legend.position="none")
+
+```
+
+上面的代码间圆形的包装图转变成为了树状图。
+```{r}
+# 绘制图形
+ggraph(mygraph, 'treemap', weight = 'size') + 
+  geom_node_tile(aes(fill = depth), size = 0.25) +
+  theme_void() +
+  theme(legend.position="none")
+
+```
+
+上面的代码将圆形包装图转变成为了树形图。
+
+```{r}
+# 绘制图形
+ggraph(mygraph) + 
+  geom_edge_link() + 
+  geom_node_point() +
+  theme_void() +
+  theme(legend.position="none")
+```
+
+上面的代码将圆形包装图转变成为了网络图。需要注意的是，上面所绘制的图形所用的数据是一样的，图形表达的含义也是完全一样，只不过表现形式有一定的区别。
+
+### 调整细节
+
+气泡大小与变量成比例,将数字变量映射到圆形大小可以向图表添加额外的信息层。下面的代码所使用的的数据集vertices中有一列size用于气泡的大小。基本上，它只需要传递给ggraph()函数的weight参数。
+```{r}
+# 加载包
+library(ggraph)
+library(igraph)
+library(tidyverse)
+library(viridis)
+ 
+# 创建一个层次结构的数据框
+edges <- flare$edges
+vertices <- flare$vertices
+mygraph <- graph_from_data_frame( edges, vertices=vertices )
+ 
+# 控制每个圆的大小
+ggraph(mygraph, layout = 'circlepack', weight="size") + 
+  geom_node_circle() +
+  theme_void()
+```
+
+上面的代码将weight参数指定为size变量，通过这样的方式将图形中圆形大小与变量size联系起来。为圆形包装图图添加颜色绝对有意义。添加颜色的第一种方式是将变量映射到颜色参数，图形中每个节点的原点都有一个颜色，不同的等级可以显示不同的颜色，依此类推。
+
+像往常一样，可以使用调色板来选择不同的配色。下面的代码分别使用了viridis和RColorBrewer的调色板来绘制图形：
+
+```{r}
+#  颜色取决于深度
+p <- ggraph(mygraph, layout = 'circlepack', weight="size") + 
+  geom_node_circle(aes(fill = depth)) +
+  theme_void() + 
+  theme(legend.position="FALSE")
+p
+
+```
+
+上面的代码中，在绘制图形的时候将depth变量指定为fill参数。从图形中可以看到，不同层级的圆形呈现出不同的颜色，整个图形的颜色呈现蓝色色调，图形中不同层级的颜色差异并不是很大。下面的代码分别使用了另外两种配色来绘制图形：
+
+```{r}
+# 调整调色板:viridis
+p + scale_fill_viridis()
+
+```
+上面的代码中，在绘制好图形之后，调用了scale_fill_viridis()函数。从图形中可以看到，层级越高的圆对应的颜色越深，层级越小的圆颜色更鲜艳。使用这种配色不同层级的颜色差异更大，能够更好地阅读图形信息。
+
+```{r}
+# 调色:colorBrewer
+p + scale_fill_distiller(palette = "RdPu") 
+```
+上面的底阿妈中，在绘制好的图形之后，使用了scale_fill_distiller函数来调整图形的颜色，并且设置了参数，palette = ’RdPu‘。从图形中可以看到整个图形呈现出红色色调。
+
+
+将颜色映射到不同层次之后，为了更好地了解图形，我们经常需要在圆圈中添加标签。但是，只有当圆圈数量不大时才能这样做，如果圆圈数量太多，及时添加了标签，标签同样很难阅读。可以使用geom_node_text或geom_node_label来注释圆形包装图的叶子节点：
+```{r}
+# 创建数据集的子集 
+edges <- flare$edges %>% 
+  filter(to %in% from) %>% 
+  droplevels()
+vertices <- flare$vertices %>% 
+  filter(name %in% c(edges$from, edges$to)) %>% 
+  droplevels()
+vertices$size <- runif(nrow(vertices))
+ 
+# 重建图形对象
+mygraph <- graph_from_data_frame( edges, vertices=vertices )
+ 
+# 绘制图形
+ggraph(mygraph, layout = 'circlepack', weight="size" ) + 
+  geom_node_circle(aes(fill = depth)) +
+  geom_node_text( aes(label=shortName, filter=leaf, fill=depth, size=size)) +
+  theme_void() + 
+  theme(legend.position="FALSE") + 
+  scale_fill_viridis()
+
+```
+
+上面的代码中，使用了geom_node_text函数来添加圆形包装图的标签。从图形中可以看到，每一个子节点都被添加上了标签数据。下面的代码使用另外一种方式添加标签：
+
+```{r}
+# 绘制图形
+ggraph(mygraph, layout = 'circlepack', weight="size" ) + 
+  geom_node_circle(aes(fill = depth)) +
+  geom_node_label( aes(label=shortName, filter=leaf, size=size)) +
+  theme_void() + 
+  theme(legend.position="FALSE") + 
+  scale_fill_viridis()
+```
+
+上面的代码中使用了geom_node_label 函数添加了图形的标签，从图中可以看到，这种标签方式比上文的图中所添加的标签更加的容易阅读，因为这幅图中的标签全部被一个白色背景的矩阵包裹起来，可以清晰的看到标签是什么。
+
+### 隐藏第一级
+
+围绕整个图表的大圆圈（0级，原点）通常可以删除掉，因为这个圆圈没有提供任何信息，因此没有它的情况下图表看起来更好。
+
+想要删除最外层的圆圈，只需在scale_fill_manual()和scale_color_manual()函数中指定一个等于背景颜色的颜色即可。遵循相同的想法，还可以可以根据自己的需求删除多层次的层次结构。
+```{r}
+# 加载包
+library(ggraph)
+library(igraph)
+library(tidyverse)
+library(viridis)
+ 
+#  需要一个给出层次结构的数据框 
+edges=flare$edges
+vertices = flare$vertices
+mygraph <- graph_from_data_frame( edges, vertices=vertices )
+ 
+# 隐藏第一层
+ggraph(mygraph, layout = 'circlepack', weight="size") + 
+  geom_node_circle(aes(fill = as.factor(depth), color = as.factor(depth) )) +
+  scale_fill_manual(values=c("0" = "white", "1" = viridis(4)[1], "2" = viridis(4)[2], "3" = viridis(4)[3], "4"=viridis(4)[4])) +
+  scale_color_manual( values=c("0" = "white", "1" = "black", "2" = "black", "3" = "black", "4"="black") ) +
+  theme_void() + 
+  theme(legend.position="FALSE") 
+
+```
+
+上面的代码中，删除了最外层的圆圈，达成这样效果的代码是'scale_fill_manual(values=c("0" = "white", "1" = "magma(4)[1]", "2" = magma(4)[2], "3" = magma(4)[3], "4"=magma(4)[4]))',这里的代码表示第0层的园使用白色进行填充，第一层使用magma(4)[1]对应的颜色进行填充，第三层的园使用magma(4)[2]来填充，magma(4)[2]对应的是一个16进制的颜色代码，将magma(4)[2]在R中运行会输出'#721F81FF'.同理，对于其他层级设置了不同的填充颜色。
+
+然后，scale_color_manual( values=c("0" = "white", "1" = "black", "2" = "black", "3" = "black", "4"="black") )代码表示第0层级的线条通过白色表示，第1层级的线条通过过黑色表示。其他层级的线条都通过黑色来表示。
+
+更多这样的设置，0层的圆被设置成了背景颜色，白色。因此，在图形中不会被显现出来。从图中可以看到，最外面的层级被删除掉了。
+```{r}
+# 隐藏两个层级
+ggraph(mygraph, layout = 'circlepack', weight="size") + 
+  geom_node_circle(aes(fill = as.factor(depth), color = as.factor(depth) )) +
+  scale_fill_manual(values=c("0" = "white", "1" = "white", "2" = magma(4)[2], "3" = magma(4)[3], "4"=magma(4)[4])) +
+  scale_color_manual( values=c("0" = "white", "1" = "white", "2" = "black", "3" = "black", "4"="black") ) +
+  theme_void() + 
+  theme(legend.position="FALSE")
+```
+
+上面的代码中，删除了最外的两个层级的圆圈，达成这样效果的代码是'scale_fill_manual(values=c("0" = "white", "1" = "white", "2" = magma(4)[2], "3" = magma(4)[3], "4"=magma(4)[4]))',这里的代码表示第0层的园使用白色进行填充，第1层的圆同样使用白色进行填充，第三层的园使用magma(4)[2]来填充，magma(4)[2]对应的是一个16进制的颜色代码，将magma(4)[2]在R中运行会输出'#721F81FF'.同理，对于其他层级设置了不同的填充颜色。
+
+然后，scale_color_manual( values=c("0" = "white", "1" = "white", "2" = "black", "3" = "black", "4"="black") )代码表示第0层级的线条通过白色表示，第1层级的线条同样通难过白色表示。其他层级的线条都通过黑色来表示。
+
+更多这样的设置，0层和第1层都被设置成了背景颜色，白色。因此，在图形中不会被显现出来。从图中可以看到，最外面的两个层级被删除掉了。
+
+
+另外，还可以将标签添加到层次结构的特定级别，相关问题包括仅为一个特定级别的层次结构添加标签。例如，如果要显示level2组的名称，而不显示级别3的名称，以避免使图表混乱。要解决此问题，最棘手的部分是确定边列表数据框中每个节点的级别。幸运的是，data.tree包中的FromDataFrameNetwork()函数可以实现这样的操作。它允许设置每个节点的级别，使选择要显示的标签变得轻而易举。
+```{r}
+# 加载包
+library(data.tree)
+
+# 重塑数据
+edges <-flare$edges
+vertices <- flare$vertices
+
+# 转换成“tree”格式
+tree <- FromDataFrameNetwork(edges)
+
+# 然后可以很容易的得到每个节点的级别，并将其添加到初始数据框中:
+mylevels <- data.frame( name=tree$Get('name'), level=tree$Get("level") )
+vertices <- vertices %>% 
+  left_join(., mylevels, by=c("name"="name"))
+
+ 
+vertices <- vertices %>% 
+  mutate(new_label=ifelse(level==2, shortName, NA))
+mygraph <- graph_from_data_frame( edges, vertices=vertices )
+
+# 绘制图形
+ggraph(mygraph, layout = 'circlepack', weight="size") + 
+  geom_node_circle(aes(fill = as.factor(depth), color = as.factor(depth) )) +
+  scale_fill_manual(values=c("0" = "white", "1" = viridis(4)[1], "2" = viridis(4)[2], "3" = viridis(4)[3], "4"=viridis(4)[4])) +
+  scale_color_manual( values=c("0" = "white", "1" = "black", "2" = "black", "3" = "black", "4"="black") ) +
+  geom_node_label( aes(label=new_label), size=4) +
+  theme_void() + 
+  theme(legend.position="FALSE", plot.margin = unit(rep(0,4), "cm"))
+```
+上面的代码中对于第三个层级的圆都添加了标签，从图中可以看到，只有第三个层级的圆圈被添加了标签。这样做可以再圆比较多的时候避免添加标签而造成的混乱。
+
+
+# 树形图 （Treemap）
+
+
+树形图将分层数据显示为一组嵌套的矩形。每个组由一个矩形表示，该区域与其值成比例。下面年的代码描述250个国家的世界人口的示例。世界在大陆（组）中划分，大陆划分为区域（子组），区域划分在各个国家。在这种树形结构中，国家被视为叶子，它们位于分支的末端。
+
+```{r}
+# 加载包
+library(tidyverse)
+library(treemap)
+
+#  获取数据集
+data <- read.table("https://raw.githubusercontent.com/holtzy/data_to_viz/master/Example_dataset/11_SevCatOneNumNestedOneObsPerGroup.csv", header=T, sep=";")
+data[ which(data$value==-1),"value"] <- 1
+colnames(data) <- c("Continent", "Region", "Country", "Pop")
+
+# 绘制图形
+p <- treemap(data,
+            
+            # 数据集
+            index=c("Continent", "Region", "Country"),
+            vSize="Pop",
+            type="index",
+            
+            # 主题
+            title="",
+            palette="Dark2",
+
+            # 边界
+            border.col=c("black", "grey", "grey"),             
+            border.lwds=c(1,0.5,0.1),                         
+        
+            # 标签
+            fontsize.labels=c(0.7, 0.4, 0.3),
+            fontcolor.labels=c("white", "white", "black"),
+            fontface.labels=1,            
+            bg.labels=c("transparent"),              
+            align.labels=list( c("center", "center"), c("left", "top"), c("right", "bottom")),                                  
+            overlap.labels=0.5#, inflate.labels=T   
+            
+)
+```
+
+树形图理解起来和圆形包装图非常的类似，只不过圆形变成了矩阵。树形图中不同大小的矩阵代表了不同层级的数据。从图中可以观察到，图形的整体是一个矩阵，矩阵中包含了许许多多的子矩阵。这就类似于圆形包装图，其是一个大圆，包含了许多嵌套的小圆。
+
+树形图体现了整体是如何划分的：对于层次结构的每个层次，很容易理解哪个实体最重要，以及整体如何在部分之间分配。Treemap甚至可以在没有任何层次结构的情况下使用，只是为了显示几个实体的值，就像在条形图中一样。
+树形图具有有效利用空间的优势，这使得它们可用于表示大量数据。电商中会用到这个图形，电商中商品品类数据非常适合这样的图形进行展示，因为，电商商品存在多级别的品类，例如衣服是一大的品类，短袖是衣服品类下的子品类，男士T恤则又是短袖品类下的子品类，这样品类数据就会存在层次结构，最低级别的层次则是某一具体的商品。这样的数据类型就很适合使用这种图形进行展示。
+
+在绘制树形图的时候需要注意的是，不要注释层次结构的3个以上级别，这会使图形不可读。应当优先考虑层次结构的最高级别。
+
+
+## 基本的树形图
+
+
+绘制最基本的树形图，非常的简单，首先数据集需要两列，第一别表示数据的分组，第二列表示对应的值。然后使用treemap包中的treemap函数进行绘图。
+函数需要至少提供一个dataset（data），提供groups（index）的列，以及给出每个group（vSize）的大小的列。下面的代码绘制了基本的树形图：
+
+
+```{r}
+# 加载包
+library(treemap)
+ 
+# 创建数据集
+group <- c("group-1","group-2","group-3")
+value <- c(13,5,22)
+data <- data.frame(group,value)
+ 
+# 绘制图形
+treemap(data,
+            index="group",
+            vSize="value" 
+            )
+```
+
+上面的代码绘制了一副树形图。首先创建了一个数据框，数据框有两个变量，group和value，其中group 是离散变量，value 是连续变量。然后使用treemap绘制树形图，group 变量映射到index参数，value变量映射到vSize变量。然后即可绘制出树形图。从图形中可以看到，树形图只有一个层次，其中group - 3 组面积最大，对应的数据最大。
+
+## 带有多个级别的树形图
+
+下面的代码绘制了一个包含多个级别的树形图。数据中有3个小组，每个小组包含几个小组。每个子组都有一个我们映射到一个区域的值。
+在index参数中，需要按重要性顺序指定级别：group> subgroup> sub-subgroup。
+```{r}
+# 加载包
+library(treemap)
+ 
+# 构建数据集
+group <- c(rep("group-1",4),rep("group-2",2),rep("group-3",3))
+subgroup <- paste("subgroup" , c(1,2,3,4,1,2,1,2,3), sep="-")
+value <- c(13,5,22,12,11,7,3,1,23)
+data <- data.frame(group,subgroup,value)
+ 
+# 绘制图形
+treemap(data,
+            index=c("group","subgroup"),
+            vSize="value",
+            type="index"
+            ) 
+```
+
+上面的代码中，首先创建了一个数据集，数据集包含三个变量，第一个变量是group，第二个变量是subgroup，第三个变量是value。group变量和subgroup变量分表表示组和子组。使用treemap函数绘制图形，要绘制包含多个级别的树形图，需要将多个层次的数据映射到index参数，对应的代码为```index=c("group","subgroup")```，表示将group 和subgroup分别设置为组和子组。
+从图形中可以观察到，树形图绘制出了两个层次的数据。
+
+## 自定义树形图
+
+在绘制了基础的树形图之后，可以对图形的细节进行进一步的调整。第一步是调整标签外观。所有选项都在下面的代码中解释。需要注意的是，可以为树图的每个级别应用不同的功能，例如，对于组标签使用白色，对于子组标签使用橙色。
+```{r}
+# 加载包
+library(treemap)
+ 
+# 创建数据集
+group <- c(rep("group-1",4),rep("group-2",2),rep("group-3",3))
+subgroup <- paste("subgroup" , c(1,2,3,4,1,2,1,2,3), sep="-")
+value <- c(13,5,22,12,11,7,3,1,23)
+data <- data.frame(group,subgroup,value)
+ 
+# 自定义标签
+treemap(data, index=c("group","subgroup"),     vSize="value", type="index",
+ 
+    fontsize.labels=c(15,12),                # 标签的大小。给出每个级别聚合的大小:组的大小、子组的大小、子子组的大小……
+    fontcolor.labels=c("white","orange"),    # 标签的颜色
+    fontface.labels=c(2,1),                  # 标签字体:1,2,3,4为正常，粗体，斜体，粗体-斜体…
+    bg.labels=c("transparent"),              # 标签背景的颜色
+    align.labels=list(
+        c("center", "center"), 
+        c("right", "bottom")
+        ),                                   # 在矩形中何处放置标签?
+    overlap.labels=0.5,                      # n介于0和1之间的数，决定了标签之间重叠的容差。0表示较低级别的标签不打印，如果较高级别的标签重叠，1表示始终打印。中间值，例如默认值。5，表示如果其他标签的重叠面积不超过其面积的。5倍，则打印较低级别的标签。
+    inflate.labels=F,                        # 如果是，当矩形变大时，标签变大。
+ 
+)
+```
+上面的代码中对于图形的标签进行了调整，调整的标签的大小，位置以及颜色。从图中可以观察到组的标签被设置为白色，并将标签都放在矩阵的下方。
+
+另外还可以调整边框，使用border.col可以调整边框颜色。使用border.lwds参数调整边框的宽度。可以为每个选项提供向量，从而分别调整组和子组。
+
+```{r}
+# 自定义便捷
+treemap(data, index=c("group","subgroup"), vSize="value", type="index",
+ 
+    border.col=c("black","white"),             # 组、子组、子子组的边框颜色…
+    border.lwds=c(7,2)                         # 宽度的颜色
+        
+    )
+
+```
+上面的代码调整了图形的边框颜色，代码'border.col=c("black","white")'表示将第一层的边框设置为黑色，将第二层的边框设置为白色。border.lwds参数同样对两个层级边框的宽度进行了调整。从图中可以观察到，第一层的边框被设为为黑色，第二层级的边框被设置为白色。并且第一层的边框比第二层边框要更加的粗。
+
+下面的代码调整了树形图的颜色。
+```{r}
+# 绘制图形
+treemap(data, index=c("group","subgroup"), vSize="value", 
+ 
+    type="index",                            # 给树形图上色
+    palette = "Set1",                        # 设置配色
+    title="treemap",                      #  设置标题
+    fontsize.title=12,                       # 标题的大小设置
+ 
+) 
+```
+上面的代码中，使用了palette参数，用于调整图形的配色。参数设置为palette = 'Set1'。从图形中可以可以观察到group1 组被设置为红色，group2组被设置为蓝色，group3组被设置为绿色。图形的配色比较的醒目。当然还有其他的配色可以调整，包括Accent, Dark2, Paired, Pastel1等等。在绘图的过程中，可以多尝试几种配色，已达到最好的图形效果。

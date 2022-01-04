@@ -1,0 +1,1212 @@
+---
+title: "第一章 简介"
+output:
+  word_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# R和Rstudio
+
+## R语言
+
+R是一种编程语言和自由软件，常常被用于统计计算和图形绘制。R语言广泛应用于统计学家和数据科学家之中，用于开发统计软件和数据分析。R是世界上最强大的统计计算，机器学习和图形编程语言，拥有蓬勃发展的全球用户，开发人员和贡献者社区。
+
+R是罗斯·哈卡（Ross Ihaka）和罗伯特（Robert Gentleman）在新西兰的奥克兰大学所创建，R部分命名为前两个R作者的名字。R项目于1992年构思，1995年发布初始版本，2000年发布稳定版本。R可从CRAN网页进行下载及安装下载的链接为：http://cran.r-project.org/。
+
+
+R及其库实现了各种统计和图形方法，这些包括线性和非线性建模，经典统计测试，时间序列分析，分类，聚类等。
+
+R可以通过函数和扩展包轻松扩展，R社区因其在软件包方面的积极贡献而闻名。任何人都可以在R社区贡献出子集的包。到目前为止，R中有超过10,000个R包可供下载。R和开发人员社区非常的活跃，R在统计计算，数据科学以及数据可视化方面有着无与伦比的能力，几乎你面临的所有问题或者你关心的问题都有人为你实现了R包。R语言社区如此的活跃是有其原因的。
+
+1. R是数据科学领域最流行的语言。R语言是完全面向数据的，更加注重于从数据的角度去思考问题。在这一点与其他的编程语言有很大的区别。
+2. R是用于统计研究的主要工具：当新的方法被开发的时候，这个方法不仅仅被作为论文发表，这些方法往往会被开发成为一个R包，这让R永远成为新算法的前沿。
+3. CRAN系统本身是一个非常有效的共享R扩展平台，具有用于包创作，构建，测试和分发的成熟系统。R核心团队，特别是CRAN维护者，为R包创建这样一个充满活力的生态系统值得称赞。 
+
+![](/Users/milin/写书/Rpackages.png)
+
+从这张图可以看到，R语言的包的开发速度越来越快。但是过于多的包让人们很难选择自己所需要的包，可能需要一些搜索来找到你需要的软件包。当然，目前有很多关于包的搜索与汇总工具：
+
+1. CRAN提供包任务视图（https://cran.r-project.org/web/views/），按主题区域（例如财务或临床试验）提供包目录。
+
+
+2. MRAN（Microsoft R应用程序网络）为CRAN上的R软件包提供搜索工具。 MRAN（https://mran.microsoft.com/taskview）
+
+3. 为了找到最受欢迎的软件包，Rdocumentation.org 按下载次数提供了软件包的排行榜。它还提供了新发布和最近更新的包的列表。RDocumentation.org（https://www.rdocumentation.org/taskviews#Bayesian）还提供基于CRAN任务视图的可搜索版本。
+
+
+通过上面的几个连接可以很方便的找到自己所需要的包。
+
+R的许多标准函数都是用R编写的，这使得用户可以轻松地遵循所做的算法选择。对于计算密集型任务，可以在运行时链接和调用C，C ++和Fortran代码。高级用户可以编写C，C ++， Java， .NET 或Python代码直接操作R对象。通过使用用户提交的包来执行特定功能或特定研究领域，R具有高度可扩展性。由于其S传统，R具有比大多数统计计算语言更强大的面向对象编程设施。扩展R也因其词汇范围规则而得到缓解。
+
+R的语法非常的简单，介绍R的语法首先从数据的角度入手，在使用任何编程语言进行编程时，需要使用各种变量来存储各种信息。 变量只是保留值的存储位置。这意味着，当你创建一个变量，你必须在内存中保留一些空间来存储它们。可能想存储各种数据类型的信息，如字符，宽字符，整数，浮点，双浮点，布尔等。基于变量的数据类型，操作系统分配内存并决定什么可以存储在保留内存中。
+与其他编程语言（如C中的C和java）相反，变量不会声明为某种数据类型。 变量分配有R对象，R对象的数据类型变为变量的数据类型。尽管有很多类型的R对象，但经常使用的是：
+
+1. 向量
+2. 列表
+3. 矩阵
+4. 数组
+5. 因子
+6. 数据框
+
+### 向量
+当你想用多个元素创建向量时，你应该使用c()函数，这意味着将元素组合成一个向量。
+```{r}
+# 创建一个向量
+letter <- c('a','b',"c")
+letter
+
+# 查看数据类型
+class(letter)
+```
+
+上面的代码使用了c()函数来创建了一个向量，包含三个元素，分别为a，b，c这三个字母。然后class函数可以用于查看数据的类型。
+
+### Lists 列表
+列表是一个R对象，它可以在其中包含许多不同类型的元素，如向量，函数甚至其中的另一个列表。list这个数据类型常常用于储存不同的数据类型的数据。list里面可以储存向量，列表，矩阵，数组，因子，数据框所有的数据类型，另外，list还可以不断的嵌套list：
+```{r}
+l <- list(c(1,2,3),list(1),array(c(1,2,3,3,1,2),dim = c(1,2,3)),matrix(c(1,2,3,4),nrow = 2),factor(c(1,2,3)),data.frame(nu = c(1:3),id =c("a","b","c")))
+l
+class(l)
+```
+
+
+上面的代码创建了6中类型的数据，然后将这6种类型的数据全部放到一个list里面。
+
+### 矩阵
+
+矩阵是二维矩形数据集。 它可以使用矩阵函数的向量输入创建。当我们执行上面的代码，它产生以下结果
+```{r}
+# Create a matrix.
+M = matrix( c('a','a','b','c','b','a'), nrow = 2, ncol = 3, byrow = TRUE)
+print(M)
+```
+
+上面的代码创建了一个矩阵，创建矩阵的时候需要制定几个参数，nrow表示这个矩阵是多少的行，ncol用于表示这个矩阵是多少的列。这两个参数设置最少只需要设置一个。byrow=TRUE表示将向量通过行的方式排列称为矩阵，以上面的数据来说，‘c’的位置为(2,1)，如果设置的是byrow=F，则‘c’的位置是(2,2)
+
+
+### 数组
+虽然矩阵被限制为二维，但数组可以具有任何数量的维度。 数组函数使用一个dim属性创建所需的维数。 在下面的例子中，我们创建了一个包含两个元素的数组，每个元素为3x3个矩阵。
+```{r}
+# 创建一个数组
+a <- array(c('green','yellow'),dim = c(3,3,2))
+print(a)
+```
+上面的代码创建了一个3乘3乘2的数组，dim参数其表示的含义是有两个3*3的矩阵。使用数字可以创建任意维度的数据。
+
+
+### 因子
+
+因子是使用向量创建的r对象。 它将向量与向量中元素的不同值一起存储为标签。 标签总是字符，不管它在输入向量中是数字还是字符或布尔等。 它们在统计建模中非常有用。
+使用factor()函数创建因子。nlevels函数给出级别计数。因子常常用于创建有顺序的分类变量：
+
+```{r}
+# 创建一个颜色向量
+apple_colors <- c('green','green','yellow','red','red','red','green')
+
+# 创建一个因子向量
+factor_apple <- factor(apple_colors)
+
+# 输出结果
+print(factor_apple)
+print(nlevels(factor_apple))
+
+```
+
+上面的代码常见了有三个水平组成的因子向量，其分别表示为green，red，yellow。一般而言，字符的数据是不能进行比较的。但是如何设置的因子，则表示字符是有顺序的，在这个例子中，yellow red  green。
+
+### 数据框
+
+数据框是表格数据对象。 数据框与矩阵非常的类似。但是与数据框中的矩阵不同是，数据框每列可以包含不同的数据模式。 第一列可以是数字，而第二列可以是字符，第三列可以是逻辑的。 它是等长度的向量的列表。
+使用data.frame()函数创建数据帧。
+```{r}
+# 创建一个数据框
+BMI <- 	data.frame(
+   gender = c("Male", "Male","Female"), 
+   height = c(152, 171.5, 165), 
+   weight = c(81,93, 78),
+   Age = c(42,38,26)
+)
+print(BMI)
+```
+
+上面的代码创建了一个数据框。数据框是在数据科学中最常用的数据结构，数据框的数据结构非常的符合人们对于现实实际的认识，是对现实世界的一个很好的映射。就上面所创建的数据框而言，记录了不同人的性别，身高，体重，年龄。用数据框的思维可以很好的将现实世界映射成为数据框，例如，想了解什么因素会影响学生成绩，可能是，父母学历，平均学习时长，健康状况等等，将这些数据收集起来成为一个数据框，就是一份整洁
+可以用于分析的数据。
+
+在数据科学中有一个概念，就是整洁的数据（tidy data）。
+
+1. 没一个变量都是一列（Each variable forms a column.）
+2. 每一个观测都是一行 （Each observation forms a row.）
+3. 每一种类型的观察值一起构成一个表格。（Each type of observational unit  forms a table.）
+
+数据框往往作为整洁数据的一种表现形式。
+
+在介绍完R中的数据类型之后，需要简单介绍一些关于R的控制流。
+
+### for循环
+
+For循环是一种重复控制结构，允许您有效地编写需要执行特定次数的循环。
+
+语法
+在R中创建一个for循环语句的基本语法是 -
+```
+for (test_expression) {
+   statement
+}
+
+```
+
+![](/Users/milin/Documents/for.jpg)
+
+R的for循环是特别灵活的，因为它们不限于整数，或者输入中的偶数。 我们可以传递字符向量，逻辑向量，列表或表达式。
+```{r}
+# for 循环
+v <- LETTERS[1:4]
+for ( i in v) {
+   print(i)
+}
+```
+
+上面的代码创建了一个循环，i in v表示使用i这个变量对v的所有元素进行遍历。需要注意的是，使用for循环的效率比较低。因此往往采用其他的替代方式，例如使用apply函数族。例如，上面的代码可以改为：
+```{r}
+# apply 函数
+a <- data.frame(v)
+apply(a,1,print)
+```
+
+### 条件判断
+
+在R中创建if ... else语句的基本语法是 -
+```
+if(boolean_expression) {
+   ##  statement(s) will execute if the boolean expression is true.
+} else {
+   ## statement(s) will execute if the boolean expression is false.
+}
+如果布尔表达式的计算结果为真，则将执行if代码块，否则将执行代码块。
+```
+![](/Users/milin/Documents/for.jpg)
+```{r}
+# 条件判断
+x <- c("what","is","truth")
+
+if("Truth" %in% x) {
+   print("Truth is found")
+} else {
+   print("Truth is not found")
+}
+```
+
+上面的代码用于判断字符串是否在一个向量中，这里使用到了%in%,这个符号用于判断某一个元素是否在一个集合之中。这里“Truth”和“truth”是两个不同的字符串。所以返回“Truth is not found”。
+
+if语句后面可以跟一个可选的else if ... else语句，这对于使用single if ... else if语句测试各种条件非常有用。
+
+当使用if，else if，else语句有几点要记住。
+
+1. 如果可以有零或一个else，它必须在任何其他if之后。
+2. 一个if可以有0到许多else if和它们必须在else之前。
+3. 一旦一个else如果成功，没有任何剩余的else if或else将被测试。
+
+
+在R中创建if ... else if ... else语句的基本语法是 -
+
+```
+if(boolean_expression 1) {
+   ## Executes when the boolean expression 1 is true.
+} else if( boolean_expression 2) {
+   ## Executes when the boolean expression 2 is true.
+} else if( boolean_expression 3) {
+   ## Executes when the boolean expression 3 is true.
+} else {
+   ## executes when none of the above condition is true.
+}
+```
+
+上面的代码实现了多个条件的判断。
+
+
+### 函数
+
+R语言里面构建函数的方法是表达式是：
+
+```
+function_name <- function(arg_1, arg_2, ...) {
+   Function body 
+}
+```
+管与函数可以讨论的内容其实有很多。在这了简单的介绍函数的时候。
+
+函数的不同部分
+
+1. 函数名——这是函数的实际名称。它作为具有此名称的对象存储在R环境中。
+
+2. 参数——参数是占位符。当调用一个函数时，将一个值传递给参数。参数是可选的;换句话说，函数可能没有参数。参数也可以有默认值。
+
+3. 函数体——包含定义函数的函数的语句集合。
+
+4. 返回值——函数的返回值是要计算的函数体中的最后一个表达式。
+
+R语言有许多内置函数，可以在程序中直接调用，而无需先定义它们,例如,mean，sum等等函数。我们还可以创建和使用我们自己的函数，称为用户定义函数。
+
+
+```{r}
+# 函数
+frist <- function(){
+  
+  return(1+1)
+}
+
+frist()
+
+```
+
+上面的代码构建了一个简单的函数，每次调用函数都会计算1+1的结果。在这个函数中，并没有使用任何的参数。下面构建一个稍微复杂的函数：
+
+```{r}
+Fibonacci <- function(n)
+{
+  if(n == 1|n == 2)
+  {
+    return(1)
+  }
+  else
+  {
+    return(Fibonacci(n-1) + Fibonacci(n - 2))
+  }
+}
+Fibonacci(11)
+```
+
+上面使用了递归的方式编写了计算斐波拉序列的函数。这个函数有一个参数n。并且使用了递归的函数思想。最后，提一个比较有用的参数'...',如果有很多未知的参数会输入，则会使用'...'这个参数。其实，很多R的基础函数都有使用到这个参数，例如，R中基础的绘图函数:plot
+
+```{r}
+plot
+```
+上面的代码显示了plot函数的代码，可以看到，plot函数包含了'...'这个参数。
+```{r}
+f <- function(...){sum(...)}
+f(x = 1,y = 3,z =3)
+```
+上面的代码只是设置了‘...‘参数,于是在函数调用的时候，所有的参数都会被传递到sum这个函数中。
+
+
+R的另一个优势是静态图形，它可以生成出版品质的图形，包括数学符号。通过其他软件包可以获得动态和交互式图形。R的基础的绘图函数是plot函数，使用plot函数就可以快速的绘制大多数的统计图形：
+```{r}
+# 使用基础绘图系统绘图
+plot(rnorm(100),rnorm(100),xlab = "a",ylab = "b")
+```
+
+上面的代码绘制了关于两个正态分布对基变量的散点图。使用plot函数可以非常快速的绘制。但是随着R的不断发展，有着更多的绘图的工具。例如ggplot，ggvise，这些工具可以绘制出更加美观的图形：
+```{r}
+# 使用ggplot2 绘图
+require(ggplot2)
+qplot(rnorm(100),rnorm(100),geom = "point")+xlab("a") +ylab("b")
+```
+
+上面的代码使用了ggplot2包绘制了两个正太分布数据的散点图。
+```{r}
+# 使用ggvis绘图
+library(ggvis)
+
+ggvis(data = data.frame(a = rnorm(100),b = rnorm(100)),x = ~ a,y = ~ b) %>%layer_points()
+```
+
+这里时使用ggive包绘制了两个正太分布数据的散点图。需要注意的是速度ggvis比ggplot2快得多，尤其是在更改数据时。每个ggplot2图都有一秒钟或几秒钟的延迟。ggvis的绘图比较简单。但是，目前而言，ggplot2是使用最为广泛的绘图包，并且有非常多的扩展包。在本书中也是主要使用ggplot2进行绘图。
+<!-- 但是，在本文同样会对于ggivs进行介绍。 -->
+
+## Rstudio
+
+RStudio是为R语言设计的一种跨平台集成开发环境。使用Rstudio可以更改方便的使用R进行编程。当然，R的集成开发环境有很多，包括：
+
+1. Emacs + ESS ：ESS是一个emacs文本编辑器的一个统计分析的插件.     官网：http://ess.r-project.org/
+2. Sublime Text + R-Box ： 一个在Sublime 2/3中使用R语言编程的插件.  
+3. StatET ： 一个基于Eclipse的R语言IDE.    官网：http://www.walware.de/goto/statet
+4. Revolution R Enterprise ： 专注于大数据,大规模多处理器的功能,可以对学术用户免费提供和商业使用.    官网：http://www.revolutionanalytics.com/get-revolution-r-enterprise
+5. R Commander ： 一个包括基本图形用户界面的R包.    官网：http://socserv.mcmaster.ca/jfox/Misc/Rcmdr/
+6. IRkernel ：Jupyter的R语言内核.    官网：https://github.com/IRkernel/IRkernel
+7.Radiant ： 一个使用R语言，独立的基于浏览器接口的业务分析平台,基于Shiny.    官网：http://vnijs.github.io/radiant/
+8. RTVS ： Visual Studio中R开发工具.    官网：http://microsoft.github.io/RTVS-docs/
+
+这些集成开发环境都可以用于R的使用与开发，任意一个都可以很好使用。但是目前而言，Rstudio是应用最广泛的集成开发环境。
+
+当下载好了R之后，可以下载Rstudio，下载的链接为: http://www.rstudio.com/products/RStudio/。
+
+Rstudio的使用这里不做过多的介绍。如果像了解关于Rstudio的详细的使用指南，包括快捷键，详细设置调整，可以进入Rstudio的官网查看。另外，需要提到的是，Rstudio中官网可以找都很多关于关于R相关的备忘录。这些备忘录总结关于R的各种内容。
+
+![](/Users/milin/Documents/cheet.jpg)
+
+图中显示了关于Rstudio的备忘录，查看这个备忘录可以了解到关于Rstudio使用的一份非常精简的介绍。
+
+# R包介绍
+
+R包是关于R的一个资源库。R语言的特性之一是非常的开放，R语言通过R包来扩展其功能。目前来看，R中有超过8500个包可以使用，这些包用于解决数据访问，统计，可视化，机器学习，自然语言等等各个方面的问题。这些包的开发者都是活跃在统计，数据处理和机器学习前沿的著名学者或者教授。
+
+现在R包的开发依然处于一个非常活跃的时期，R包的数量依然在不断地增加。下载R包一般有两个来源，CRAN和github。最初，现在报只能够从CRAN中下载，如果开发者开发了一个包，想要上传进入CRAN，是比较繁琐的。CRAN有非常多的要求与审核，这样的好处是保住了上传包的质量。如果想要从CRAN中下载包。所使用的的函数是install.packages()。假设要下载ggplot2这个包。那么代码则是：
+
+```
+# 下载包
+install.packages("ggplot2")
+```
+上面的代码则会将对应的包全部下载下来。后来，随着R的不断发展，为了更加方便开发者贡献出自己的力量。出现了关于R包的下载方式。有些包开发者一开始会首先将自己的包上传到github，然后再慢慢地调整，上传到CRAN。也就是说，有些包仅仅在github上有，如果想要下载github上面的包,则需要使用install_github()这个函数，这个函数来自devtools这个包，这个包提供了很多开发相关的工具。ggplot2同样上传到了github中，从github中下载ggplot2的代码如下：
+```
+#  从github 下载包
+devtools::install_github("tidyverse/ggplot2")
+```
+
+上面的代码是用于从github中下载包。其中tidyverse表示github中的用户名，ggplot2表示的是对应的项目名称。
+
+当下载好了之后，想要调用所下载好的包，一般而言有两种方式。一种是library函数，另外一种是使用require()函数。这两种加载包的方式有一些区别。使用library会加载所用的包，如果重复的使用这个函数，则会重复的加载。有的时候我们在写代码的时候并不知道某一个包是否下载了，如果一个包没有下载，然后使用library函数进行加载。这个时候R语言会报错，代码会被中断。这个时候则可以使用require函数，如果包下载了使用require函数加载包，require函数还会返回一个布尔值，TRUE。如果这个包没有被下载，这个时候代码不会报错，require函数会返回FALSE。使用这个函数可以来判断一个包是否被下载。
+
+关于包使用的基本内容，以上的介绍已经足够了。本书是介绍数据探索与可视化的书。但是，任何一个R使用者都有必要了解一下关于R包开发的相关知识。因此，在这里介绍一本R语言包开发的相关书籍，如果读者有兴趣或者需要了解R语言包开发的相关内容，可以参考书籍-《R packages》。电子书的链接为：https://r-pkgs.org/。
+
+
+
+# R语言数据读取
+
+数据的读取是我们进行数据探索与数据可视化的最基本的一个步骤，我们需要将各种各样数据源的数据加载到R的环境中进行处理，分析，建模。数据源可能R自带的数据格式RData，也有可能是csv文件，xlsx文件，或者spss，sas文件。有时候我们需要从关系数据库中获取数据，这个时候我们需要使用R操作关系数据库。在本节，这里会探讨各种读取写出数据的方法，并进行总结，帮助我们灵活的导入导出数据。
+
+
+
+RData 是R中的文件对象，可以储存R中各种的数据结构，包括向量，数据框，列表等等。在R中生成的各种结果，都是R对象，都可以通过RData 文件进行储存，储存的方式是通过save 函数进行存储。如果需要加载RData数据，则可以使用load函数进行操作。
+
+R 发展到今天，得益于很多贡献者，这些人发挥了他们的才智，为R用户开发了很多高效的工具，极大的提高了R用户的工作效率，其中与数据输入输出相关的包就是readr包。这个包是Hadley Wickham 等人开发的，其提供了快速友好的方式来读取矩阵数据，也就是csv，tsv等数据格式的数据。
+
+readr 包中的主要函数：
+
+- read_csv :读取以逗号文件，比如csv文件，tsv 文件
+- read_csv2() ：导入以分号分隔符的csv文件
+- read_delim ：与read_csv类似，其可以读取任何分隔符的文件，通过delim参数指定分隔符号
+- read_tsv() ： 读取以制表符分隔符的文件
+- read_table() ： 读取空格分隔符的文件
+
+上面就是readr包中主要的读取数据的函数，其中需要注意的是，只有read_delim 需要指定分隔符，来读取对应分隔符的数据，其他的函数只能读取指定分隔符的数据。总体来说这些函数有相似的使用方式，其也有一些共同的参数：
+
+- col_names ：这个参数的值可以回FALSE，TRUE或者一个字符向量，默认是TRUE，当参数设置为TRUE的时候表示读取第一行为列名，如果是字符向量，那么会将字符向量作为数据集的列名字
+- skip ：一个数值，表示读取数据的时候，跳过前多少条数据
+- n_max : 一个数值，表示最多读取多少条数据。这个两个参数在只需要读取一部分数据的时候可以使用
+
+以上是此函数最常用的一些参数。关于readr包的优点，最重要的一点是，readr读取数据的速度比R自带的读取数据的函数要快很多，R 自带的读取数据的函数包括:
+
+- read.csv :读取以逗号为分隔符数据
+- read.table ： 读取以空格为分隔符的数据
+- read.delim:读取以换行符“”为分隔符的数据
+
+## 读取Excel数据
+
+读取excel数据可以使用readxl这个包，这个包的作者也是Hadley Wickham等人，这个包提供了一个读取excel数据高效的方式，最主要的函数如下：
+
+- read_excel
+- read_xls
+- read_xlsx
+
+read_excel 这个函数会自动的判断文件的后缀是xls，还是xlsx，如果明确的知道文件后缀是xls或者是xlsx，那么直接使用xls或者xlsx会更合适一些.
+关于这个读取excel数据的函数，最重要的几个参数是：
+
+- 数据文件的路径
+- excel的sheet,默认会读取excel中第一个sheet的数据
+```{r}
+# 读取excel 数据
+library(readxl)
+datasets <- readxl_example("datasets.xlsx")
+read_excel(datasets)
+
+read_excel(datasets,2)
+```
+
+read_excel(datasets),所读取的是datasets这个excel中第一个sheet的数据，read_excel(datasets,2),所读取的是datasets这个excel中第二个sheet的数据.
+另外需要注意的是如果execl中的sheet有命名的，也可以通过sheet的命命来指定，例如:
+```{r}
+# 读取excel数据
+read_excel(datasets,sheet = "chickwts")
+```
+
+通过这种方式可以非常方便的获取Excel数据。接下来介绍获取从其他来源的数据集。
+
+## 读取SPSS，SAS，STATA数据
+
+
+在做统计分析的时候，往往可能还会涉及到其他的统计软件，比如sas，spss，不同软件储存数据的格式会不一样，这个时候需要一个工具对不同格式对的数据进行操作。在R语言中可以使用haven，这个包来读取其他统计软件的数据，比如sas的sas7bdat格式数据，spss的sav格式数据
+1.读取SAS数据：read_sas
+```{r}
+# 读取SAS数据
+library(haven)
+path <- system.file("examples", "iris.sas7bdat", package = "haven")
+path
+
+read_sas(path)
+```
+
+2.读取SPSS数据 ： read_sav
+
+```{r}
+# 读取SPSS 数据
+path <- system.file("examples", "iris.sav", package = "haven")
+path
+
+read_sav(path)
+```
+
+3.读取STATA数据 ：read_dta
+```{r}
+# 读取STATA数据
+path <- system.file("examples", "iris.dta", package = "haven")
+path
+
+
+read_dta(path)
+```
+
+通过上面的几种方式可以快速的获取SAS，SPSS等来源的数据。
+
+# ggplot2介绍
+
+ggplot2是一个强大而灵活的R包，由Hadley Wickham实现，用于生成优雅的图形。ggplot2中的gg是指图形语法，这是一个使用“语法”来描述情节的图形概念。
+
+根据ggplot2的理念，一个统计图形可以被划分成为三个部分：Plot = 数据（data） + 图形美学（Aesthetics） + 几何变换（Geometry）
+
+数据: 使用ggplot2进行绘图，数据集的格式一般是数据框的格式。
+
+图形美学:  指定x和y变量，同时用来指点图形的颜色，大小，形状等等。
+
+几何变换: 几何变换用于指定绘制什么统计图形，条形图，点图或者任何图形。
+
+ggplot2提出关于统计图形的图形语法，而数据，图形美学，几何变换则是绘制统计图形的几个关键的要素。ggplot2包含两个关键的函数：
+
+1. qplot：用于快速的绘制统计图形
+
+2. ggplot2： 通过不同的图层绘制图形，比qplot更加的灵活
+
+在绘制好图形之后 ，last_plot()函数，可以返回最近绘制的一幅图形。而ggsave("plot.png", width = 5, height = 5)函数，则可以将最近绘制的图形保存下来。
+
+## qplot 快速绘图
+
+函数qplot()非常类似于标准的R base 的plot()函数。它可以用来快速轻松地创建不同类型的图:散点图、框图、小提琴图、直方图和密度图。
+qplot()的简化格式为:
+
+```
+qplot(x, y = NULL, data, geom="auto")
+```
+qplot绘图函数的参数如下：
+
+•x, y:分别为x和y值。参数y是可选的，这取决于要创建的图形的类型。
+•数据:要使用的数据帧(可选)。
+•geom:指定要使用的geom的字符向量。如果x和y默认为“point”
+，如果只指定x，则指定“histogram”。
+其他参数，如main、xlab和ylab，也可以用于向绘图添加主标题和轴标签。
+
+首先使用qplot绘制散点图，qplot函数如果指定了两个连续变量的话，默认会绘制散点图。图形如下：
+```{r}
+# 绘制散点图
+library(ggplot2)
+qplot(x = speed,y = dist,data = cars)
+```
+
+上面的代码绘制了cars数据集中汽车速度与停车距离的一个散点图，上面的代码等价于```qplot(x = speed,y = dist,data = cars,geom="point")```.因为默认的是geom="point"所以在绘制散点图的时候可以省略掉。需要注意的是，可以同时指定两种图形几何。
+```{r}
+# 添加拟合曲线
+qplot(x = speed,y = dist,data = cars,geom = c("point","smooth"))
+```
+
+上面的代码中添加了两种图形几何，绘制了散点图，然后添加了散点图的拟合曲线。qplot函数的绘图方式和R中基础的绘图方式非常的相似。
+
+## ggplot绘图
+如上所述，函数ggplot()比qplot()功能强大且更灵活。本节简要介绍如何使用ggplot()逐步构建一个优雅的plot。
+回想一下，ggplot的概念将一个plot分为三个不同的基本部分:plot = data + aesthetic + geometry。
+为了演示函数ggplot()的工作原理，我们将绘制散点图。函数aes()用于指定x和y变量以及美学(例如，颜色、形状、大小)。另一个选项是函数aes_string()，它从字符串生成映射。
+
+然后使用ggplot2函数来绘制上文使用qplot函数绘制的图形：
+```{r}
+# 绘制散点图
+ggplot(data = cars,aes(x = speed,y = dist))+geom_point()
+```
+
+上面的代码绘制出了与使用qplot函数绘制的一样的散点图。上面的代码也是由于三个部分组成的。首先是数据集，用于参数data指定。图形美学用过aes函数进行指定。图形几何用函数geom_point进行指定。不同的组成部分通过‘+’链接起来，最终绘制成一幅图形。
+
+如果想要添加多种图形几何，使用ggplot2函数可以很方便的进行添加：
+```{r}
+# 绘制散点图以及拟合曲线
+p <- ggplot(data = cars,aes(x = speed,y = dist))
+
+p+geom_point()+geom_smooth()
+```
+
+
+上面的代码绘制了散点图和散点图的拟合曲线。从代码中可以看到，分别添加了geom_point函数用于表面绘制散点图和geom_smooth函数，用于表明添加拟合曲线。注意这里有一个绘图的小技巧，在绘制图形的时候，往往会将数据和图形美学保存为一个变量，然后在接下来的绘图过程中使用保存的变量再加上不同的图形几何来绘制不同的图形，这样可以使得代码尽可能的最简洁。
+
+以上是关于ggplot2的介绍，在接下来的章节中，会介绍更多的内容。
+
+# 统计图形
+
+最早的统计图形出现在18世纪左右,最初的统计图形种类比较少，比较常用的就是散点图，条形图等等。
+![](/Users/milin/Documents/st.jpg)
+
+上面这张图是法国工程师查尔斯·约瑟夫·密纳德于1861年绘制的关于拿破仑入侵俄国的信息图形。其本质上是散点图加上折线图。比较常见的图形还包括：箱线图，小提琴图等等。本章节简单介绍一下常用的一些统计图形。
+
+
+### 散点图
+
+
+散点点图是非常常见的图形，常常被用于分析两个变量之间的关系。一般而言，只要是对两个连续变量进行分析，通常而言第一步就是绘制散点图。关于散点图还有一些变体，例如，在散点图中添加边际分布图，也就是在散点图的基础之上，在图形中添加用于描述单个变量数据的图形，例如直方图，小提琴图，箱线图等等。添加边际图用于这种图形在了解数据相关关系的同时，能够了解单个变量的分布情况。
+```{r}
+
+options(scipen=999)  # 取消科学计数
+library(ggplot2)
+library(ggExtra)
+theme_set(theme_bw())  # 预先设置主题
+data("midwest", package = "ggplot2") # 获取midwest数据
+
+
+# 绘制散点图
+gg <- ggplot(midwest, aes(x=area, y=poptotal)) + 
+  geom_point(aes(col=state, size=popdensity)) + 
+  geom_smooth(method="loess", se=F) + 
+  xlim(c(0, 0.1)) + 
+  ylim(c(0, 500000)) +  theme(
+      legend.position="none")+
+  labs(subtitle="Area Vs Population", # 设置子标题
+       y="Population",  # y轴变量名
+       x="Area",  # x轴变量名
+       title="Scatterplot",  # 标题
+       caption = "Source: midwest") # 备注
+
+
+ggMarginal(gg,type = "densigram") # 添加边际分布
+# plot(gg) # 输出图形
+```
+上面的代码使用了ggplot2包中的midwest数据集。绘制了一副散点图。然后在散点图中添加了拟合曲线，并且在散点图中添加了边际分布。
+
+
+
+### 箱线图
+
+箱线图用于分析数据的分布，从箱线图中能够了解到数据的整体情况。箱线图会给出关于数据的一些统计指标，包括25%分位数，中位数，75%分位数，最大最小值，并且，从箱线图中还能够有效的识别出关于数据集的极端值。箱线图是最常用的图形之一：
+```{r,warning=FALSE}
+# 加载包
+library(tidyverse)
+library(hrbrthemes)
+library(viridis)
+
+# 创建一个数据集
+data <- data.frame(
+  name=c( rep("A",500), rep("B",500), rep("B",500), rep("C",20), rep('D', 100)  ),
+  value=c( rnorm(500, 10, 5), rnorm(500, 13, 1), rnorm(500, 18, 1), rnorm(20, 25, 4), rnorm(100, 12, 1) )
+)
+
+# 绘制图形
+data %>%
+  ggplot( aes(x=name, y=value, fill=name)) +
+    geom_boxplot() +
+    scale_fill_viridis(discrete = TRUE, alpha=0.6) +
+    geom_jitter(color="black", size=0.4, alpha=0.9) +
+    theme_ipsum() +
+    theme(
+      legend.position="none",
+      plot.title = element_text(size=11)
+    ) +
+    ggtitle("A boxplot with jitter") +
+    xlab("")
+```
+
+上面的代码首先是创建了一个数据集。然后使用这个数据集来绘制一副箱线图。箱线图给出了关于一个或多个数值变量的很好的总结。从上图中可以观察到，boxplot由几个元素组成：
+
+- 将框分成2部分的线表示数据的中值。
+- 方框的两端显示上（Q3）和下（Q1）四分位数。如果第三个四分位数是15（75%分位数），则意味着75％的观察值低于15。
+- 四分位数和三分之一的区别称为四分位数范围（IQR）
+- 极端线显示Q3 + 1.5xIQR至Q1-1.5xIQR（不包括异常值的最高值和最低值）。
+- 超出极限线的点（或其他标记）显示了异常值。
+
+箱线图可能是最常用的图表类型之一，用于比较几个组的数据分布，还有比较常用的场景是来识别数据中的异常值。但是，应该记住的是，在绘制箱线图的时候，数据的分布会被隐藏在每个框后面。箱线图可以汇总多个组的数值变量的分布信息。问题是，信息的总结也意味着丢失信息，这可能是一个陷阱。箱线图可以用于了解数据的范围，但是如果希望了解数据的分布情况，最好的选择还是使用密度分布图。
+
+### 小提琴图
+
+小提琴图类似于箱形图，但显示了组内的密度。在箱线图中提供的信息不多,而小提琴图则可以表达更多的数据信息，小提琴图允许可视化一个或多个组的数字变量的分布，它们非常适合大型数据集。
+
+小提琴图允许可视化一个或多个组的数字变量的分布。每个“小提琴”代表一个组或一个变量。形状代表变量的密度估计：特定范围内的数据点越多，小提琴对该范围的影响就越大。它非常接近箱线图，但可以更深入地了解分布情况。小提琴图是箱线图的一种变异。小提琴图可以更加清晰的观察到数据的分布。下面的代码绘制了一幅小提琴图。如图所示：
+```{r}
+# 加载包
+library(ggplot2)
+library(dplyr)
+library(forcats)
+library(hrbrthemes)
+library(viridis)
+
+# 从github 获取数据集
+data <- read.table("https://raw.githubusercontent.com/holtzy/data_to_viz/master/Example_dataset/10_OneNumSevCatSubgroupsSevObs.csv", header=T, sep=",") %>%
+  mutate(tip = round(tip/total_bill*100, 1))
+  
+# 对数据进行处理 然后绘图
+data %>%
+  mutate(day = fct_reorder(day, tip)) %>%
+  mutate(day = factor(day, levels=c("Thur", "Fri", "Sat", "Sun"))) %>%
+  ggplot(aes(fill=sex, y=tip, x=day)) + 
+    geom_violin(position="dodge", alpha=0.5, outlier.colour="transparent") +
+    scale_fill_viridis(discrete=T, name="") +
+    theme_ipsum()  +
+    xlab("") +
+    ylab("Tip (%)") +
+    ylim(0,40)
+```
+
+小提琴图是一种强大的数据可视化技术，因为它可以比较不同几个组及其组的分布情况。令人惊讶的是，它比boxplot用得少，即使它提供了更多的信息。因此，在比较多组数据的时候，小提琴图是一个比较好的选择。当数据量巨大的时候，小提琴特别适应。对于小型数据集，带有抖动的箱线图可能是更好的选择，因为它确实显示了所有信息。
+
+### 条形图
+
+条形图用于显示数字和分类变量之间的关系。条形图包括堆叠条形图和分组条形图，其中显示了多个级别的分组。条形图是最常见的图形类型之一。它显示了数字和分类变量之间的关系。分类变量的每个实体都表示为一个条形。条形的大小表示其数值。如图所示：
+
+```{r}
+# 加载包
+library(tidyverse)
+library(hrbrthemes)
+library(babynames)
+library(viridis)
+
+# 对数据进行处理
+data <- babynames %>% 
+  filter(name %in% c("Ashley", "Amanda", "Jessica",    "Patricia", "Linda", "Deborah",   "Dorothy", "Betty", "Helen")) %>%
+  filter(sex=="F")
+
+# 绘制分组的条形图
+data  %>% 
+  filter(name %in% c("Ashley", "Patricia", "Betty", "Helen")) %>%
+  filter(year %in% c(1920, 1960, 2000)) %>%
+  mutate(year=as.factor(year)) %>%
+  ggplot( aes(x=year, y=n, fill=name)) +
+    geom_bar(stat="identity", position="dodge") +
+    scale_fill_viridis(discrete=TRUE, name="") +
+    theme_ipsum() +
+    ylab("Number of baby")
+```
+上面的代码绘制了一副条形图。数据包含了与婴儿名字相关的数据，记录不同年份不同取名的婴儿数量。
+需要注意的是不要将条形图与直方图混淆。直方图只有一个数字变量作为输入并显示其分布。
+
+在绘制条形图的时候。如果分类变量的级别没有明显的顺序，最好按照其值排序条形。
+如果数据中每组有几个值，不要使用条形图。即使有误差棒，它也会隐藏信息，而其他类型的图形如箱线图或小提琴则更为合适。
+
+但是随着统计的不断发展，有越来越多的专业统计图形出现。包括桑基图，和弦图等等。下面对于并不常见的一些统计图形进行介绍：
+
+### 和弦图
+
+和弦图用于研究一组实体之间流动。实体(节点)显示在圆周围并与弧(链接)连接。在 R中,circlize包是构建和弦图的最佳选择。和弦图表示多个实体(称为nodes)之间的流或连接。每个实体都由外部一个片段的圆形表示。然后,在每个实体之间绘制弧。弧的大小与流的重要性成比例。下图显示了一个地区迁移到另外一个地区的人数的例子。如图所示：
+
+```{r}
+# 加载包
+library(tidyverse)
+library(viridis)
+library(patchwork)
+library(hrbrthemes)
+library(circlize)
+library(chorddiag)  # 如果需要下载chorddiag包，运行代码 devtools::install_github("mattflor/chorddiag")
+
+# 从 github获取数据
+data <- read.table("https://raw.githubusercontent.com/holtzy/data_to_viz/master/Example_dataset/13_AdjacencyDirectedWeighted.csv", header=TRUE)
+
+# 对变量进行重新命名
+colnames(data) <- c("Africa", "East Asia", "Europe", "Latin Ame.",   "North Ame.",   "Oceania", "South Asia", "South East Asia", "Soviet Union", "West.Asia")
+rownames(data) <- colnames(data)
+
+# 将短格式的数据修改称为长格式的数据
+data_long <- data %>%
+  rownames_to_column %>%
+  gather(key = 'key', value = 'value', -rowname)
+
+#  设置参数
+circos.clear()
+circos.par(start.degree = 90, gap.degree = 4, track.margin = c(-0.1, 0.1), points.overflow.warning = FALSE)
+par(mar = rep(0, 4))
+
+# 调整配色
+mycolor <- viridis(10, alpha = 1, begin = 0, end = 1, option = "D")
+mycolor <- mycolor[sample(1:10)]
+
+# 绘制图形
+chordDiagram(
+  x = data_long, 
+  grid.col = mycolor,
+  transparency = 0.25,
+  directional = 1,
+  direction.type = c("arrows", "diffHeight"), 
+  diffHeight  = -0.04,
+  annotationTrack = "grid", 
+  annotationTrackHeight = c(0.05, 0.1),
+  link.arr.type = "big.arrow", 
+  link.sort = TRUE, 
+  link.largest.ontop = TRUE)
+
+#  添加文本和坐标轴
+circos.trackPlotRegion(
+  track.index = 1, 
+  bg.border = NA, 
+  panel.fun = function(x, y) {
+    
+    xlim = get.cell.meta.data("xlim")
+    sector.index = get.cell.meta.data("sector.index")
+    
+    # 将名称添加到扇区。
+    circos.text(
+      x = mean(xlim), 
+      y = 3.2, 
+      labels = sector.index, 
+      facing = "bending", 
+      cex = 0.8
+      )
+
+    # 在轴上加上刻度
+    circos.axis(
+      h = "top", 
+      major.at = seq(from = 0, to = xlim[2], by = ifelse(test = xlim[2]>10, yes = 2, no = 1)), 
+      minor.ticks = 1, 
+      major.tick.percentage = 0.5,
+      labels.niceFacing = FALSE)
+  }
+)
+```
+
+和弦图在数据可视化中非常引入注目，图形绘制出来非常的美观。和弦图还有其他的方式进行替代，例如桑基图。
+
+
+### 桑基图 Sankey Diagram
+
+桑基图（Sankey Diagram）同样是一种允许显示流量的可视化技术。几个实体(nodes)由矩形或文本表示。它们的链接用箭头或弧线表示,其宽度与流动的重要性或者某种数值成比例。桑基图也是显示不同实体之间的数据流动的关系，是和弦图的另外一种表现形式。下面这副图形与上文的和弦图所用的数据是一样的，这两幅图形所表达的含义也是一样的。
+
+```{r}
+# 加载包
+library(tidyverse)
+library(viridis)
+library(patchwork)
+library(hrbrthemes)
+library(circlize)
+
+# 从github中读取数据
+data <- read.table("https://raw.githubusercontent.com/holtzy/data_to_viz/master/Example_dataset/13_AdjacencyDirectedWeighted.csv", header=TRUE)
+#  读取包
+library(networkD3)
+
+# 将短格式的数据转换成为长格式的数据
+data_long <- data %>%
+  rownames_to_column %>%
+  gather(key = 'key', value = 'value', -rowname) %>%
+  filter(value  >0)
+colnames(data_long) <- c("source", "target", "value")
+data_long$target <- paste(data_long$target, " ", sep="")
+
+# 在绘制桑基图时候，需要创建一个关于节点的数据框，这个数据框包含了所有节点的名称
+nodes <- data.frame(name=c(as.character(data_long$source), as.character(data_long$target)) %>% unique())
+ 
+# 绘图的时候，需要使用节点的ID进行绘图，而不是节点的名称
+data_long$IDsource=match(data_long$source, nodes$name)-1 
+data_long$IDtarget=match(data_long$target, nodes$name)-1
+
+#  设置颜色
+ColourScal ='d3.scaleOrdinal() .range(["#FDE725FF","#B4DE2CFF","#6DCD59FF","#35B779FF","#1F9E89FF","#26828EFF","#31688EFF","#3E4A89FF","#482878FF","#440154FF"])'
+
+# 绘制图形
+sankeyNetwork(Links = data_long, Nodes = nodes,
+                     Source = "IDsource", Target = "IDtarget",
+                     Value = "value", NodeID = "name", 
+                     sinksRight=FALSE, colourScale=ColourScal, nodeWidth=40, fontSize=13, nodePadding=20)
+```
+
+
+### 棒棒糖图
+
+棒棒糖图基本上是一个条形图，其和条形图的含义基本上是一样的，棒棒糖图的线条长度就是条形图的高度。棒棒糖图显示了数字和分类变量之间的关系。
+
+```{r,message=FALSE}
+# 加载包
+library(tidyverse)
+library(hrbrthemes)
+library(kableExtra)
+# devtools::install_github("thomasp85/patchwork") 如果没有patchwork包，使用代码下载
+library(patchwork)
+
+# 从github中获取数据
+data <- read.table("https://raw.githubusercontent.com/holtzy/data_to_viz/master/Example_dataset/7_OneCatOneNum.csv", header=TRUE, sep=",")
+ 
+# 绘制图形
+data %>%
+  filter(!is.na(Value)) %>%
+  arrange(Value) %>%
+  tail(20) %>%
+  mutate(Country=factor(Country, Country)) %>%
+  ggplot(aes(x=Country, y=Value)) +
+    geom_segment( aes(x=Country ,xend=Country, y=0, yend=Value), color="grey") +
+    geom_point(size=3, color="#69b3a2") +
+    coord_flip() +
+    theme_ipsum() +
+    theme(
+      panel.grid.minor.y = element_blank(),
+      panel.grid.major.y = element_blank(),
+      legend.position="none"
+    ) +
+    xlab("") +
+    ylab("")
+```
+
+棒棒糖图完全用于与条形图相同的情况，二者表达的数据含义是一样的。然而，棒棒糖图更具吸引力，也传达了信息。当你有几个相同高度的条形时棒棒糖图特别有用：它避免了凌乱数字和莫尔效应。
+莫尔图案或莫尔条纹是具有透明间隙的不透明刻划图案覆盖在另一个相似图案上时可产生的大规模干涉图案。为了出现莫尔干涉图案，两个图案不能完全相同，而是例如移位，旋转或具有略微不同的间距。
+
+### 克利夫兰点图
+
+克利夫兰点图(Cleveland dotplot)是一个棒棒糖图的变体，这个图形允许比较每个组的2个数值变量的值。也可以使用分组或堆栈条形图来可视化这种数据。但是，这种表示不那么混乱，而且更容易阅读。如果每组有2个子组，请使用它。
+
+```{r}
+# 加载相关的包
+library(ggplot2)
+library(dplyr)
+library(hrbrthemes)
+
+# 创建数据集
+value1 <- abs(rnorm(26))*2
+data <- data.frame(
+  x=LETTERS[1:26], 
+  value1=value1, 
+  value2=value1+1+rnorm(26, sd=1) 
+)
+ 
+# 对数据进行处理
+data <- data %>% 
+  rowwise() %>% 
+  mutate( mymean = mean(c(value1,value2) )) %>% 
+  arrange(mymean) %>% 
+  mutate(x=factor(x, x))
+
+# 绘制图形
+ggplot(data) +
+  geom_segment( aes(x=x, xend=x, y=value1, yend=value2), color="grey") +
+  geom_point( aes(x=x, y=value1), color=rgb(0.2,0.7,0.1,0.5), size=3 ) +
+  geom_point( aes(x=x, y=value2), color=rgb(0.7,0.2,0.1,0.5), size=3 ) +
+  coord_flip()+
+  theme_ipsum() +
+  theme(
+    legend.position = "none",
+  ) +
+  xlab("") +
+  ylab("Value of Y")
+```
+
+绘制克利夫兰图的关键点的是首先绘制线条，线条的两端分别代表数据中两个变量的值。然后在线条的两端添加散点图即可绘制出克里夫兰图。
+
+需要注意的是，克利夫兰图（cleveland dotplot），该术语看起来并没有很好地定义，并且有时也用于点图或经典的棒棒糖图。之前的图表也称为哑铃点图。
+
+如果希望以下方面，哑铃图表是一个很好的工具：1。可视化两个时间点之间的相对位置（如增长和下降）。2.比较两个类别之间的距离。
+
+
+### 艺术图
+
+最后介绍艺术图。因为不管是任何图形，基本的元素都是一样的，点，线段，大小，颜色等等。基于这些基本的元素，可以创建任何没有定义过的图形。下面的代码使用ggplot2绘制了一个机器人。如图所示
+
+```{r}
+# 加载包
+library("dplyr")
+library("ggplot2")
+library("sp")
+library("rgeos")
+
+
+# 创建一个coord_circle函数
+coord_circle <- function(centre = c(0, 0), r = 1, n = 1000) {
+  data_frame(
+    x = seq(from = 0 - r, to = 0 + r, length.out = n %/% 2),
+    y = sqrt(r^2 - x^2)
+  ) %>% bind_rows(., -.) %>%
+    mutate(x = x + centre[1], y = y + centre[2])
+}
+
+# 绘图函数
+create_poly <- function(...) {
+  args <- list(...)
+  SpatialPolygons(
+    lapply(
+      X = seq_along(args),
+      FUN = function(x) {
+        Polygons(list(Polygon(as.data.frame(args[[x]]))), names(args)[x])
+      }
+    )
+  )
+}
+
+
+echancrure <- function(to_var, by_var, p = 0.1) {
+  ind <- which(by_var >= -0.08 & by_var <= 0.08 & to_var > 0)
+  to_var[ind] <- to_var[ind] - p
+  ind <- which(by_var >= -0.08 & by_var <= 0.08 & to_var < 0)
+  to_var[ind] <- to_var[ind] + p
+  return(to_var)
+}
+
+
+
+ 
+ 
+# 绘制机器人身体的形状：两个圆圈和一条竖线
+droid_body <- coord_circle(centre = c(0, 0), r = 1)
+droid_body$xvert <- 0
+droid_body$yvert <- droid_body$x
+droid_body <- bind_cols(
+  droid_body,
+  coord_circle(centre = c(0, 0), r = 0.35, n = nrow(droid_body)) %>% select(xint = x, yint = y)
+)
+
+# 中心内圈的灰色形状
+droid_body_rect <- data_frame(
+  x = c(-0.5, 0.5, 0.5, -0.5, c(-0.5, 0.5, 0.5, -0.5) - 0.2, c(-0.5, 0.5, 0.5, -0.5) + 0.2),
+  y = c(-0.6, 0.4, 0.6, -0.4, c(-0.6, 0.4, 0.6, -0.4) + 0.2, c(-0.6, 0.4, 0.6, -0.4) - 0.2),
+  group = rep(1:3, each = 4)
+)
+# 计算灰色图形与内圆相交的多边形
+polyrect <- create_poly(
+  "polyrect1" = droid_body_rect[droid_body_rect$group == 1, 1:2],
+  "polyrect2" = droid_body_rect[droid_body_rect$group == 2, 1:2],
+  "polyrect3" = droid_body_rect[droid_body_rect$group == 3, 1:2]
+)
+
+polycircle <- create_poly(
+  "polycircle" = droid_body[, c("xint", "yint")]
+)
+# plot(polyrect); plot(polycircle, add = TRUE)
+polyrect <- gIntersection(spgeom1 = polyrect, spgeom2 = polycircle)
+# plot(polyrect); plot(polycircle, add = TRUE)
+
+droid_body_rect <- fortify(polyrect)
+
+
+#设置中央环为（橙色）
+ring <- coord_circle(centre = c(0, 0), r = 0.4)
+ring$y <- echancrure(to_var = ring$y, by_var = ring$x, p = 0.1)
+ring$x <- echancrure(to_var = ring$x, by_var = ring$y, p = 0.1)
+ring <- bind_rows(
+  ring %>% mutate(group = (x >= 0) * 1),
+  coord_circle(centre = c(0, 0), r = 0.55, n = nrow(ring)) %>% mutate(y = -y, group = (x >= 0) * 1)
+) %>%
+  filter(group == 1) # oups something went wrong
+ring <- bind_rows(ring, ring %>% mutate(x = -x, group = 2))
+
+
+
+
+# 左右的位置绘制圈
+ring_left <- ring %>% filter(group == 1)
+# 改变环的中心
+ring_left$x <- ring_left$x - 1.3
+
+# 进行同样的操作
+ring_right <- ring %>% filter(group == 2)
+ring_right$x <- ring_right$x + 1.3
+
+# 为与机器人身体圆的交点创建了一个多边形
+polyring <- create_poly(
+  "polyring_g" = ring_left[, c("x", "y")],
+  "polyring_d" = ring_right[, c("x", "y")]
+)
+
+polydroid_body <- create_poly("polydroid_body" = droid_body[, c("x", "y")])
+
+
+
+polyring <- gIntersection(spgeom1 = polyring, spgeom2 = polydroid_body)
+fort_ring <- fortify(polyring)
+
+
+# 身体的水平线（分为两部分）
+ligne_hori <- data_frame(
+  x = c(-1, range(ring$x), 1),
+  y = 0,
+  group = c(1, 1, 2, 2)
+)
+
+
+# 绘制机器人头--------------------------------------------------------------------
+
+droid_head <- coord_circle(centre = c(0, 1.02), r = 0.52) %>%
+  filter(y >= 1.02) %>%
+  mutate(group = 1, fill = "white", col= "black") %>%
+  bind_rows(
+    data_frame(
+      x = c(-0.52, -0.4, 0.4, 0.52),
+      y = c(1.02, 0.95, 0.95, 1.02),
+      group = 2, fill = "white", col= "black"
+    )
+  )
+
+
+
+# 机器人头上的灰条
+poly_head_grey <- create_poly(
+  "poly_head_grey_haut" = data_frame(
+    x = c(-0.52, 0.52, 0.52, -0.52),
+    y = c(1.44, 1.44, 1.51, 1.51)
+  ),
+  "poly_head_grey_bas" = data_frame(
+    x = c(-0.52, 0.52, 0.52, -0.52),
+    y = c(1.02, 1.02, 1.07, 1.07)
+  )
+)
+
+polydroid_head <- create_poly("polydroid_head" = droid_head[droid_head$group == 1, c("x", "y")])
+
+poly_head_grey <- gIntersection(spgeom1 = poly_head_grey, spgeom2 = polydroid_head)
+fort_droid_headrectgris <- fortify(poly_head_grey)
+
+
+
+ 
+poly_head_orange <- create_poly(
+  "poly_head_orange1" = data_frame(
+    x = c(-0.52, 0.52, 0.52, -0.52),
+    y = c(1.38, 1.38, 1.42, 1.42)
+  ),
+  "poly_head_orange2" = data_frame(
+    x = c(-0.35, -0.35, -0.2, -0.2),
+    y = c(1.07, 1.15, 1.15, 1.07)
+  ),
+  "poly_head_orange3" = data_frame(
+    x = c(-0.55, -0.55, -0.45, -0.45),
+    y = c(1.07, 1.15, 1.15, 1.07)
+  ),
+  "poly_head_orange4" = data_frame(
+    x = c(0.44, 0.44, 0.47, 0.47),
+    y = c(1.07, 1.15, 1.15, 1.07)
+  )
+)
+
+poly_head_orange <- gIntersection(spgeom1 = poly_head_orange, spgeom2 = polydroid_head)
+fort_droid_headrectorange <- fortify(poly_head_orange)
+
+
+polygones_droid_head <- bind_rows(
+  fort_droid_headrectgris %>% select(-piece) %>%
+    mutate(group = as.numeric(as.character(group)), fill = "#8E8E9C", col= "black"),
+  fort_droid_headrectorange %>% select(-piece) %>% 
+    mutate(group = as.numeric(as.character(group)) * 2, fill = "#DF8D5D", col= "black")
+)
+
+
+# 绘制眼睛
+droid_eyes <- bind_rows(
+  coord_circle(centre = c(0, 1.35), r = 0.14) %>% mutate(group = 1, fill = "white", col = "white"),
+  coord_circle(centre = c(0, 1.35), r = 0.12) %>% mutate(group = 2, fill = "white", col = "black"),
+  coord_circle(centre = c(0, 1.35), r = 0.10) %>% mutate(group = 3, fill = "grey40", col = "grey40"),
+  coord_circle(centre = c(0, 1.35), r = 0.08) %>% mutate(group = 4, fill = "black", col = "black"),
+  coord_circle(centre = c(0, 1.16), r = 0.04) %>% mutate(group = 5, fill = "#76B1DE", col = "black"),
+  coord_circle(centre = c(0.25, 1.20), r = 0.08) %>% mutate(group = 6, fill = "black", col = "black"),
+  coord_circle(centre = c(0.25, 1.20), r = 0.07) %>% mutate(group = 7, fill = "white", col = "black"),
+  coord_circle(centre = c(0.25, 1.20), r = 0.06) %>% mutate(group = 8, fill = "grey40", col = "grey40"),
+  coord_circle(centre = c(0.25, 1.20), r = 0.04) %>% mutate(group = 9, fill = "black", col = "black")
+)
+
+eye_line <- data_frame(
+  x = 0,
+  y = c(1.07, 1.16-0.04)
+)
+
+# 添加触角
+antennas <- data_frame(
+  x = c(0.01, 0.01, 0.10, 0.10),
+  y = c(sqrt(0.52^2 - 0.01^2) + 1.02, sqrt(0.52^2 - 0.01^2) + 1.02 + 0.15,
+        sqrt(0.52^2 - 0.1^2) + 1.02, sqrt(0.52^2 - 0.1^2) + 1.02 + 0.25),
+  group = c(1, 1, 2, 2)
+)
+
+
+# 绘图 ------------------------------------------------------------
+
+bb8 <- ggplot(data = droid_body) +
+  coord_fixed() +
+  geom_polygon(mapping = aes(x = x, y = y), fill = "white", col = "black") +
+  geom_polygon(data = droid_body_rect, mapping = aes(x = long, y = lat, group = group), fill = "#8E8E9C") +
+  geom_path(mapping = aes(x = xvert, y = yvert)) +
+  geom_path(mapping = aes(x = xint, y = yint)) +
+  geom_polygon(data = ring, mapping = aes(x = x, y = y, group = group), fill = "#DF8D5D", col = "#DF8D5D") +
+  geom_path(data = ligne_hori, mapping = aes(x = x, y = y, group = group)) +
+  geom_polygon(data = fort_ring , mapping = aes(x = long, y = lat, group = group), fill = "#DF8D5D") +
+  geom_polygon(data = droid_head, mapping = aes(x = x, y = y, group = group, fill = fill, col = col)) +
+  geom_polygon(data = polygones_droid_head, mapping = aes(x = long, y = lat, group = group, fill = fill, col = col)) +
+  geom_polygon(data = droid_eyes, mapping = aes(x = x, y = y, group = group, fill = fill, col = col)) +
+  scale_fill_identity() + scale_color_identity() +
+  geom_line(data = eye_line, mapping = aes(x = x, y = y)) +
+  geom_line(data = antennas, mapping = aes(x = x, y = y, group = group), col = "black")
+
+
+bb8
+```
+
+当然，还有很多的图形没有被介绍，更多的图形，在本书的后面一些章节都会介绍到。
+
+# tidyverse介绍
+
+R中已经有大量的自带函数可强大的数据结构可以用来完成复杂的数据探索，数据科学的工作，但是有一个包提供了一个简洁，完整的数据科学工作流程的工具箱 -- tidyverse。tidyverse包提供了一个完整的数据科学工作流的工具，tidyverse包中有很多的子包可以用于解决数据科学工作中各个步骤的任务。数据科学的步骤包括：数据的导入，数据的清洁，数据的转换，数据的探索以及数据的可视化与建模。接下来会简单的介绍tidyverse的组成部分，然后在下文对于使用tidyverse进行数据探索的相关内容进行详细的介绍。
+
+tidyverse中用于读取数据的包是readr，readr提供了一套灵活的数据读取的工具，使用readr包读取数据的速度也远远比使用基础函数读取数据要有更高的效率。readr可以读取几乎所有的文本格式的数据，包括csv，tsv，delimited，fixed width等等类型的数据。数据读取之后的数据格式是tibble，tibbles是数据框格式的一个扩展，与数据框非常的相似，但是是比数据框更高级的一个版本。tibbles格式和数据框格式的数据有几个比较大的区别。tibbles会改变数据框中变量的名字，并且不会创建新的变量名。并且输出tibbles格式的数据默认只会输出前十行，不会像数据框将所有的数据输出造成刷屏的现象。使用tibbles格式来提到数据框是一个更好的选择，但是从整体上而言，二者是非常相似的。
+
+tidyverse中用于数据清洁的包是tidyr，整洁的数据通常有三个条件，1. 每一个变量都有唯一的行。2. 每一条数据都有唯一的行 。3. 每一个值都有他自己的单元格。使用tidy可以非常方便将将各种各样的数据转变成为整洁的数据格式。
+
+
+tidyverse包中用于数据转换的包是dplyr，这是非常常用的一个包，这个包中有5个常用的函数用于将数据进行转换。这些函数包括filter函数，arrange函数，select函数，mutate函数和summarize函数。同时，这五个函数都常常与group_by函数联系紧密。filter函数用于筛选数据的行，比如要筛选年龄大于18岁的数据，则需要使用filter函数。arrange函数用于对数据进行排序，select用于筛选数据的列，mutate函数用于生成新的列。summarize用于生成一些关于数据集的统计汇总。在数据探索的过程中，这些函数会被大量的使用到。
+
+
+另外，tidyverse还包括绘图的包，绘图的包则是ggplot2，这里就不做重复的介绍。另外还包括stringr，purr，forcats等等。stringr包被用于进行字符串的处理，purr被用于进行函数式编程.forcats常常被用于对因子类型的变量进行处理。
+
+
+最后需要介绍的是管道操作符：%>%，这个操作符会被广泛的使用到。管道操作符的左边是数据，管道操作符的右边是函数，表示将左边的数据作为右边函数的第一个参数。举一个例子：
+```{r}
+library(ggplot2)
+library(dplyr)
+
+# 创建数据集
+data <- data.frame(
+  name=c("north","south","south-east","north-west","south-west","north-east","west","east"),
+  val=sample(seq(1,10), 8 )
+)
+
+
+data %>%
+  arrange(val) %>%    # 对数据集使用val变量进行排序
+  mutate(name=factor(name, levels=name)) %>%   # 对因子变量重新设置因子变量
+  ggplot( aes(x=name, y=val)) + # 绘图
+    geom_segment( aes(xend=name, yend=0)) +
+    geom_point( size=4, color="orange") +
+    coord_flip() +
+    theme_bw() +
+    xlab("")
+```
+
+上面的代码中，出现了三个管道操作符，第一个管道操作符的代码是：
+```{r}
+data %>%
+  arrange(val) # 排序
+```
+
+上面的代码表示对数据及通过val变量从小到进行排序。第二个管道操作符的代码是：
+```{r}
+data %>%
+  arrange(val) %>%    
+  mutate(name=factor(name, levels=name))
+```
+上面的代码表示对排序后的数据集进行处理，将排序好的数据集的name变量转换成为因子类型。第三个管道操作符表示将处理之后的数据集作为ggplot函数的第一个参数进行绘制图形。管道操作符让代码更加具有可读性，避免了代码嵌套的问题。
+
+使用%>%操作符，被广泛地用于tidyverse包，因为它们包含许多函数，这些函数执行相对较小的任务。其思想是，这些函数是构建块，允许用户将函数调用组合在一起以产生所需的结果。
+为了说明这是怎么回事，下面是两个等价代码的简单例子:
+```
+f(x) = x %>% f()
+```
+
+管道操作符本质上取左边的东西，并将它作为第一个
+右边是函数调用的参数。
+如果有多个函数进行嵌套的话，管道操作符的优点就会很明显的显示出来了：
+```
+a(b(c(d(x)))) = x %>% d() %>% c() %>% b() %>% a()
+```
+在函数链中，函数调用的词法顺序与计算它们的顺序相同。
+如果希望存储最终结果，可以在开始时使用<-运算符。例如，这将用函数链的结果替换原来的x:
+```
+x <- x %>% d() %>% c() %>% b() %>% a()
+```
+
+管道操作符在本书中有大量的应用，了解了管道操作符的原理，可以更加容易的理解代码所表达的含义。在编写代码的过程中使用管道操作符同样可以让代码变得更加的具有可读性。
+
+# 总结
+
+本章节介绍了R与Rstudio的相关内容，介绍了R包的下载，加载等等内容。数据是进行探索，进行可视化的基础，R可以获取各种来源的数据，然后介绍了如何使用R语言来获取各种来源的数据。最后分别介绍了ggplot2和tidyverse，这两个包同样是本书会大量使用的包。介绍了这两个包的基本内容。在下一个章节，会介绍使用ggpplot2快速的绘制各种图形，并且介绍数据探索的详细内容
