@@ -13,5 +13,7 @@
 ~~~R
 ggplot2
 readr
+readxl
+haven
 ~~~
 
