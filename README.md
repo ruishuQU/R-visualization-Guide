@@ -15,5 +15,11 @@ ggplot2
 readr
 readxl
 haven
+ggExtra
+hrbrthemes
+babynames
+patchwork
+circlize
+chorddiag devtools::install_github("mattflor/chorddiag")
 ~~~
 
